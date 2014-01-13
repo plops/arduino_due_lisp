@@ -22,6 +22,7 @@
   2014-01-12 Martin Kielhorn I modified the code in femtolisp/tiny/lisp.c
   to run it on Arduino Due
 */
+#include "Arduino.h"
 #include <setjmp.h>
 
 enum {DEBUG=0};  // 1 will make parsing functions print out their names
@@ -1063,7 +1064,9 @@ void setup() {
 
 void loop() {
   while(ebufmax=Serial.readBytes(ebuf,sizeof(ebuf))){
-    
+    ebuf[ebufmax]=0;
+    Serial.print("parsing expression: ");
+    Serial.println(ebuf);
     v = read_sexpr(stdin);
     print(stdout, v=toplevel_eval(v));
     set(symbol("that"), v);
