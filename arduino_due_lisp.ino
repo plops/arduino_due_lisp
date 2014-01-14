@@ -1,5 +1,3 @@
-
-
 /*
   femtoLisp
 
@@ -22,13 +20,47 @@
   2014-01-12 Martin Kielhorn I modified the code in femtolisp/tiny/lisp.c
   to run it on Arduino Due
 */
+/*
+use this to check assembly code:
+/home/martin/arduino-nightly/hardware/tools/g++_arm_none_eabi/bin/arm-none-eabi-objdump  -d -S -C arduino_due_lisp.cpp.elf
+*/
+
 #include "Arduino.h"
 #include <setjmp.h>
 
-enum {DEBUG=0};  // 1 will make parsing functions print out their names
-char ebuf[1024]; // i couldn't figure out how to read from the serial port
-                 // as from a file, therefore i read chunks of instructions into ram
-int ebufpos=0, ebufmax=1023;
+#define VERBOSEGC 1
+
+enum {DEBUG=0};
+char ebuf[1024];
+int ebufmax=0;
+int ebufpos=0;
+
+int fgetc2(FILE*f)
+{
+  if(ebufmax<=ebufpos)
+    return EOF;
+  
+  int e = ebuf[ebufpos];
+  ebufpos++;
+  if(DEBUG){
+    Serial.print("fgetc2 ");
+    Serial.println((char)e);
+  }
+  return e;
+}
+
+int ungetc2(int b,FILE*f)
+{
+  if(DEBUG){
+    Serial.print("ungetc2 ");
+    Serial.println((char)b);
+  }
+  ebufpos--;
+  if(ebufpos<0)
+    return EOF;
+  return b;
+}
+
 
 typedef uint32_t value_t;
 typedef int32_t number_t;
@@ -92,7 +124,7 @@ static char *builtin_names[] =
 
 static char *stack_bottom;
 #define PROCESS_STACK_SIZE (2*1024*1024)
-#define N_STACK 23000
+#define N_STACK 13000
 //49152
 static value_t Stack[N_STACK];
 static uint32_t SP = 0;
@@ -110,25 +142,28 @@ value_t load_file(char *fname);
 
 // error utilities ------------------------------------------------------------
 
-jmp_buf toplevel;
+//jmp_buf toplevel;
 
 void lerror(char *format, ...)
 {
    // i don't want to port this to arduino right now
-   // va_list args; 
-    //va_start(args, format);
-   // vfprintf(stderr, format, args);
-   // va_end(args);
-    //longjmp(toplevel, 1);
+  va_list args; 
+  va_start(args, format);
+  char s[200];
+  vsprintf(s, format, args);
+  Serial.println(s);
+  va_end(args);
+  //  longjmp(toplevel, 1);
 }
 
 
 
 void type_error(char *fname, char *expected, uint32_t got)
 {
-   // fprintf(stderr, "%s: error: expected %s, got ", fname, expected);
-   // print(stderr, got); 
-   //lerror("\n");
+  char s[200];
+  sprintf(s, "%s: error: expected %s, got %d", fname, expected, got);
+  Serial.println(s); 
+  //lerror("\n");
 }
 
 // safe cast operators --------------------------------------------------------
@@ -286,7 +321,9 @@ void gc(void)
         Stack[i] = relocate(Stack[i]);
     trace_globals(symtab);
 #ifdef VERBOSEGC
-  //  printf("gc found %d/%d live conses\n", (curheap-tospace)/8, heapsize/8);
+    char s[100];
+    snprintf(s,sizeof(s),"gc found %d/%d live conses\n", (curheap-tospace)/8, heapsize/8);
+    Serial.println(s);
 #endif
     temp = tospace;
     tospace = fromspace;
@@ -330,14 +367,14 @@ static char nextchar(FILE *f)
     int ch;
 
     do {
-        ch = fgetc(f);
+        ch = fgetc2(f);
         if (ch == EOF)
             return 0;
         c = (char)ch;
         if (c == ';') {
             // single-line comment
             do {
-                ch = fgetc(f);
+                ch = fgetc2(f);
                 if (ch == EOF)
                     return 0;
             } while ((char)ch != '\n');
@@ -360,34 +397,14 @@ static void accumchar(char c, int *pi)
 }
 
 
-int fgetc(FILE*f)
-{
-  if (DEBUG) Serial.println("fgetc");
-  if(ebufmax<=ebufpos)
-   return EOF;
-   
-  int b = ebuf[ebufpos];
-  ebufpos++;
-  return b;
-}
-
-int ungetc(int c,FILE*f)
-{
-   if(DEBUG) {Serial.print("ungetc "); Serial.println((char)c);}
-   ebufpos--;
-   if(ebufpos<0)
-     return EOF;
-   return c;
-}
-
 // return: 1 for dot token, 0 for symbol
 static int read_token(FILE *f, char c)
 {
     int i=0, ch, escaped=0, dot=(c=='.'), totread=0;
 
-    ungetc(c, f);
+    ungetc2(c, f);
     while (1) {
-        ch = fgetc(f); totread++;
+        ch = fgetc2(f); totread++;
         if (ch == EOF)
             goto terminate;
         c = (char)ch;
@@ -395,7 +412,7 @@ static int read_token(FILE *f, char c)
             escaped = !escaped;
         }
         else if (c == '\\') {
-            ch = fgetc(f);
+            ch = fgetc2(f);
             if (ch == EOF)
                 goto terminate;
             accumchar((char)ch, &i);
@@ -407,7 +424,7 @@ static int read_token(FILE *f, char c)
             accumchar(c, &i);
         }
     }
-    ungetc(c, f);
+    ungetc2(c, f);
  terminate:
     buf[i++] = '\0';
     return (dot && (totread==2));
@@ -418,12 +435,16 @@ static uint32_t peek(FILE *f)
     char c, *end;
     number_t x;
 
-    if(DEBUG) Serial.println("peek");
-
     if (toktype != TOK_NONE)
         return toktype;
     c = nextchar(f);
-    //if (feof(f)) return TOK_NONE;
+
+    if(DEBUG){
+      Serial.print("peek c=");
+      Serial.println(c);
+    }
+    //if (feof(f))
+    if(c==-1) return TOK_NONE;
     if (c == '(') {
         toktype = TOK_OPEN;
     }
@@ -537,18 +558,19 @@ void print(FILE *f, value_t v)
 {
     value_t cd;
 
+    char s[100];
+    
     switch (tag(v)) {
     case TAG_NUM: Serial.print(numval(v)); // (f, "%ld", numval(v));
       break;
     case TAG_SYM: 
-    //fprintf(f, "%s", ((symbol_t*)ptr(v))->name); 
-    Serial.print(((symbol_t*)ptr(v))->name);
-    break;
-    case TAG_BUILTIN: // fprintf(f, "#<builtin %s>",builtin_names[intval(v)]); break;
-    Serial.print("#<builtin ");
-    Serial.print(builtin_names[intval(v)]);
-    Serial.print(">");
-    break;
+      snprintf(s,sizeof(s), "%s", ((symbol_t*)ptr(v))->name); 
+      Serial.print(s);
+      break;
+    case TAG_BUILTIN:
+      snprintf(s,sizeof(s), "#<builtin %s>",builtin_names[intval(v)]);
+      Serial.print(s);
+      break;
     case TAG_CONS:
         Serial.print("(");
         while (1) {
@@ -1048,31 +1070,56 @@ uint32_t load_file(char *fname)
 value_t v;
 
 void setup() {
- 
- Serial.begin(115200);
-
-    stack_bottom = ((char*)&v) - PROCESS_STACK_SIZE;
-    lisp_init();
+  Serial.begin(115200);
+  stack_bottom = ((char*)&v) - PROCESS_STACK_SIZE;
+  lisp_init();
   
- //   load_file("system.lsp");
-    //if (argc > 1) { load_file(argv[1]); return 0; }
-  //  printf("Welcome to femtoLisp ----------------------------------------------------------\n");
- Serial.println("welcome to femtolisp----------\n");
- Serial.print("> ");
+  //load_file("system.lsp");
+  //if (argc > 1) { load_file(argv[1]); return 0; }
+  Serial.println("welcome to femtolisp ----------\n");
+  Serial.print("> ");
+  Serial.setTimeout(1000);
 }
 
-
 void loop() {
-  while(ebufmax=Serial.readBytes(ebuf,sizeof(ebuf))){
+  if(Serial.available()>0){
+    delay(100);
+    int c;
+    do {
+      c=Serial.read();
+      if(c!=-1){
+	ebuf[ebufmax]=(char) c;
+	ebufmax++;
+      }
+      //Serial.println(c);
+    } while((Serial.available()>0) && (ebufmax<sizeof(ebuf)));
+    
+    ebufpos=0;
     ebuf[ebufmax]=0;
-    Serial.print("parsing expression: ");
-    Serial.println(ebuf);
-    v = read_sexpr(stdin);
-    print(stdout, v=toplevel_eval(v));
-    set(symbol("that"), v);
+    
+    /* Serial.print("input: \""); */
+    /* Serial.print(ebuf); */
+    /* Serial.println("\""); */
+    
+    if(ebufmax>0){
+      v = read_sexpr(stdin);
+      print(stdout, v=toplevel_eval(v));
+      set(symbol("that"), v);
+    }
     Serial.println("");
     Serial.println("");  
     Serial.print("> ");
+    ebufmax=0;
+    ebufpos=0;
   }
-  ebufpos=0;
 }
+
+/*
+1
+2
+(+ 1 2)
+((lambda (x) (* x x)) 3)
+(set 'a 1)
+(+ a 1)
+ */
+
