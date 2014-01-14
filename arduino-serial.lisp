@@ -132,6 +132,10 @@
 
 #+nil
 (destructuring-bind (str fd) *ard*
+  (close-serial fd))
+
+#+nil
+(destructuring-bind (str fd) *ard*
   (talk-arduino fd str "(+ 1 2)"))
 
 #+nil

@@ -34,12 +34,14 @@ enum {DEBUG=0};
 char ebuf[10]; // i have to introduce this array because arduino
 		 // doessnt allow access to serial port with fgetc and
 		 // ungetc
+int lastebufchar=-1;
 int ebufmax=0;
 int ebufpos=0;
 
 int fgetc2(FILE*f)
 {
   if(ebufmax<=ebufpos){
+    lastebufchar=ebuf[ebufmax-1];
     ebufmax=Serial.readBytes(ebuf,sizeof(ebuf));
     if(ebufmax==0)
       return EOF;
@@ -63,7 +65,7 @@ int ungetc2(int b,FILE*f)
   }
   ebufpos--;
   if(ebufpos<0)
-    return EOF;
+    return lastebufchar;
   return b;
 }
 
