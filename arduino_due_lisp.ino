@@ -31,14 +31,20 @@ use this to check assembly code:
 #define VERBOSEGC 1
 
 enum {DEBUG=0};
-char ebuf[1024];
+char ebuf[10]; // i have to introduce this array because arduino
+		 // doessnt allow access to serial port with fgetc and
+		 // ungetc
 int ebufmax=0;
 int ebufpos=0;
 
 int fgetc2(FILE*f)
 {
-  if(ebufmax<=ebufpos)
-    return EOF;
+  if(ebufmax<=ebufpos){
+    ebufmax=Serial.readBytes(ebuf,sizeof(ebuf));
+    if(ebufmax==0)
+      return EOF;
+    ebufpos=0;
+  }
   
   int e = ebuf[ebufpos];
   ebufpos++;
@@ -1080,7 +1086,7 @@ void setup() {
   //if (argc > 1) { load_file(argv[1]); return 0; }
   Serial.println("welcome to femtolisp ----------\n");
   Serial.print("> ");
-  Serial.setTimeout(1000);
+  Serial.setTimeout(100);
 }
 
 void loop() {
@@ -1089,13 +1095,13 @@ void loop() {
     ebufmax=Serial.readBytes(ebuf,sizeof(ebuf));
     
     ebufpos=0;
-    ebuf[ebufmax]=0;
+    /* ebuf[ebufmax]=0; */
 
-    Serial.print("length: ");
-    Serial.print(ebufmax);
-    Serial.print(" input: \"");
-    Serial.print(ebuf);
-    Serial.println("\"");
+    /* Serial.print("length: "); */
+    /* Serial.print(ebufmax); */
+    /* Serial.print(" input: \""); */
+    /* Serial.print(ebuf); */
+    /* Serial.println("\""); */
     
     if(ebufmax>0){
       v = read_sexpr(stdin);
