@@ -1,4 +1,4 @@
-/*
+/* -*- mode: C -*-
   femtoLisp
 
   a minimal interpreter for a minimal lisp dialect
@@ -64,11 +64,10 @@ int ungetc2(int b,FILE*f)
 
 typedef uint32_t value_t;
 typedef int32_t number_t;
-// arduino compiler doesnt seem to support types that refer from function definitions to typedefs,
-// perhaps because it's c++?
 
 typedef struct {
-    value_t car,cdr;
+    value_t car;
+    value_t cdr;
 } cons_t;
 
 typedef struct _symbol_t symbol_t;
@@ -158,7 +157,7 @@ void lerror(char *format, ...)
 
 
 
-void type_error(char *fname, char *expected, uint32_t got)
+void type_error(char *fname, char *expected, value_t got)
 {
   char s[200];
   sprintf(s, "%s: error: expected %s, got %d", fname, expected, got);
@@ -185,7 +184,7 @@ SAFECAST_OP(number,number_t, numval)
 static symbol_t *symtab = NULL;
 
 
-static struct _symbol_t *
+static symbol_t *
 mk_symbol(char *str)
 {
     symbol_t *sym;
@@ -197,7 +196,7 @@ mk_symbol(char *str)
     return sym;
 }
 
-static struct _symbol_t **symtab_lookup(struct _symbol_t **ptree, char *str)
+static symbol_t **symtab_lookup(symbol_t **ptree, char *str)
 {
     int x;
 
@@ -213,7 +212,7 @@ static struct _symbol_t **symtab_lookup(struct _symbol_t **ptree, char *str)
     return ptree;
 }
 
-uint32_t symbol(char *str)
+value_t symbol(char *str)
 {
     symbol_t **pnode;
 
@@ -256,7 +255,7 @@ void lisp_init(void)
 
 void gc(void);
 
-static uint32_t mk_cons(void)
+static value_t mk_cons(void)
 {
     cons_t *c;
 
@@ -267,14 +266,14 @@ static uint32_t mk_cons(void)
     return tagptr(c, TAG_CONS);
 }
 
-static uint32_t cons_(uint32_t *pcar, uint32_t *pcdr)
+static value_t cons_(value_t *pcar, value_t *pcdr)
 {
     value_t c = mk_cons();
     car_(c) = *pcar; cdr_(c) = *pcdr;
     return c;
 }
 
-uint32_t *cons(uint32_t *pcar, uint32_t *pcdr)
+value_t *cons(value_t *pcar, value_t *pcdr)
 {
     value_t c = mk_cons();
     car_(c) = *pcar; cdr_(c) = *pcdr;
@@ -283,7 +282,7 @@ uint32_t *cons(uint32_t *pcar, uint32_t *pcdr)
 }
 // collector ------------------------------------------------------------------
 
-static uint32_t relocate(uint32_t v)
+static value_t relocate(value_t v)
 {
     value_t a, d, nc;
 
@@ -299,7 +298,7 @@ static uint32_t relocate(uint32_t v)
     return nc;
 }
 
-static void trace_globals(struct _symbol_t *root)
+static void trace_globals(symbol_t *root)
 {
     while (root != NULL) {
         root->binding = relocate(root->binding);
@@ -440,8 +439,9 @@ static uint32_t peek(FILE *f)
     c = nextchar(f);
 
     if(DEBUG){
-      Serial.print("peek c=");
-      Serial.println(c);
+      Serial.print("peek c=\"");
+      Serial.print(c);
+      Serial.println("\"");
     }
     //if (feof(f))
     if(c==-1) return TOK_NONE;
@@ -482,7 +482,7 @@ static uint32_t peek(FILE *f)
 // build a list of conses. this is complicated by the fact that all conses
 // can move whenever a new cons is allocated. we have to refer to every cons
 // through a handle to a relocatable pointer (i.e. a pointer on the stack).
-static void read_list(FILE *f, uint32_t *pval)
+static void read_list(FILE *f, value_t *pval)
 {
     value_t c, *pc;
     uint32_t t;
@@ -520,7 +520,7 @@ static void read_list(FILE *f, uint32_t *pval)
     POP();
 }
 
-uint32_t read_sexpr(FILE *f)
+value_t read_sexpr(FILE *f)
 {
     value_t v;
     if (DEBUG) Serial.println("read_sexpr");
@@ -561,7 +561,9 @@ void print(FILE *f, value_t v)
     char s[100];
     
     switch (tag(v)) {
-    case TAG_NUM: Serial.print(numval(v)); // (f, "%ld", numval(v));
+    case TAG_NUM:
+      snprintf(s,sizeof(s), "%ld", numval(v));
+      Serial.print(s);
       break;
     case TAG_SYM: 
       snprintf(s,sizeof(s), "%s", ((symbol_t*)ptr(v))->name); 
@@ -574,7 +576,7 @@ void print(FILE *f, value_t v)
     case TAG_CONS:
         Serial.print("(");
         while (1) {
-            Serial.print(car_(v));
+	    print(f,car_(v));
             cd = cdr_(v);
             if (!iscons(cd)) {
                 if (cd != NIL) {
@@ -603,7 +605,7 @@ static inline void argcount(char *fname, int nargs, int c)
     if (tag(xpr)<0x2) { return (xpr); } \
     else { e=(xpr); *penv=(env); goto eval_top; } } while (0)
 
-uint32_t eval_sexpr(uint32_t e, uint32_t *penv)
+value_t eval_sexpr(value_t e, value_t *penv)
 { 
     value_t f, v, bind, headsym, asym, labl=0, *pv, *argsyms, *body, *lenv;
     value_t *rest;
@@ -625,7 +627,7 @@ uint32_t eval_sexpr(uint32_t e, uint32_t *penv)
             v = cdr_(v);
         }
         if ((v = sym->binding) == UNBOUND)
-            lerror("eval: error: variable %s has no value\n", sym->name);
+            lerror("eval: error: variable \"%s\" has no value\n", sym->name);
         return v;
     }
     if ((unsigned long)(char*)&nargs < (unsigned long)stack_bottom || SP>=(N_STACK-100))
@@ -1040,7 +1042,7 @@ uint32_t eval_sexpr(uint32_t e, uint32_t *penv)
 // repl -----------------------------------------------------------------------
 
 static char *infile = NULL;
-uint32_t toplevel_eval(uint32_t expr)
+value_t toplevel_eval(value_t expr)
 {
     value_t v;
     uint32_t saveSP = SP;
@@ -1050,7 +1052,7 @@ uint32_t toplevel_eval(uint32_t expr)
     return v;
 }
 /*
-uint32_t load_file(char *fname)
+value_t load_file(char *fname)
 {
     value_t e, v=NIL;
     char *lastfile = infile;
@@ -1083,23 +1085,17 @@ void setup() {
 
 void loop() {
   if(Serial.available()>0){
-    delay(100);
-    int c;
-    do {
-      c=Serial.read();
-      if(c!=-1){
-	ebuf[ebufmax]=(char) c;
-	ebufmax++;
-      }
-      //Serial.println(c);
-    } while((Serial.available()>0) && (ebufmax<sizeof(ebuf)));
+    ebufmax=0;
+    ebufmax=Serial.readBytes(ebuf,sizeof(ebuf));
     
     ebufpos=0;
     ebuf[ebufmax]=0;
-    
-    /* Serial.print("input: \""); */
-    /* Serial.print(ebuf); */
-    /* Serial.println("\""); */
+
+    Serial.print("length: ");
+    Serial.print(ebufmax);
+    Serial.print(" input: \"");
+    Serial.print(ebuf);
+    Serial.println("\"");
     
     if(ebufmax>0){
       v = read_sexpr(stdin);
@@ -1121,5 +1117,12 @@ void loop() {
 ((lambda (x) (* x x)) 3)
 (set 'a 1)
 (+ a 1)
+
+(list 1 2 34 'a)
+(set 'b (list 1 2 34 a))
+(set 'list (lambda args args))
+(set 'setq (macro (name val) (list set (list quote name) val)))
+(setq f-body (lambda (e) (cond ((atom e) e) ((eq (cdr e) ()) (car e)) (t (cons progn e)))))
+that
  */
 
