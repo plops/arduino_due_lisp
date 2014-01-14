@@ -43,7 +43,7 @@ void setup_max532()
   analogReadResolution(12);
 }
 
-void writeDAC(unsigned short a, unsigned short b)
+void writeDAC(unsigned short b, unsigned short a)
 {
   digitalWrite(chipSelectPin, LOW);
   byte x,y,z;
@@ -148,7 +148,7 @@ enum {
     // functions
     F_EQ, F_ATOM, F_CONS, F_CAR, F_CDR, F_READ, F_EVAL, F_PRINT, F_SET, F_NOT,
     F_LOAD, F_SYMBOLP, F_NUMBERP, F_ADD, F_SUB, F_MUL, F_DIV, F_LT, F_PROG1,
-    F_APPLY, F_RPLACA, F_RPLACD, F_BOUNDP, F_DAC, F_ADC, N_BUILTINS
+    F_APPLY, F_RPLACA, F_RPLACD, F_BOUNDP, F_DAC, F_ADC, F_DELAY, N_BUILTINS
 };
 #define isspecial(v) (intval(v) <= (int)F_PROGN)
 
@@ -156,7 +156,7 @@ static char *builtin_names[] =
     { "quote", "cond", "if", "and", "or", "while", "lambda", "macro", "label",
       "progn", "eq", "atom", "cons", "car", "cdr", "read", "eval", "print",
       "set", "not", "load", "symbolp", "numberp", "+", "-", "*", "/", "<",
-      "prog1", "apply", "rplaca", "rplacd", "boundp", "dac", "adc" };
+      "prog1", "apply", "rplaca", "rplacd", "boundp", "dac", "adc", "delay" };
 
 static char *stack_bottom;
 #define PROCESS_STACK_SIZE (2*1024*1024)
@@ -924,6 +924,11 @@ value_t eval_sexpr(value_t e, value_t *penv)
 	  argcount("adc", nargs, 1);
 	  v = number(analogRead(tonumber(Stack[SP-1],"adc")));
 	  break;
+	case F_DELAY:
+	  argcount("delay", nargs, 1);
+	  delay(tonumber(Stack[SP-1],"delay"));
+	  v = T;
+	  break;
         case F_LT:
             argcount("<", nargs, 2);
             if (tonumber(Stack[SP-2],"<") < tonumber(Stack[SP-1],"<"))
@@ -1175,12 +1180,12 @@ void loop() {
 (dac 0 0)
 (adc 0)
 (list 
-(list (dac 0 0) (adc 0) (adc 1))
-(list (dac 1000 0) (adc 0) (adc 1) )
-(list (dac 2000 0) (adc 0) (adc 1) )
-(list (dac 0 1000) (adc 0) (adc 1) )
-(list (dac 0 2000) (adc 0) (adc 1))
-(list (dac 0 0) (adc 0) (adc 1)))
+ (list (dac 0 0)    (delay 100) (adc 0) (adc 1))
+ (list (dac 1000 0) (delay 100) (adc 0) (adc 1))
+ (list (dac 2000 0) (delay 100) (adc 0) (adc 1))
+ (list (dac 0 1000) (delay 100) (adc 0) (adc 1))
+ (list (dac 0 2000) (delay 100) (adc 0) (adc 1))
+ (list (dac 0 0)    (delay 100) (adc 0) (adc 1)))
 (adc 1)
 (adc 15)
 that
