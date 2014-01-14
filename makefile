@@ -2,9 +2,10 @@ CXX=/home/martin/arduino-nightly/hardware/tools/g++_arm_none_eabi/bin/arm-none-e
 CC=/home/martin/arduino-nightly/hardware/tools/g++_arm_none_eabi/bin/arm-none-eabi-gcc
 # OPTFLAGS=-g -Os
 OPTFLAGS=-Os -Wall -Wextra
-CXXFLAGS=-w -fno-rtti -fno-exceptions -ffunction-sections -fdata-sections -nostdlib --param max-inline-insns-single=500  -Dprintf=iprintf -mcpu=cortex-m3 -DF_CPU=84000000L -DARDUINO=155 -DARDUINO_SAM_DUE -DARDUINO_ARCH_SAM -D__SAM3X8E__ -mthumb -DUSB_VID=0x2341 -DUSB_PID=0x003e -DUSBCON -DUSB_MANUFACTURER="Unknown" -DUSB_PRODUCT=\""Arduino Due\"" -I/home/martin/arduino-nightly/hardware/arduino/sam/system/libsam -I/home/martin/arduino-nightly/hardware/arduino/sam/system/CMSIS/CMSIS/Include/ -I/home/martin/arduino-nightly/hardware/arduino/sam/system/CMSIS/Device/ATMEL/ -I/home/martin/arduino-nightly/hardware/arduino/sam/cores/arduino -I/home/martin/arduino-nightly/hardware/arduino/sam/variants/arduino_due_x
-CFLAGS=-w -ffunction-sections -fdata-sections -nostdlib --param max-inline-insns-single=500  -Dprintf=iprintf -mcpu=cortex-m3 -DF_CPU=84000000L -DARDUINO=155 -DARDUINO_SAM_DUE -DARDUINO_ARCH_SAM -D__SAM3X8E__ -mthumb -DUSB_VID=0x2341 -DUSB_PID=0x003e -DUSBCON -DUSB_MANUFACTURER="Unknown" -DUSB_PRODUCT="\"Arduino Due\"" -I/home/martin/arduino-nightly/hardware/arduino/sam/system/libsam -I/home/martin/arduino-nightly/hardware/arduino/sam/system/CMSIS/CMSIS/Include/ -I/home/martin/arduino-nightly/hardware/arduino/sam/system/CMSIS/Device/ATMEL/ -I/home/martin/arduino-nightly/hardware/arduino/sam/cores/arduino -I/home/martin/arduino-nightly/hardware/arduino/sam/variants/arduino_due_x
+INCLUDES=-I/home/martin/arduino-nightly/hardware/arduino/sam/system/libsam -I/home/martin/arduino-nightly/hardware/arduino/sam/system/CMSIS/CMSIS/Include/ -I/home/martin/arduino-nightly/hardware/arduino/sam/system/CMSIS/Device/ATMEL/ -I/home/martin/arduino-nightly/hardware/arduino/sam/cores/arduino -I/home/martin/arduino-nightly/hardware/arduino/sam/variants/arduino_due_x -I/home/martin/arduino-nightly/hardware/arduino/sam/libraries
 
+CXXFLAGS=-w -fno-rtti -fno-exceptions -ffunction-sections -fdata-sections -nostdlib --param max-inline-insns-single=500  -Dprintf=iprintf -mcpu=cortex-m3 -DF_CPU=84000000L -DARDUINO=155 -DARDUINO_SAM_DUE -DARDUINO_ARCH_SAM -D__SAM3X8E__ -mthumb -DUSB_VID=0x2341 -DUSB_PID=0x003e -DUSBCON -DUSB_MANUFACTURER="Unknown" -DUSB_PRODUCT=\""Arduino Due\"" 
+CFLAGS=-w -ffunction-sections -fdata-sections -nostdlib --param max-inline-insns-single=500  -Dprintf=iprintf -mcpu=cortex-m3 -DF_CPU=84000000L -DARDUINO=155 -DARDUINO_SAM_DUE -DARDUINO_ARCH_SAM -D__SAM3X8E__ -mthumb -DUSB_VID=0x2341 -DUSB_PID=0x003e -DUSBCON -DUSB_MANUFACTURER="Unknown" -DUSB_PRODUCT="\"Arduino Due\"" 
 AR=/home/martin/arduino-nightly/hardware/tools/g++_arm_none_eabi/bin/arm-none-eabi-ar
 
 DEPS = cores/arduino/syscalls_sam3.c \
@@ -33,8 +34,8 @@ cores/arduino/IPAddress.cpp \
 cores/arduino/USARTClass.cpp \
 cores/arduino/cxxabi-compat.cpp \
 cores/arduino/RingBuffer.cpp \
-variants/arduino_due_x/variant.cpp 
-
+variants/arduino_due_x/variant.cpp \
+libraries/SPI/SPI.cpp
 
 
 OBJS = $(patsubst %,build/%.o,$(DEPS))
@@ -50,15 +51,15 @@ build/arduino_due_lisp.cpp: arduino_due_lisp.ino
 	cp arduino_due_lisp.ino build/arduino_due_lisp.cpp
 
 build/arduino_due_lisp.cpp.o: build/arduino_due_lisp.cpp
-	$(CXX) $(OPTFLAGS) $(CXXFLAGS) -c -o $@ $<
+	$(CXX) $(OPTFLAGS) $(INCLUDES) $(CXXFLAGS) -c -o $@ $<
 
 build/%.cpp.o: /home/martin/arduino-nightly/hardware/arduino/sam/%.cpp
 	mkdir -p `dirname $@`
-	$(CXX) $(OPTFLAGS) $(CXXFLAGS) -c -o $@ $<
+	$(CXX) $(OPTFLAGS) $(INCLUDES) $(CXXFLAGS) -c -o $@ $<
 
 build/%.c.o: /home/martin/arduino-nightly/hardware/arduino/sam/%.c
 	mkdir -p `dirname $@`
-	$(CC) $(OPTFLAGS) $(CFLAGS) -c -o $@ $<
+	$(CC) $(OPTFLAGS) $(INCLUDES) $(CFLAGS) -c -o $@ $<
 
 build/core.a: $(OBJS)
 	$(AR) rcs build/core.a $^

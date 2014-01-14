@@ -27,8 +27,37 @@ use this to check assembly code:
 
 #include "Arduino.h"
 #include <setjmp.h>
+#include <SPI/SPI.h>
 
-#define VERBOSEGC 1
+const int chipSelectPin = 16;
+void setup_max532()
+{
+  // start the SPI library:
+  SPI.begin();
+  SPI.setBitOrder(MSBFIRST);
+  SPI.setDataMode(SPI_MODE2);
+ //SPI.setClockDivider(); //default clock of 4MHz should work
+  
+  // initalize the  chip select pins:
+  pinMode(chipSelectPin, OUTPUT);
+  analogReadResolution(12);
+}
+
+void writeDAC(unsigned short a, unsigned short b)
+{
+  digitalWrite(chipSelectPin, LOW);
+  byte x,y,z;
+  x = (0xff0 & a) >> 4;
+  y = ((0xf & a) << 4) + ((0xf00 & b) >> 8);
+  z = 0xff & b;
+  SPI.transfer(x); 
+  SPI.transfer(y); 
+  SPI.transfer(z); 
+  digitalWrite(chipSelectPin, HIGH);
+}
+
+
+//#define VERBOSEGC 1
 
 enum {DEBUG=0};
 char ebuf[10]; // i have to introduce this array because arduino
@@ -119,7 +148,7 @@ enum {
     // functions
     F_EQ, F_ATOM, F_CONS, F_CAR, F_CDR, F_READ, F_EVAL, F_PRINT, F_SET, F_NOT,
     F_LOAD, F_SYMBOLP, F_NUMBERP, F_ADD, F_SUB, F_MUL, F_DIV, F_LT, F_PROG1,
-    F_APPLY, F_RPLACA, F_RPLACD, F_BOUNDP, N_BUILTINS
+    F_APPLY, F_RPLACA, F_RPLACD, F_BOUNDP, F_DAC, F_ADC, N_BUILTINS
 };
 #define isspecial(v) (intval(v) <= (int)F_PROGN)
 
@@ -127,7 +156,7 @@ static char *builtin_names[] =
     { "quote", "cond", "if", "and", "or", "while", "lambda", "macro", "label",
       "progn", "eq", "atom", "cons", "car", "cdr", "read", "eval", "print",
       "set", "not", "load", "symbolp", "numberp", "+", "-", "*", "/", "<",
-      "prog1", "apply", "rplaca", "rplacd", "boundp" };
+      "prog1", "apply", "rplaca", "rplacd", "boundp", "dac", "adc" };
 
 static char *stack_bottom;
 #define PROCESS_STACK_SIZE (2*1024*1024)
@@ -886,6 +915,15 @@ value_t eval_sexpr(value_t e, value_t *penv)
             }
             v = number(s);
             break;
+	case F_DAC:
+	  argcount("dac", nargs, 2);
+	  writeDAC(tonumber(Stack[SP-2],"dac"),tonumber(Stack[SP-1],"dac"));
+	    v=T;
+	  break;
+	case F_ADC:
+	  argcount("adc", nargs, 1);
+	  v = number(analogRead(tonumber(Stack[SP-1],"adc")));
+	  break;
         case F_LT:
             argcount("<", nargs, 2);
             if (tonumber(Stack[SP-2],"<") < tonumber(Stack[SP-1],"<"))
@@ -1089,6 +1127,8 @@ void setup() {
   Serial.println("welcome to femtolisp ----------\n");
   Serial.print("> ");
   Serial.setTimeout(100);
+  setup_max532();
+  analogReadResolution(12);
 }
 
 void loop() {
@@ -1131,6 +1171,18 @@ void loop() {
 (set 'list (lambda args args))
 (set 'setq (macro (name val) (list set (list quote name) val)))
 (setq f-body (lambda (e) (cond ((atom e) e) ((eq (cdr e) ()) (car e)) (t (cons progn e)))))
+(dac 4000 200)
+(dac 0 0)
+(adc 0)
+(list 
+(list (dac 0 0) (adc 0) (adc 1))
+(list (dac 1000 0) (adc 0) (adc 1) )
+(list (dac 2000 0) (adc 0) (adc 1) )
+(list (dac 0 1000) (adc 0) (adc 1) )
+(list (dac 0 2000) (adc 0) (adc 1))
+(list (dac 0 0) (adc 0) (adc 1)))
+(adc 1)
+(adc 15)
 that
  */
 
