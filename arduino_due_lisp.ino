@@ -57,7 +57,7 @@ void writeDAC(unsigned short b, unsigned short a)
 }
 
 
-//#define VERBOSEGC 1
+#define VERBOSEGC 1
 
 enum {DEBUG=0};
 char ebuf[256]; // i have to introduce this array because arduino
@@ -264,7 +264,7 @@ static unsigned char *fromspace;
 static unsigned char *tospace;
 static unsigned char *curheap;
 static unsigned char *lim;
-static uint32_t heapsize = 1024;//bytes
+static uint32_t heapsize = 4096;//bytes
 
 void lisp_init(void)
 {

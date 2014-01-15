@@ -130,7 +130,7 @@
 	   (values string &optional))
   (ensure-response-buffer-clear tty-fd tty-stream)
   (write-arduino tty-stream command)
-  (sleep .2)
+  (sleep .1)
   (let ((n (do ((i 0 (1+ i))
 		(n 0 (serial-recv-length tty-fd)))
 	       ((or (< 0 n) (<= 30 i)) n)
@@ -233,7 +233,10 @@
 				:external-format :latin-1 
 				:buffering :full)))
     (talk-arduino fd s (string-downcase
-			(format nil "~a" '(list 1 2 (+ 3 4)))))))
+			(format nil "~a" '(let ((i 0))
+					   (while (< i 4)
+					     (setq i (+ 1 i))
+					     (print i))))))))
 
 #+nil
 (destructuring-bind (str fd) *ard8*
