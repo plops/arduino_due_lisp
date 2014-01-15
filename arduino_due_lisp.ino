@@ -185,8 +185,8 @@ void lerror(char *format, ...)
    // i don't want to port this to arduino right now
   va_list args; 
   va_start(args, format);
-  char s[200];
-  vsprintf(s, format, args);
+  char s[80];
+  vsnprintf(s,sizeof(s), format, args);
   Serial.println(s);
   va_end(args);
   //  longjmp(toplevel, 1);
@@ -196,8 +196,8 @@ void lerror(char *format, ...)
 
 void type_error(char *fname, char *expected, value_t got)
 {
-  char s[200];
-  sprintf(s, "%s: error: expected %s, got %d", fname, expected, got);
+  char s[40];
+  snprintf(s,sizeof(s), "%s: error: expected %s, got %d", fname, expected, got);
   Serial.println(s); 
   //lerror("\n");
 }
@@ -226,7 +226,10 @@ mk_symbol(char *str)
 {
     symbol_t *sym;
 
-    sym = (symbol_t*)malloc(sizeof(symbol_t) + strlen(str));
+    sym = (symbol_t*)malloc(sizeof(symbol_t) + strlen(str)); 
+    if(sym==NULL){
+      Serial.print("error: can't allocate symbol.\n");
+    }
     sym->left = sym->right = NULL;
     sym->constant = sym->binding = UNBOUND;
     strcpy(&sym->name[0], str);
@@ -252,7 +255,10 @@ static symbol_t **symtab_lookup(symbol_t **ptree, char *str)
 value_t symbol(char *str)
 {
     symbol_t **pnode;
-
+    if(strncmp(str,"",1)==0)
+      Serial.println("error: symbol name is \"\"");
+    if(strlen(str)>23)
+      Serial.println("error: symbol name is too long");
     pnode = symtab_lookup(&symtab, str);
     if (*pnode == NULL)
         *pnode = mk_symbol(str);
@@ -264,14 +270,22 @@ static unsigned char *fromspace;
 static unsigned char *tospace;
 static unsigned char *curheap;
 static unsigned char *lim;
-static uint32_t heapsize = 4096;//bytes
+static uint32_t heapsize = 16*1024;//bytes
 
 void lisp_init(void)
 {
     int i;
 
     fromspace = (unsigned char*)malloc(heapsize);
+    if(fromspace==NULL){
+      Serial.print("error: can't allocate fromspace.\n");
+    }
+
     tospace   = (unsigned char*)malloc(heapsize);
+    if(tospace==NULL){
+      Serial.print("error: can't allocate tospace.\n");
+    }
+
     curheap = fromspace;
     lim = curheap+heapsize-sizeof(cons_t);
 
@@ -357,7 +371,7 @@ void gc(void)
         Stack[i] = relocate(Stack[i]);
     trace_globals(symtab);
 #ifdef VERBOSEGC
-    char s[100];
+    char s[40];
     snprintf(s,sizeof(s),"gc found %d/%d live conses\n", (curheap-tospace)/8, heapsize/8);
     Serial.println(s);
 #endif
@@ -595,7 +609,7 @@ void print(FILE *f, value_t v)
 {
     value_t cd;
 
-    char s[100];
+    char s[60];
     
     switch (tag(v)) {
     case TAG_NUM:

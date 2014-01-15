@@ -233,10 +233,159 @@
 				:external-format :latin-1 
 				:buffering :full)))
     (talk-arduino fd s (string-downcase
-			(format nil "~a" '(let ((i 0))
-					   (while (< i 4)
-					     (setq i (+ 1 i))
-					     (print i))))))))
+			(format nil "~a" '(defmacro dotimes2 (var . body)
+					   (let ((v (car var))
+						 (cnt (cadr var)))
+					     (list 'let (list (list v 0))
+						   (list 'while (list '< v cnt)
+							 (list 'prog1 (f-body body)
+							       (list 'setq v (list '+ v 1))))))))))))
+
+#+nil
+(destructuring-bind (str fd) *ard8*
+  (let ((s
+	 (sb-sys:make-fd-stream fd :input t :output t :element-type 'base-char
+				:external-format :latin-1 
+				:buffering :full)))
+    (defparameter *a*
+     (loop for a in `(,@(loop for i from 0 upto 4000 by 100 collect i) 4095) collect
+	  (progn
+	    (talk-arduino fd s (string-downcase
+				(format nil "~a" `(dac ,a 0))))
+	    (sleep .1)
+	    (let ((resp
+		   (talk-arduino fd s (string-downcase
+				       (format nil "~a" `(progn
+							   (set 'list (lambda args args))
+							   (dac ,a 0)
+							   (list ,@(loop for i below 100 collect '(adc 0)))))))))
+	      (let ((vals (read-from-string resp)))
+		(when (consp vals)
+		  (let ((n (length vals)))
+		    (let* ((avg (* (/ 1d0 n) (loop for e in vals sum e)))
+			   (var (* (/ 1d0 n) (loop for e in vals sum (- (expt e 2) (expt avg 2))))))
+		      (list a avg (sqrt var))))))))))
+
+    (defparameter *b*
+     (loop for b in `(,@(loop for i from 0 upto 4000 by 100 collect i) 4095) collect
+	  (progn
+	    (talk-arduino fd s (string-downcase
+				(format nil "~a" `(dac 0 ,b))))
+	    (sleep .1)
+	    (let ((resp
+		   (talk-arduino fd s (string-downcase
+				       (format nil "~a" `(progn
+							   (set 'list (lambda args args))
+							   (dac 0 ,b)
+							   (list ,@(loop for i below 100 collect '(adc 1)))))))))
+	      (let ((vals (read-from-string resp)))
+		(when (consp vals)
+		  (let ((n (length vals)))
+		    (let* ((avg (* (/ 1d0 n) (loop for e in vals sum e)))
+			   (var (* (/ 1d0 n) (loop for e in vals sum (- (expt e 2) (expt avg 2))))))
+		      (list b avg (sqrt var))))))))))))
+
+
+;; channel a+ measured amplified voltage (differential channel a+)
+;; ((0 0) (100 .165) (1000 1.56) (2000 3.06) (3000 4.61) (4095 6.24))
+
+;; channel b+
+;; ((0 0) (100 .23) (1000 1.61) (2000 3.12) (3000 4.55) (4095 6.24))
+
+#+nil
+(defparameter *a*
+  '((0 0.0d0 0.0d0) (100 25.46d0 1.1083320801997525d0) NIL
+    (300 115.3d0 1.4247806848774496d0)
+    (400 159.89000000000001d0 1.1566762727719166d0)
+    (500 204.56d0 1.79064234284669d0) NIL (700 294.36d0 1.315446692189472d0)
+    (800 338.89d0 1.340857934312619d0) (900 384.02d0 1.3414917070276935d0)
+    (1000 428.85d0 1.098863048787558d0) NIL
+    (1200 518.19d0 1.128671785749849d0) (1300 563.02d0 1.183046913702319d0)
+    (1400 607.74d0 1.213424904954972d0) NIL
+    (1600 697.69d0 1.3091600360256948d0) (1700 741.96d0 1.4759403781691298d0)
+    (1800 787.0600000000001d0 1.2947586647267082d0)
+    (1900 831.74d0 0.9446692542611704d0) NIL
+    (2100 921.48d0 1.5778466338548343d0) (2200 966.08d0 1.383329317217331d0)
+    (2300 1011.1d0 1.4035668847336196d0) NIL
+    (2500 1100.71d0 1.3137351331146943d0)
+    (2600 1145.58d0 1.2343419299909317d0) (2700 1190.17d0 1.04933312149811d0)
+    (2800 1235.41d0 1.087152243104639d0) NIL
+    (3000 1324.82d0 1.38115893368247d0) (3100 1369.4d0 1.2884098725424002d0)
+    (3200 1414.26d0 1.2619033243560545d0) NIL
+    (3400 1504.22d0 1.1711532777651765d0)
+    (3500 1548.6200000000001d0 1.770762547506388d0)
+    (3600 1593.41d0 1.3645145656475783d0)
+    (3700 1638.22d0 1.3607350954750046d0) NIL
+    (3900 1728.18d0 1.2359611642566808d0)
+    (4000 1772.78d0 1.054324428204316d0)
+    (4095 1815.49d0 1.1789402019441408d0)))
+
+#+nil
+(defparameter *b*
+  '((0 0.0d0 0.0d0) (100 23.57d0 1.234949391675633d0) NIL
+    (300 111.87d0 1.101408189545751d0) (400 155.75d0 1.1779218989389746d0)
+    (500 199.79d0 1.0420652570740656d0) NIL
+    (700 287.95d0 1.0136567466359518d0) (800 331.92d0 1.0067770358835157d0)
+    (900 376.13d0 0.9343982020546097d0) (1000 420.25d0 1.0037429949942367d0)
+    NIL (1200 508.17d0 1.149391143168434d0)
+    (1300 552.25d0 1.2031209415515964d0) (1400 596.13d0 1.7415797426449486d0)
+    NIL (1600 684.42d0 1.3651373557499218d0)
+    (1700 728.51d0 1.3152566289467107d0) (1800 772.27d0 1.018381068207499d0)
+    (1900 816.1800000000001d0 1.4098226838325283d0) NIL
+    (2100 904.3100000000001d0 1.146254770954569d0)
+    (2200 948.44d0 1.3661625085963243d0) (2300 992.59d0 1.0497142467752956d0)
+    NIL (2500 1080.84d0 1.120000000047564d0)
+    (2600 1124.58d0 1.0693923509340169d0)
+    (2700 1168.8600000000001d0 1.0678951257496703d0)
+    (2800 1212.8700000000001d0 1.1802965727840689d0) NIL
+    (3000 1300.94d0 1.1473447607152647d0)
+    (3100 1344.91d0 1.0685972112461393d0)
+    (3200 1388.8600000000001d0 1.2249081596973042d0) NIL
+    (3400 1476.84d0 1.111035553126647d0)
+    (3500 1521.23d0 0.9365361711334499d0)
+    (3600 1565.08d0 1.0457533171139406d0)
+    (3700 1608.94d0 1.093800712959488d0) NIL
+    (3900 1697.25d0 1.2278029157808674d0)
+    (4000 1740.98d0 1.3113351973765348d0)
+    (4095 1782.81d0 1.5079456224810837d0)))
+
+
+#+nil
+(let ((i 0))
+  (while (< i 4)
+    (prog1
+	(progn (print i))
+      (setq i (+ 1 i)))))
+
+#+nil
+(defun f-body (e)
+  (cond ((atom e)        e)
+	((eq (cdr e) ()) (car e))
+	(t               (cons progn e))))
+
+#+nil
+(defmacro while (check prog)
+  `(loop while ,check do ,prog))
+
+#+nil
+(let ((i 0))
+  (while (< i 10)
+    (prog1
+	(print i)
+      (incf i))))
+
+#+nil
+(defmacro dotimes2 (var . body)
+  (let ((v (car var))
+        (cnt (cadr var)))
+    (list 'let (list (list v 0))
+          (list 'while (list '< v cnt)
+                (list 'prog1 (f-body body)
+		      (list 'setq v (list '+ v 1)))))))
+
+#+nil
+(dotimes2 (i 10)
+	  )
 
 #+nil
 (destructuring-bind (str fd) *ard8*
