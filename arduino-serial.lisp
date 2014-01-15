@@ -67,7 +67,7 @@
  
     (tcsetattr fd TCSANOW term) #+nil (set terminal port attributes)
     (values
-     (sb-sys:make-fd-stream fd :input t :output t :element-type element-type
+     (sb-sys:make-fd-stream fd :input t :output t :element-type element-type 
 			    :buffering :full)
      fd)))
  
@@ -114,14 +114,23 @@
 
 #+nil
 (defparameter *ard* (multiple-value-list
-		     (open-serial "/dev/ttyACM0"))) 
- 
+		     (open-serial "/dev/ttyACM0")))
+
+(defparameter *ard8* (multiple-value-list
+		      (open-serial "/dev/ttyACM0" :element-type '(unsigned-byte 8))))
+
+(defun ensure-response-buffer-clear (fd str)
+ (unless (= 0 (serial-recv-length fd))
+   (read-response fd str)))
+
 (defun talk-arduino (tty-fd tty-stream command)
   (declare (fd-type tty-fd)
 	   (stream tty-stream)
 	   (string command)
 	   (values string &optional))
+  (ensure-response-buffer-clear tty-fd tty-stream)
   (write-arduino tty-stream command)
+  (sleep .2)
   (let ((n (do ((i 0 (1+ i))
 		(n 0 (serial-recv-length tty-fd)))
 	       ((or (< 0 n) (<= 30 i)) n)
@@ -130,14 +139,113 @@
 	""
 	(read-response tty-fd tty-stream))))
 
+
 #+nil
-(destructuring-bind (str fd) *ard*
+(destructuring-bind (str fd) *ard8*
   (close-serial fd))
 
 #+nil
-(destructuring-bind (str fd) *ard*
-  (talk-arduino fd str "(+ 1 2)"))
+(loop for i from 0 upto 10 do
+     (format t "~a~%"
+	     (destructuring-bind (str fd) *ard*
+	       (talk-arduino fd str (format nil "(* 2 (+ 1 ~d))" i)))))
 
 #+nil
 (destructuring-bind (str fd) *ard*
-  (talk-arduino fd str "4"))
+  (ensure-response-buffer-clear fd str))
+
+#+nil
+(destructuring-bind (str fd) *ard*
+  (talk-arduino fd str "()"))
+
+#+nil
+(destructuring-bind (str fd) *ard8*
+  (let* ((n (serial-recv-length fd))
+	 (a (make-array n :element-type '(unsigned-byte 8))))
+    (read-sequence a str)
+    (when (< 0 n)
+     (map 'string #'(lambda (x) (code-char x)) a))))
+
+
+#+nil
+(destructuring-bind (str fd) *ard8*
+  (let ((s
+	 (sb-sys:make-fd-stream fd :input t :output t :element-type 'base-char
+				:external-format :latin-1 
+				:buffering :full)))
+    (ensure-response-buffer-clear fd s)
+    (talk-arduino fd s "(+ 1 2 3)")))
+
+(defparameter *system*
+ (with-open-file (s "system.lsp")
+   (loop for l = (read s nil nil) while l collect l)))
+
+(defparameter *system-lines*
+ (with-open-file (s "system.lsp")
+   (loop for l = (read-line s nil nil) while l collect l)))
+
+#+nil
+(with-open-file (s "lisp_system.h" :direction :output :if-exists :supersede :if-does-not-exist :create)
+  (format s "const char *lisp_system=~%")
+  (loop for e in *system-lines* do
+       (format s "\"~a\"~%" e))
+  (format s ";~%"))
+
+#+nil
+(+ 1 2)
+#+nil
+(set 'list (lambda b b))
+#+nil
+(list 1 12)
+#+nil
+(defparameter *response*
+  (loop for e in *system* collect
+       (let ((def (string-downcase
+		   (format nil "~a" e))))
+	 (format t "input: ~a~%" def)
+	 (format t "output: \"~a\"~%"
+		 (destructuring-bind (str fd) *ard8*
+		   (let ((s
+			  (sb-sys:make-fd-stream fd :input t :output t :element-type 'base-char
+						 :external-format :latin-1 
+						 :buffering :full)))
+		     
+		     (let ((resp (talk-arduino fd s def)))
+		       (when (string= "" resp)
+			 (break "error ~a.~%" def))
+		       resp)
+		     ))))))
+
+#+nil
+(destructuring-bind (str fd) *ard8*
+  (let ((s
+	 (sb-sys:make-fd-stream fd :input t :output t :element-type 'base-char
+				:external-format :latin-1 
+				:buffering :full)))
+    (talk-arduino fd s (string-downcase
+			(format nil "~a" '(set 'list (lambda args args)))))))
+#+nil
+(list 1 23 4)
+#+nil
+(destructuring-bind (str fd) *ard8*
+  (let ((s
+	 (sb-sys:make-fd-stream fd :input t :output t :element-type 'base-char
+				:external-format :latin-1 
+				:buffering :full)))
+    (talk-arduino fd s (string-downcase
+			(format nil "~a" '(list 1 2 (+ 3 4)))))))
+
+#+nil
+(destructuring-bind (str fd) *ard8*
+  (let ((s
+	 (sb-sys:make-fd-stream fd :input t :output t :element-type 'base-char
+				:external-format :latin-1 
+				:buffering :full)))
+    (ensure-response-buffer-clear fd s)))
+
+
+#+nil
+(destructuring-bind (str fd) *ard*
+  (talk-arduino fd str "(list 1 2 3)"))
+
+

@@ -60,7 +60,7 @@ void writeDAC(unsigned short b, unsigned short a)
 //#define VERBOSEGC 1
 
 enum {DEBUG=0};
-char ebuf[10]; // i have to introduce this array because arduino
+char ebuf[256]; // i have to introduce this array because arduino
 		 // doessnt allow access to serial port with fgetc and
 		 // ungetc
 int lastebufchar=-1;
@@ -159,8 +159,8 @@ static char *builtin_names[] =
       "prog1", "apply", "rplaca", "rplacd", "boundp", "dac", "adc", "delay" };
 
 static char *stack_bottom;
-#define PROCESS_STACK_SIZE (2*1024*1024)
-#define N_STACK 13000
+#define PROCESS_STACK_SIZE (1024)
+#define N_STACK 512
 //49152
 static value_t Stack[N_STACK];
 static uint32_t SP = 0;
@@ -264,7 +264,7 @@ static unsigned char *fromspace;
 static unsigned char *tospace;
 static unsigned char *curheap;
 static unsigned char *lim;
-static uint32_t heapsize = 64*1024;//bytes
+static uint32_t heapsize = 1024;//bytes
 
 void lisp_init(void)
 {
@@ -1131,7 +1131,7 @@ void setup() {
   //if (argc > 1) { load_file(argv[1]); return 0; }
   Serial.println("welcome to femtolisp ----------\n");
   Serial.print("> ");
-  Serial.setTimeout(100);
+  Serial.setTimeout(1);
   setup_max532();
   analogReadResolution(12);
 }
@@ -1190,4 +1190,3 @@ void loop() {
 (adc 15)
 that
  */
-
