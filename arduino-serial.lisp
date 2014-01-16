@@ -285,12 +285,37 @@
 			   (var (* (/ 1d0 n) (loop for e in vals sum (- (expt e 2) (expt avg 2))))))
 		      (list b avg (sqrt var))))))))))))
 
+;; results of fitting
+;; channel A differential amplifier
+;; a               = 0.00152444       +/- 5.183e-06    (0.34%)   V/DACADU
+;; b               = 0.0155642        +/- 0.01174      (75.43%)  V
+;; ;; channel B differential amplifier
+;; a2              = 0.00150965       +/- 1.276e-05    (0.8454%) V/DACADU
+;; b2              = 0.0598476        +/- 0.02891      (48.3%)   V
+;; ;; channel A digitizer (ADC0)
+;; s1              = 0.447223         +/- 0.0004653    (0.104%)  ADCADU/DACADU
+;; o1              = -17.1033         +/- 1.119        (6.542%)  ADCADU
+;; ;; channel B digitizer (ADC1)
+;; s2              = 0.439523         +/- 0.0004876    (0.1109%) ADCADU/DACADU
+;; o2              = -17.9308         +/- 1.172        (6.539%)  ADCADU
+
+ 
+
 
 ;; channel a+ measured amplified voltage (differential channel a+)
-;; ((0 0) (100 .165) (1000 1.56) (2000 3.06) (3000 4.61) (4095 6.24))
+(defparameter *av* '((0 0) (100 .165) (1000 1.56) (2000 3.06) (3000 4.61) (4095 6.24)))
+
+(loop for (adu volt) in (remove-if #'null *bv*)
+   do
+     (format t "~a ~f~%" adu volt))
+
+#+nil
+(loop for (adu adc err) in (remove-if #'null *b*)
+   do
+     (format t "~a ~f~%" adu adc))
 
 ;; channel b+
-;; ((0 0) (100 .23) (1000 1.61) (2000 3.12) (3000 4.55) (4095 6.24))
+(defparameter *bv* '((0 0) (100 .23) (1000 1.61) (2000 3.12) (3000 4.55) (4095 6.24)))
 
 #+nil
 (defparameter *a*
