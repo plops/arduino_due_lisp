@@ -134,7 +134,7 @@
   (let ((n (do ((i 0 (1+ i))
 		(n 0 (serial-recv-length tty-fd)))
 	       ((or (< 0 n) (<= 30 i)) n)
-	     (sleep .03d0))))
+	     (sleep .08d0))))
     (if (eq 0 n)
 	""
 	(read-response tty-fd tty-stream))))
@@ -217,23 +217,32 @@
 		     ))))))
 
 #+nil
-(destructuring-bind (str fd) *ard8*
-  (let ((s
-	 (sb-sys:make-fd-stream fd :input t :output t :element-type 'base-char
-				:external-format :latin-1 
-				:buffering :full)))
-    (talk-arduino fd s (string-downcase
-			(format nil "~a" '(let ((i 0))
-					   (while (< i 4095)
-					     (progn
-					       (dac i 0)
-					       (delay 1))
-					     (set 'i (+ i 1)))
-					   (while (< 0 i)
-					     (progn
-					       (dac i 0)
-					       (delay 1))
-					     (set 'i (- i 1)))))))))
+(progn
+  (defparameter *bla* nil)
+  (setf *bla*
+   (destructuring-bind (str fd) *ard8*
+     (let ((s
+	    (sb-sys:make-fd-stream fd :input t :output t :element-type 'base-char
+				   :external-format :latin-1 
+				   :buffering :full)))
+       (list
+	(talk-arduino fd s (string-downcase
+			    (format nil "~a" `(progn
+						(set 'list (lambda args args))
+						(set 'x (lambda () (adc 1)))
+						(dac 1000 0)
+						(delay 100)
+						(dac 3000 0)
+						(list ,@(loop for i below 300 collect '(x)))))))
+	(progn (sleep .1)
+	       (ensure-response-buffer-clear fd s)))))))
+
+#+nil
+(with-open-file (s "step.dat" :direction :output :if-exists :supersede
+		   :if-does-not-exist :create)
+  (let ((dat (read-from-string (concatenate 'string (first *bla*) (second *bla*)))))
+    (loop for i from 0 and e in dat do
+	 (format s "~d ~d~%" i e))))
 
 #+nil
 (let ((i 0))
