@@ -222,23 +222,24 @@
 (progn
   (defparameter *bla* nil)
   (setf *bla*
-   (destructuring-bind (str fd) *ard8*
-     (let ((s
-	    (sb-sys:make-fd-stream fd :input t :output t :element-type 'base-char
-				   :external-format :latin-1 
-				   :buffering :full)))
-       (list
-	(talk-arduino fd s (string-downcase
-			    (format nil "~a" `(progn
-						(set 'list (lambda args args))
-						(set 'x (lambda () (progn (delay-microseconds 100) (list (micros) (adc 1)))))
-						(dac 1000 0)
-						(delay 100)
-						(set 'start (list (micros) (adc 1)))
-						(dac 3000 0)
-						(list start ,@(loop for i below 230 collect '(x)))))))
-	(progn (sleep 1)
-	       (ensure-response-buffer-clear fd s)))))))
+	(loop for i below 3 collect
+	 (destructuring-bind (str fd) *ard8*
+	   (let ((s
+		  (sb-sys:make-fd-stream fd :input t :output t :element-type 'base-char
+					 :external-format :latin-1 
+					 :buffering :full)))
+	     (list
+	      (talk-arduino fd s (string-downcase
+				  (format nil "~a" `(progn
+						      (set 'list (lambda args args))
+						      (set 'x (lambda () (progn (delay-microseconds 100) (list (micros) (adc 1)))))
+						      (dac 1000 0)
+						      (delay 100)
+						      (set 'start (list (micros) (adc 1)))
+						      (dac 3000 0)
+						      (list start ,@(loop for i below 230 collect '(x)))))))
+	      (progn (sleep 1)
+		     (ensure-response-buffer-clear fd s))))))))
 
 #+nil
 (read-from-string (first *bla*))
@@ -249,10 +250,12 @@
 #+nil
 (with-open-file (s "step.dat" :direction :output :if-exists :supersede
 		   :if-does-not-exist :create)
-  (let* ((dat (read-from-string (concatenate 'string (first *bla*) (second *bla*))))
-	 (start (first (first dat))))
-    (loop for i from 0 and (micros adc) in dat do
-	 (format s "~d ~d~%" (- micros start) adc))))
+  (loop for b in *bla* do
+       (let* ((dat (read-from-string (concatenate 'string (first b) (second b))))
+	      (start (first (first dat))))
+	 (loop for i from 0 and (micros adc) in dat do
+	      (format s "~d ~d~%" (- micros start) adc)))
+       (terpri s)))
 
 #+nil
 (let ((i 0))
