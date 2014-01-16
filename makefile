@@ -71,11 +71,11 @@ build/arduino_due_lisp.cpp.bin: build/arduino_due_lisp.cpp.elf
 	/home/martin/arduino-nightly/hardware/tools/g++_arm_none_eabi/bin/arm-none-eabi-objcopy -O binary build/arduino_due_lisp.cpp.elf build/arduino_due_lisp.cpp.bin 
 
 upload: build/arduino_due_lisp.cpp.bin
-	stty -F /dev/ttyACM0 speed 1200
-	/home/martin/arduino-nightly/hardware/tools/bossac --port=ttyACM0 -U false -e -w -b build/arduino_due_lisp.cpp.bin -R
+	stty -F /dev/ttyACM? speed 1200
+	/home/martin/arduino-nightly/hardware/tools/bossac --port=`ls /dev/ttyACM?|xargs basename` -U false -e -w -b build/arduino_due_lisp.cpp.bin -R
 
 verify: build/arduino_due_lisp.cpp.bin
-	stty -F /dev/ttyACM0 speed 1200
-	/home/martin/arduino-nightly/hardware/tools/bossac --port=ttyACM0 -U false -i -d -v -e -w -b build/arduino_due_lisp.cpp.bin -R
+	stty -F /dev/ttyACM? speed 1200
+	/home/martin/arduino-nightly/hardware/tools/bossac --port=`ls /dev/ttyACM?|xargs basename` -U false -i -d -v -e -w -b build/arduino_due_lisp.cpp.bin -R
 
 # -i -d -v

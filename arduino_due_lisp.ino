@@ -57,7 +57,7 @@ void writeDAC(unsigned short b, unsigned short a)
 }
 
 
-#define VERBOSEGC 1
+#define VERBOSEGC 0
 
 enum {DEBUG=0};
 char ebuf[256]; // i have to introduce this array because arduino
@@ -148,7 +148,7 @@ enum {
     // functions
     F_EQ, F_ATOM, F_CONS, F_CAR, F_CDR, F_READ, F_EVAL, F_PRINT, F_SET, F_NOT,
     F_LOAD, F_SYMBOLP, F_NUMBERP, F_ADD, F_SUB, F_MUL, F_DIV, F_LT, F_PROG1,
-    F_APPLY, F_RPLACA, F_RPLACD, F_BOUNDP, F_DAC, F_ADC, F_DELAY, N_BUILTINS
+    F_APPLY, F_RPLACA, F_RPLACD, F_BOUNDP, F_DAC, F_ADC, F_DELAY, F_DELAYMICROSECONDS, F_MICROS, N_BUILTINS
 };
 #define isspecial(v) (intval(v) <= (int)F_PROGN)
 
@@ -156,7 +156,7 @@ static char *builtin_names[] =
     { "quote", "cond", "if", "and", "or", "while", "lambda", "macro", "label",
       "progn", "eq", "atom", "cons", "car", "cdr", "read", "eval", "print",
       "set", "not", "load", "symbolp", "numberp", "+", "-", "*", "/", "<",
-      "prog1", "apply", "rplaca", "rplacd", "boundp", "dac", "adc", "delay" };
+      "prog1", "apply", "rplaca", "rplacd", "boundp", "dac", "adc", "delay", "delay-microseconds", "micros" };
 
 static char *stack_bottom;
 #define PROCESS_STACK_SIZE (1024)
@@ -372,8 +372,8 @@ void gc(void)
     trace_globals(symtab);
 #ifdef VERBOSEGC
     char s[40];
-    snprintf(s,sizeof(s),"gc found %d/%d live conses\n", (curheap-tospace)/8, heapsize/8);
-    Serial.println(s);
+    snprintf(s,sizeof(s),";; gc found %d/%d live conses\n", (curheap-tospace)/8, heapsize/8);
+    Serial.print(s);
 #endif
     temp = tospace;
     tospace = fromspace;
@@ -942,6 +942,15 @@ value_t eval_sexpr(value_t e, value_t *penv)
 	  argcount("delay", nargs, 1);
 	  delay(tonumber(Stack[SP-1],"delay"));
 	  v = T;
+	  break;
+	case F_DELAYMICROSECONDS:
+	  argcount("delay-microseconds", nargs, 1);
+	  delayMicroseconds(tonumber(Stack[SP-1],"delay-microseconds"));
+	  v = T;
+	  break;
+	case F_MICROS:
+	  argcount("micros", nargs, 0);
+	  v = number(micros());
 	  break;
         case F_LT:
             argcount("<", nargs, 2);

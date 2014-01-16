@@ -18,7 +18,7 @@
   `(unsigned-byte 31))
 
 (defun open-serial (tty &key (element-type 'character))
-  (declare (type string tty)
+  (declare (type (or pathname string) tty)
 	   (values stream fd-type &optional))
   (let* ((fd (sb-posix:open
 	      tty (logior O-RDWR
@@ -117,7 +117,9 @@
 		     (open-serial "/dev/ttyACM0")))
 
 (defparameter *ard8* (multiple-value-list
-		      (open-serial "/dev/ttyACM0" :element-type '(unsigned-byte 8))))
+		      (open-serial (first (directory "/dev/ttyACM*")) :element-type '(unsigned-byte 8))))
+
+
 
 (defun ensure-response-buffer-clear (fd str)
  (unless (= 0 (serial-recv-length fd))
@@ -229,20 +231,28 @@
 	(talk-arduino fd s (string-downcase
 			    (format nil "~a" `(progn
 						(set 'list (lambda args args))
-						(set 'x (lambda () (adc 1)))
+						(set 'x (lambda () (progn (delay-microseconds 100) (list (micros) (adc 1)))))
 						(dac 1000 0)
 						(delay 100)
+						(set 'start (list (micros) (adc 1)))
 						(dac 3000 0)
-						(list ,@(loop for i below 300 collect '(x)))))))
-	(progn (sleep .1)
+						(list start ,@(loop for i below 230 collect '(x)))))))
+	(progn (sleep 1)
 	       (ensure-response-buffer-clear fd s)))))))
+
+#+nil
+(read-from-string (first *bla*))
+
+#+nil
+(read-from-string (concatenate 'string (first *bla*) (second *bla*)))
 
 #+nil
 (with-open-file (s "step.dat" :direction :output :if-exists :supersede
 		   :if-does-not-exist :create)
-  (let ((dat (read-from-string (concatenate 'string (first *bla*) (second *bla*)))))
-    (loop for i from 0 and e in dat do
-	 (format s "~d ~d~%" i e))))
+  (let* ((dat (read-from-string (concatenate 'string (first *bla*) (second *bla*))))
+	 (start (first (first dat))))
+    (loop for i from 0 and (micros adc) in dat do
+	 (format s "~d ~d~%" (- micros start) adc))))
 
 #+nil
 (let ((i 0))
