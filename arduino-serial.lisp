@@ -223,7 +223,30 @@
 				:external-format :latin-1 
 				:buffering :full)))
     (talk-arduino fd s (string-downcase
-			(format nil "~a" '(set 'list (lambda args args)))))))
+			(format nil "~a" '(let ((i 0))
+					   (while (< i 4095)
+					     (progn
+					       (dac i 0)
+					       (delay 1))
+					     (set 'i (+ i 1)))
+					   (while (< 0 i)
+					     (progn
+					       (dac i 0)
+					       (delay 1))
+					     (set 'i (- i 1)))))))))
+
+#+nil
+(let ((i 0))
+  (while (< i 4095)
+    (progn
+      (dac i 0)
+      (delay 1))
+    (set 'i (+ i 1)))
+  (while (< 0 i)
+    (progn
+      (dac i 0)
+      (delay 1))
+    (set 'i (- i 1))))
 #+nil
 (list 1 23 4)
 #+nil
@@ -303,8 +326,10 @@
 
 
 ;; channel a+ measured amplified voltage (differential channel a+)
+#+nil
 (defparameter *av* '((0 0) (100 .165) (1000 1.56) (2000 3.06) (3000 4.61) (4095 6.24)))
 
+#+nil
 (loop for (adu volt) in (remove-if #'null *bv*)
    do
      (format t "~a ~f~%" adu volt))
@@ -315,6 +340,7 @@
      (format t "~a ~f~%" adu adc))
 
 ;; channel b+
+#+nil
 (defparameter *bv* '((0 0) (100 .23) (1000 1.61) (2000 3.12) (3000 4.55) (4095 6.24)))
 
 #+nil
