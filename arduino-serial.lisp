@@ -222,7 +222,7 @@
 (progn
   (defparameter *bla* nil)
   (setf *bla*
-	(loop for i below 3 collect
+	(loop for i below 13 collect
 	 (destructuring-bind (str fd) *ard8*
 	   (let ((s
 		  (sb-sys:make-fd-stream fd :input t :output t :element-type 'base-char
@@ -232,11 +232,11 @@
 	      (talk-arduino fd s (string-downcase
 				  (format nil "~a" `(progn
 						      (set 'list (lambda args args))
-						      (set 'x (lambda () (progn (delay-microseconds 100) (list (micros) (adc 1)))))
-						      (dac 1000 0)
+						      (set 'x (lambda () (progn (delay-microseconds 100) (list (micros) (adc 0)))))
+						      (dac 0 1000)
 						      (delay 100)
-						      (set 'start (list (micros) (adc 1)))
-						      (dac 3000 0)
+						      (set 'start (list (micros) (adc 0)))
+						      (dac 0 ,(+ 1010 (* 10 i)))
 						      (list start ,@(loop for i below 230 collect '(x)))))))
 	      (progn (sleep 1)
 		     (ensure-response-buffer-clear fd s))))))))
