@@ -60,30 +60,35 @@ void writeDAC(unsigned short b, unsigned short a)
 #define VERBOSEGC 0
 
 enum {DEBUG=0};
-char ebuf[256]; // i have to introduce this array because arduino
+char ebuf[16];   // i have to introduce this array because arduino
 		 // doessnt allow access to serial port with fgetc and
 		 // ungetc
-int lastebufchar=-1;
 int ebufmax=0;
 int ebufpos=0;
 
+void lerror(char *format, ...)
+{
+   // i don't want to port this to arduino right now
+  va_list args; 
+  va_start(args, format);
+  char s[80];
+  vsnprintf(s,sizeof(s), format, args);
+  Serial.println(s);
+  va_end(args);
+  while(1);
+  //  longjmp(toplevel, 1);
+}
+
+
 int fgetc2(FILE*f)
 {
-  if(ebufmax<=ebufpos){
-    lastebufchar=ebuf[ebufmax-1];
-    ebufmax=Serial.readBytes(ebuf,sizeof(ebuf));
-    if(ebufmax==0)
-      return EOF;
-    ebufpos=0;
+  if (ebufpos >= ebufmax) {
+    ebufpos = 0;
+    do {
+      ebufmax = Serial.readBytes(ebuf, sizeof(ebuf));
+    } while (ebufmax==0);
   }
-  
-  int e = ebuf[ebufpos];
-  ebufpos++;
-  if(DEBUG){
-    Serial.print("fgetc2 ");
-    Serial.println((char)e);
-  }
-  return e;
+  return ebuf[ebufpos++];
 }
 
 int ungetc2(int b,FILE*f)
@@ -92,9 +97,9 @@ int ungetc2(int b,FILE*f)
     Serial.print("ungetc2 ");
     Serial.println((char)b);
   }
-  ebufpos--;
-  if(ebufpos<0)
-    return lastebufchar;
+  if (!ebufpos)
+    lerror("unget used but buffer empty");
+  ebuf[--ebufpos] = b;
   return b;
 }
 
@@ -148,7 +153,7 @@ enum {
     // functions
     F_EQ, F_ATOM, F_CONS, F_CAR, F_CDR, F_READ, F_EVAL, F_PRINT, F_SET, F_NOT,
     F_LOAD, F_SYMBOLP, F_NUMBERP, F_ADD, F_SUB, F_MUL, F_DIV, F_LT, F_PROG1,
-    F_APPLY, F_RPLACA, F_RPLACD, F_BOUNDP, F_DAC, F_ADC, F_DELAY, F_DELAYMICROSECONDS, F_MICROS, N_BUILTINS
+    F_APPLY, F_RPLACA, F_RPLACD, F_BOUNDP, F_DAC, F_ADC, F_DELAY, F_DELAYMICROSECONDS, F_MICROS, F_ROOM, N_BUILTINS
 };
 #define isspecial(v) (intval(v) <= (int)F_PROGN)
 
@@ -156,7 +161,7 @@ static char *builtin_names[] =
     { "quote", "cond", "if", "and", "or", "while", "lambda", "macro", "label",
       "progn", "eq", "atom", "cons", "car", "cdr", "read", "eval", "print",
       "set", "not", "load", "symbolp", "numberp", "+", "-", "*", "/", "<",
-      "prog1", "apply", "rplaca", "rplacd", "boundp", "dac", "adc", "delay", "delay-microseconds", "micros" };
+      "prog1", "apply", "rplaca", "rplacd", "boundp", "dac", "adc", "delay", "delay-microseconds", "micros", "room" };
 
 static char *stack_bottom;
 #define PROCESS_STACK_SIZE (1024)
@@ -180,17 +185,6 @@ value_t load_file(char *fname);
 
 //jmp_buf toplevel;
 
-void lerror(char *format, ...)
-{
-   // i don't want to port this to arduino right now
-  va_list args; 
-  va_start(args, format);
-  char s[80];
-  vsnprintf(s,sizeof(s), format, args);
-  Serial.println(s);
-  va_end(args);
-  //  longjmp(toplevel, 1);
-}
 
 
 
@@ -198,7 +192,8 @@ void type_error(char *fname, char *expected, value_t got)
 {
   char s[40];
   snprintf(s,sizeof(s), "%s: error: expected %s, got %d", fname, expected, got);
-  Serial.println(s); 
+  Serial.println(s);
+  while(1);
   //lerror("\n");
 }
 
@@ -228,7 +223,7 @@ mk_symbol(char *str)
 
     sym = (symbol_t*)malloc(sizeof(symbol_t) + strlen(str)); 
     if(sym==NULL){
-      Serial.print("error: can't allocate symbol.\n");
+      lerror("error: can't allocate symbol.\n");
     }
     sym->left = sym->right = NULL;
     sym->constant = sym->binding = UNBOUND;
@@ -256,9 +251,9 @@ value_t symbol(char *str)
 {
     symbol_t **pnode;
     if(strncmp(str,"",1)==0)
-      Serial.println("error: symbol name is \"\"");
+      lerror("error: symbol name is \"\"");
     if(strlen(str)>23)
-      Serial.println("error: symbol name is too long");
+      lerror("error: symbol name is too long");
     pnode = symtab_lookup(&symtab, str);
     if (*pnode == NULL)
         *pnode = mk_symbol(str);
@@ -952,6 +947,16 @@ value_t eval_sexpr(value_t e, value_t *penv)
 	  argcount("micros", nargs, 0);
 	  v = number(micros());
 	  break;
+	case F_ROOM:
+	  argcount("room", nargs, 0);
+	  {
+	    char s[80];
+	    snprintf(s,sizeof(s), "heap: %d/%d, stack: %d/%d",
+		     (curheap-fromspace)/8, heapsize/8, SP, N_STACK);
+	    Serial.println(s);
+	  }
+	  v = number((curheap-fromspace)/8);
+	  break;
         case F_LT:
             argcount("<", nargs, 2);
             if (tonumber(Stack[SP-2],"<") < tonumber(Stack[SP-1],"<"))
@@ -1160,30 +1165,11 @@ void setup() {
 }
 
 void loop() {
-  if(Serial.available()>0){
-    ebufmax=0;
-    ebufmax=Serial.readBytes(ebuf,sizeof(ebuf));
-    
-    ebufpos=0;
-    /* ebuf[ebufmax]=0; */
-
-    /* Serial.print("length: "); */
-    /* Serial.print(ebufmax); */
-    /* Serial.print(" input: \""); */
-    /* Serial.print(ebuf); */
-    /* Serial.println("\""); */
-    
-    if(ebufmax>0){
-      v = read_sexpr(stdin);
-      print(stdout, v=toplevel_eval(v));
-      set(symbol("that"), v);
-    }
-    Serial.println("");
-    Serial.println("");  
-    Serial.print("> ");
-    ebufmax=0;
-    ebufpos=0;
-  }
+  v = read_sexpr(stdin);
+  print(stdout, v=toplevel_eval(v));
+  set(symbol("that"), v);
+  Serial.println("");  
+  Serial.print("> ");
 }
 
 /*
