@@ -1157,6 +1157,7 @@ void setup() {
   Serial.setTimeout(1);
   setup_max532();
   analogReadResolution(12);
+  writeDAC(2048,2048);
 }
 
 void loop() {

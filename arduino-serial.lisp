@@ -112,9 +112,6 @@
   (write-sequence data tty-stream)
   (finish-output tty-stream))
 
-#+nil
-(defparameter *ard* (multiple-value-list
-		     (open-serial "/dev/ttyACM0")))
 
 (defparameter *ard8* (multiple-value-list
 		      (open-serial (first (directory "/dev/ttyACM*")) :element-type '(unsigned-byte 8))))
@@ -221,25 +218,48 @@
 #+nil
 (progn
   (defparameter *bla* nil)
-  (setf *bla*
-	(loop for i below 13 collect
-	 (destructuring-bind (str fd) *ard8*
-	   (let ((s
-		  (sb-sys:make-fd-stream fd :input t :output t :element-type 'base-char
-					 :external-format :latin-1 
-					 :buffering :full)))
-	     (list
-	      (talk-arduino fd s (string-downcase
-				  (format nil "~a" `(progn
+  (loop for j below 100 do
+       (let ((i (if (= 0 (mod j 2)) 0 0)))
+	 ;(sleep .1)
+     (setf *bla*
+	   (destructuring-bind (str fd) *ard8*
+	     (let ((s
+		    (sb-sys:make-fd-stream fd :input t :output t :element-type 'base-char
+					   :external-format :latin-1 
+					   :buffering :full)))
+	       (list
+		(talk-arduino fd s (string-downcase
+				    (format nil "~a" `(dac 2048 ,(+ 2048 i)))))
+		#+nil (progn (sleep 1)
+		       (ensure-response-buffer-clear fd s)))))))))
+
+#+nil
+(destructuring-bind (str fd) *ard8*
+  (let ((s
+	 (sb-sys:make-fd-stream fd :input t :output t :element-type 'base-char
+				:external-format :latin-1 
+				:buffering :full)))
+    (talk-arduino fd s (string-downcase
+			(format nil "~a" `(dac 2048 ,(+ 0 2048))
+				)))))
+
+#+nil
+(progn
+						     (set 'i 0)
+						     (while (< i 1000)
+						      (dac (+ 2048 i) 2048)
+						      (delay-microseconds 100)
+						      (set 'i (+ i 1))))
+
+#+nil
+(progn
 						      (set 'list (lambda args args))
 						      (set 'x (lambda () (progn (delay-microseconds 100) (list (micros) (adc 0)))))
 						      (dac 0 1000)
 						      (delay 100)
 						      (set 'start (list (micros) (adc 0)))
-						      (dac 0 ,(+ 1010 (* 10 i)))
-						      (list start ,@(loop for i below 230 collect '(x)))))))
-	      (progn (sleep 1)
-		     (ensure-response-buffer-clear fd s))))))))
+						      (dac 0 ,(+ 1110 (* 10 i)))
+						      (list start ,@(loop for i below 230 collect '(x))))
 
 #+nil
 (read-from-string (first *bla*))
