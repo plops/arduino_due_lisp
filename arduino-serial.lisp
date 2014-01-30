@@ -99,7 +99,9 @@
 	  (dotimes (i n)
 	    (setf (char ret i) (read-char tty-stream)))
 	  ret))))
- 
+
+
+
 (defun write-arduino (tty-stream command)
   (declare (stream tty-stream)
 	   (string command))
@@ -139,6 +141,7 @@
 	(read-response tty-fd tty-stream))))
 
 
+
 #+nil
 (destructuring-bind (str fd) *ard8*
   (close-serial fd))
@@ -165,6 +168,21 @@
     (when (< 0 n)
      (map 'string #'(lambda (x) (code-char x)) a))))
 
+#+nil
+(destructuring-bind (str fd) *ard8*
+  (let ((s
+	 (sb-sys:make-fd-stream fd :input t :output t :element-type 'base-char
+				:external-format :latin-1 
+				:buffering :full)))
+    (ensure-response-buffer-clear fd s)
+    (sb-thread:make-thread 
+     #'(lambda ()
+	 (format t "acquisition program starts .. ")
+	 (sb-ext:run-program "/home/martin/aravis/tests/arv-example" nil)
+	 (format t "acquisition program ended~%")))
+    (sleep .3)
+    (talk-arduino fd s "(dotimes (i 2000)(delay-microseconds 5000)(dac 1900 (+ 1000 i)))")))
+
 
 #+nil
 (destructuring-bind (str fd) *ard8*
@@ -173,7 +191,62 @@
 				:external-format :latin-1 
 				:buffering :full)))
     (ensure-response-buffer-clear fd s)
-    (talk-arduino fd s "(+ 1 2 3)")))
+    (talk-arduino fd s "(dac 1900 2000)")))
+
+
+#+nil
+(defparameter *response*
+ (destructuring-bind (str fd) *ard8*
+   (let ((s
+	  (sb-sys:make-fd-stream fd :input t :output t :element-type 'base-char
+				 :external-format :latin-1 
+				 :buffering :full)))
+     (ensure-response-buffer-clear fd s)
+     (loop for i below 100 collect
+	  (progn
+	    (format t "~a~%" i)
+	    (talk-arduino fd s (format nil "(setq var~a ~a)" i i)))))))
+
+#+nil
+(destructuring-bind (str fd) *ard8*
+  (let ((s
+	 (sb-sys:make-fd-stream fd :input t :output t :element-type 'base-char
+				:external-format :latin-1 
+				:buffering :full)))
+    (read-response fd s)))
+
+
+
+#+nil
+(destructuring-bind (str fd) *ard8*
+  (let ((s
+	 (sb-sys:make-fd-stream fd :input t :output t :element-type 'base-char
+				:external-format :latin-1 
+				:buffering :full)))
+    (ensure-response-buffer-clear fd s)
+    (talk-arduino fd s "(bla)")))
+
+#+nil
+(destructuring-bind (str fd) *ard8*
+  (let ((s
+	 (sb-sys:make-fd-stream fd :input t :output t :element-type 'base-char
+				:external-format :latin-1 
+				:buffering :full)))
+    (ensure-response-buffer-clear fd s)
+    (talk-arduino fd s "(set 'list (lambda args args))
+     (set 'setq (macro (name val) (list set (list quote name) val)))
+    (setq f-body (lambda (e)
+	       (cond ((atom e)        e)
+		     ((eq (cdr e) ()) (car e))
+		     (t               (cons progn e)))))")))
+#+nil
+(destructuring-bind (str fd) *ard8*
+  (let ((s
+	 (sb-sys:make-fd-stream fd :input t :output t :element-type 'base-char
+				:external-format :latin-1 
+				:buffering :full)))
+    (ensure-response-buffer-clear fd s)
+    (talk-arduino fd s "(set 'setq (macro (name val) (list set (list quote name) val)))")))
 
 (defparameter *system*
  (with-open-file (s "system.lsp")
@@ -190,6 +263,7 @@
        (format s "\"~a\"~%" e))
   (format s ";~%"))
 
+
 #+nil
 (+ 1 2)
 #+nil
@@ -197,7 +271,7 @@
 #+nil
 (list 1 12)
 #+nil
-(defparameter *response*
+(defparameter *response* ;; upload system.lsp to arduino
   (loop for e in *system* collect
        (let ((def (string-downcase
 		   (format nil "~a" e))))
