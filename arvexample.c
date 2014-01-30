@@ -1,7 +1,12 @@
+//  gcc -g -O2 -o arv-example arvexample.c -MD -MP -MF -pthread -I/usr/include/aravis-0.4 -I/usr/lib/glib-2.0/include  -I/usr/include/glib-2.0  -lm -L/usr/lib -lgio-2.0 -lgobject-2.0 -lxml2 -lgthread-2.0 -pthread -lrt -lglib-2.0 -lz  -laravis-0.4 -lglfw
+#include <GLFW/glfw3.h>
+
 #include <arv.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <stdio.h>
+
+GLFWwindow* window;
 
 typedef struct {
 	GMainLoop *main_loop;
@@ -33,6 +38,28 @@ new_buffer_cb (ArvStream *stream, ApplicationData *data)
 		count++;
 		fwrite(buffer->data,buffer->size,1,f);
 		fclose(f);
+
+		int width,height;
+glfwGetFramebufferSize(window, &width, &height);
+float ratio = width / (float) height;
+glViewport(0, 0, width, height);
+ glClear(GL_COLOR_BUFFER_BIT);
+glMatrixMode(GL_PROJECTION);
+glLoadIdentity();
+glOrtho(-ratio, ratio, -1.f, 1.f, 1.f, -1.f);
+glMatrixMode(GL_MODELVIEW);
+glLoadIdentity();
+glRotatef((float) glfwGetTime() * 50.f, 0.f, 0.f, 1.f);
+glBegin(GL_TRIANGLES);
+glColor3f(1.f, 0.f, 0.f);
+glVertex3f(-0.6f, -0.4f, 0.f);
+glColor3f(0.f, 1.f, 0.f);
+glVertex3f(0.6f, -0.4f, 0.f);
+glColor3f(0.f, 0.f, 1.f);
+glVertex3f(0.f, 0.6f, 0.f);
+glEnd();
+
+		glfwSwapBuffers(window);
 		if (count==1000){
 		  g_main_loop_quit (data->main_loop);
 		}
@@ -65,6 +92,8 @@ control_lost_cb (ArvGvDevice *gv_device)
 	cancel = TRUE;
 }
 
+enum { W = 659, H = 494};
+
 int
 main (int argc, char **argv)
 {
@@ -73,6 +102,11 @@ main (int argc, char **argv)
 	ArvStream *stream;
 	ArvBuffer *buffer;
 	int i;
+
+	if (!glfwInit())
+	  exit(EXIT_FAILURE);
+        window = glfwCreateWindow(W, H, "gig-e-camera", NULL, NULL);
+	glfwMakeContextCurrent(window);
 
 	data.buffer_count = 0;
 
@@ -103,8 +137,8 @@ main (int argc, char **argv)
 /* format 003 = 0x210001f YUV_422_PACKED (it was in this setting in the beginning) */
 /* format 004 = 0x2100032 YUV_422_YUYV_PACKED */
 
-		/* Set region of interrest to a 200x200 pixel area */
-		arv_camera_set_region (camera, 0, 0, 659, 494);
+		/* Set region of interrest to a ...x... pixel area */
+		arv_camera_set_region (camera, 0, 0, W, H);
 		/* Set frame rate to 10 Hz */
 		arv_camera_set_frame_rate (camera, 100.0);
 		arv_camera_set_gain (camera, 100);
@@ -157,5 +191,6 @@ main (int argc, char **argv)
 	} else
 		printf ("No camera found\n");
 
+	glfwTerminate();
 	return 0;
 }
