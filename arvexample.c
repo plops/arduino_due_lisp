@@ -98,7 +98,7 @@ main (int argc, char **argv)
 		  arv_camera_set_pixel_format(camera,ARV_PIXEL_FORMAT_MONO_12);
 		}
 /* format 000 = 0x1080001 MONO_8 */
-/* format 001 = 0x1100005 MONO_12 */
+/* format 001 = 0x1100005 MONO_12 i need Byte_Swapper.class to view the data in imagej */
 /* format 002 = 0x10c0006 MONO_12_PACKED */
 /* format 003 = 0x210001f YUV_422_PACKED (it was in this setting in the beginning) */
 /* format 004 = 0x2100032 YUV_422_YUYV_PACKED */
@@ -108,7 +108,7 @@ main (int argc, char **argv)
 		/* Set frame rate to 10 Hz */
 		arv_camera_set_frame_rate (camera, 100.0);
 		arv_camera_set_gain (camera, 100);
-		arv_camera_set_exposure_time (camera, 10000.0 /*us*/);
+		arv_camera_set_exposure_time (camera, 1000.0 /*us*/);
 		/* retrieve image payload (number of bytes per image) */
 		payload = arv_camera_get_payload (camera);
 		
