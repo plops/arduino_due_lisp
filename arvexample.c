@@ -42,7 +42,8 @@ void fft_init()
 {
   fft_in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * W*H);
   fft_out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * W*H);
-
+  fftw_init_threads();
+  fftw_plan_with_nthreads(5);
   fft_plan=fftw_plan_dft_2d(H,W,fft_in, fft_out, FFTW_FORWARD, FFTW_ESTIMATE);
 }
 
@@ -59,8 +60,10 @@ void fft_run()
 {
   fftw_execute(fft_plan);
   int i;
-  for(i=0;i<W*H;i++)
-    store2[i]=(unsigned short)(8000*log(1+cabs(fft_out[i])));
+  for(i=0;i<W*H;i++){
+    double v=1000*cabs(fft_out[i]); // (8000*log(1+cabs(fft_out[i])));
+    store2[i]=(v<65535)?(unsigned short)v:65535; 
+  }
 }
 
 
