@@ -10,7 +10,7 @@
 #include <stdio.h>
 
 enum { W = 658, H = 494, NFIFO=4};
-
+const int do_store=0;
 int fifo=0;
 unsigned short store[W*H*NFIFO],store2[W*H];
 
@@ -180,7 +180,7 @@ new_buffer_cb (ArvStream *stream, ApplicationData *data)
 		if (buffer->status == ARV_BUFFER_STATUS_SUCCESS)
 			data->buffer_count++;
 		/* Image processing here */
-		/*
+		if(do_store){
 		char s[100];
 		snprintf(s,sizeof(s),"/dev/shm/dat/o%04d.pgm",count);
 		FILE*f=fopen(s,"w");
@@ -188,7 +188,7 @@ new_buffer_cb (ArvStream *stream, ApplicationData *data)
 		count++;
 		fwrite(buffer->data,buffer->size,1,f);
 		fclose(f);
-		*/
+		}
 		//pthread_mutex_lock(&mutex_texture);
 	      
 		int i,byte;
@@ -291,11 +291,15 @@ main (int argc, char **argv)
 /* format 004 = 0x2100032 YUV_422_YUYV_PACKED */
 
 		/* Set region of interrest to a ...x... pixel area */
+		gint sensor_w,sensor_h;
+		arv_camera_get_sensor_size(camera,&sensor_w,&sensor_h);
+		// red camera is 2080x2080
+		printf("sensor size %dx%d\n",sensor_w,sensor_h);
 		arv_camera_set_region (camera, 0, 0, W, H);
 		/* Set frame rate to 10 Hz */
-		arv_camera_set_frame_rate (camera, 100.0);
+		arv_camera_set_frame_rate (camera, 5.0);
 		arv_camera_set_gain (camera, 100);
-		arv_camera_set_exposure_time (camera, 990.0 /*us*/);
+		arv_camera_set_exposure_time (camera, 50090.0 /*us*/);
 		/* retrieve image payload (number of bytes per image) */
 		payload = arv_camera_get_payload (camera);
 		
