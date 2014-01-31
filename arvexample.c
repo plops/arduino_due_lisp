@@ -1,5 +1,8 @@
 //  gcc -g -O2 -o arv-example arvexample.c -MD -MP -MF -pthread -I/usr/include/aravis-0.4 -I/usr/lib/glib-2.0/include  -I/usr/include/glib-2.0  -lm -L/usr/lib -lgio-2.0 -lgobject-2.0 -lxml2 -lgthread-2.0 -pthread -lrt -lglib-2.0 -lz  -laravis-0.4 -lglfw
 #include <GLFW/glfw3.h>
+#include <complex.h>
+#include <math.h>
+#include <fftw3.h>
 #include <string.h>
 #include <arv.h>
 #include <stdlib.h>
@@ -8,7 +11,7 @@
 
 enum { W = 658, H = 494};
 
-unsigned short store[W*H];
+unsigned short store[W*H],store2[W*H];
 
 pthread_mutex_t mutex_texture = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  condition_new_image   = PTHREAD_COND_INITIALIZER;
@@ -32,18 +35,62 @@ int read_dontquit()
   return b;
 }
 
+fftw_complex *fft_in, *fft_out;
+fftw_plan fft_plan;
+
+void fft_init()
+{
+  fft_in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * W*H);
+  fft_out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * W*H);
+
+  fft_plan=fftw_plan_dft_2d(H,W,fft_in, fft_out, FFTW_FORWARD, FFTW_ESTIMATE);
+}
+
+void fft_fill()
+{
+  int i;
+  double s=1/65535.0;
+  for(i=0;i<W*H;i++){
+    fft_in[i]=store[i]*s;
+  }
+}
+
+void fft_run()
+{
+  fftw_execute(fft_plan);
+  int i;
+  for(i=0;i<W*H;i++)
+    store2[i]=(unsigned short)(8000*log(1+cabs(fft_out[i])));
+}
+
+
+void draw_quad(int obj, int y){
+  glBindTexture( GL_TEXTURE_2D, obj );
+  glBegin(GL_QUADS);
+  glVertex2i(0,y); glTexCoord2i(0,0);
+  glVertex2i(0,H+y); glTexCoord2i(1,0);
+  glVertex2i(W,H+y); glTexCoord2i(1,1);
+  glVertex2i(W,y); glTexCoord2i(0,1);
+  glEnd();
+}
+
 void* gl(void*ignore)
 {
+  fft_init();
   if (!glfwInit())
     exit(EXIT_FAILURE);
-  GLFWwindow* window = glfwCreateWindow(W, H, "gig-e-camera", NULL, NULL);
+  GLFWwindow* window = glfwCreateWindow(W, 2*H, "gig-e-camera", NULL, NULL);
   glfwMakeContextCurrent(window);
-  GLuint texture;
-  glGenTextures( 1, &texture );
-  glBindTexture( GL_TEXTURE_2D, texture );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+  const int n_tex=2;
+  GLuint texture[n_tex];
+  glGenTextures( n_tex, texture );
+  int i;
+  for(i=0;i<n_tex;i++){
+    glBindTexture( GL_TEXTURE_2D, texture[i] );
+    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
                      GL_NEAREST );
-  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+  
   //glMatrixMode(GL_COLOR);
   //glPushMatrix();
   //glLoadIdentity();
@@ -51,18 +98,20 @@ void* gl(void*ignore)
   //double o=0;
   //glScaled(s,s,s);
   //glTranslated(-o,-o,-o);
-  glTexImage2D(GL_TEXTURE_2D,0,GL_LUMINANCE,W,H,0,GL_LUMINANCE,GL_UNSIGNED_SHORT,0);
+    glTexImage2D(GL_TEXTURE_2D,0,GL_LUMINANCE,W,H,0,GL_LUMINANCE,GL_UNSIGNED_SHORT,0);
   //glPopMatrix();
   //glMatrixMode(GL_MODELVIEW);
+  }  
   glEnable(GL_TEXTURE_2D);
-
+  
   while (read_dontquit()) {
-    //pthread_mutex_lock( &mutex_texture );
+    pthread_mutex_lock( &mutex_texture );
     // Wait while reader function new_buffer_cb copies data
     // mutex unlocked if condition variable in new_buffer_cb  signaled.
     //pthread_cond_wait( &condition_new_image, &mutex_texture );
+    glBindTexture( GL_TEXTURE_2D, texture[0] );
     glTexSubImage2D(GL_TEXTURE_2D,0,0,0,W,H,GL_LUMINANCE,GL_UNSIGNED_SHORT,store);
- 
+    
 
     /*    FILE*f=fopen("/dev/shm/bla.pgm","w");
     fprintf(f,"P5\n658 494\n65535\n");
@@ -70,29 +119,31 @@ void* gl(void*ignore)
     fclose(f);
     */
 
-    //pthread_mutex_unlock( &mutex_texture );
+    pthread_mutex_unlock( &mutex_texture );
+    
+    fft_fill(); fft_run();
+    glBindTexture( GL_TEXTURE_2D, texture[1] );
+    glTexSubImage2D(GL_TEXTURE_2D,0,0,0,W,H,GL_LUMINANCE,GL_UNSIGNED_SHORT,store2);
+
+
     int width,height;
     glfwGetFramebufferSize(window, &width, &height);
-    float ratio = width / (float) height;
+    //float ratio = width / (float) height;
     glViewport(0, 0, width, height);
     glClear(GL_COLOR_BUFFER_BIT);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     //glOrtho(-ratio, ratio, -1.f, 1.f, 1.f, -1.f);
-    glOrtho(0, W, 0, H, 1.f, -1.f);
+    glOrtho(0, W, 0,2*H, 1.f, -1.f);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     //glRotatef((float) glfwGetTime() * 50.f, 0.f, 0.f, 1.f);
     glColor3f(1.f,1.f,1.f);
-    glBegin(GL_QUADS);
-    glVertex2i(0,0); glTexCoord2i(0,0);
-    glVertex2i(0,H); glTexCoord2i(1,0);
-    glVertex2i(W,H); glTexCoord2i(1,1);
-    glVertex2i(W,0); glTexCoord2i(0,1);
-    glEnd();
+    draw_quad(texture[0],0);
+    draw_quad(texture[1],H);
      
     glfwSwapBuffers(window);
-    usleep(32000);
+    usleep(16000);
   }
 
   glfwTerminate();
@@ -133,28 +184,31 @@ new_buffer_cb (ArvStream *stream, ApplicationData *data)
 		fwrite(buffer->data,buffer->size,1,f);
 		fclose(f);
 		*/
-		//pthread_mutex_lock(&mutex_texture);
+		pthread_mutex_lock(&mutex_texture);
 	      
 		int i,byte;
 		//printf("%d %d\n",W*H,buffer->size);
-		/*for(i=0,byte=0; byte<buffer->size;i+=2, byte+=3){
-		  char 
-		    a=(buffer->data[byte+0] & 0xf0) >> 4,
-		    b=(buffer->data[byte+0] & 0x0f),
-		    c=(buffer->data[byte+1] & 0xf0) >> 4,
-		    d=(buffer->data[byte+1] & 0x0f),
-		    e=(buffer->data[byte+2] & 0xf0) >> 4,
-		    f=(buffer->data[byte+2] & 0x0f);
-		  store[i]=(c<<8+b<<4+a)*32;
-		  store[i+1]=(f<<8+e<<4+d)*32;
-		  }*/
 		unsigned char *buf=buffer->data;
+		/* for(i=0,byte=0; byte<buffer->size;i+=2, byte+=3){ */
+		/*   char  */
+		/*     a=(buf[byte+0] & 0xf0) >> 4, */
+		/*     b=(buf[byte+0] & 0x0f), */
+		/*     c=(buf[byte+1] & 0xf0) >> 4, */
+		/*     d=(buf[byte+1] & 0x0f), */
+		/*     e=(buf[byte+2] & 0xf0) >> 4, */
+		/*     f=(buf[byte+2] & 0x0f); */
+		/*   store[i]=(c<<8+b<<4+a)*16; */
+		/*   store[i+1]=(f<<8+e<<4+d)*16; */
+		/* } */
+		
 		for(i=0;i<W*H;i++)
 		  store[i]=(buf[2*i]+256*buf[2*i+1])*16;
-		//memcpy(store,buffer->data,min(sizeof(store),buffer->size));
-		/*pthread_cond_signal( &condition_new_image );
+
+	       	//memcpy(store,buffer->data,min(sizeof(store),buffer->size));
+		//pthread_cond_signal( &condition_new_image );
 		pthread_mutex_unlock(&mutex_texture);
-		*/
+		
+
 		if (count==1000){
 		  //g_main_loop_quit (data->main_loop);
 		}
@@ -199,8 +253,9 @@ main (int argc, char **argv)
 	int i;
 
 	pthread_t gl_thread;
+      
 	int iret1 = pthread_create( &gl_thread, NULL, gl, (void*) NULL);
-
+	
 	data.buffer_count = 0;
 
 	/* Mandatory glib type system initialization */
