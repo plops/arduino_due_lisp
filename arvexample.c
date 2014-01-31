@@ -9,31 +9,31 @@
 #include <signal.h>
 #include <stdio.h>
 
-enum { W = 658, H = 494};
+enum { W = 658, H = 494, NFIFO=4};
 
-unsigned short store[W*H],store2[W*H];
+int fifo=0;
+unsigned short store[W*H*NFIFO],store2[W*H];
 
-pthread_mutex_t mutex_texture = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t  condition_new_image   = PTHREAD_COND_INITIALIZER;
+/* pthread_mutex_t mutex_texture = PTHREAD_MUTEX_INITIALIZER; */
+/* pthread_cond_t  condition_new_image   = PTHREAD_COND_INITIALIZER; */
+/* pthread_mutex_t mutex_dontquit = PTHREAD_MUTEX_INITIALIZER; */
+/* int dontquit=1; */
 
-pthread_mutex_t mutex_dontquit = PTHREAD_MUTEX_INITIALIZER;
-int dontquit=1;
-
-void write_dontquit(int b)
-{
-  pthread_mutex_lock( &mutex_texture );
-  dontquit=b;
-  pthread_mutex_unlock( &mutex_texture );
-}
+/* void write_dontquit(int b) */
+/* { */
+/*   pthread_mutex_lock( &mutex_texture ); */
+/*   dontquit=b; */
+/*   pthread_mutex_unlock( &mutex_texture ); */
+/* } */
 
 
-int read_dontquit()
-{
-  pthread_mutex_lock( &mutex_texture );
-  int b=dontquit;
-  pthread_mutex_unlock( &mutex_texture );
-  return b;
-}
+/* int read_dontquit() */
+/* { */
+/*   pthread_mutex_lock( &mutex_texture ); */
+/*   int b=dontquit; */
+/*   pthread_mutex_unlock( &mutex_texture ); */
+/*   return b; */
+/* } */
 
 fftw_complex *fft_in, *fft_out;
 fftw_plan fft_plan;
@@ -43,16 +43,16 @@ void fft_init()
   fft_in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * W*H);
   fft_out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * W*H);
   fftw_init_threads();
-  fftw_plan_with_nthreads(5);
+  fftw_plan_with_nthreads(4);
   fft_plan=fftw_plan_dft_2d(H,W,fft_in, fft_out, FFTW_FORWARD, FFTW_ESTIMATE);
 }
 
-void fft_fill()
+void fft_fill(int fifo_now)
 {
   int i;
   double s=1/65535.0;
   for(i=0;i<W*H;i++){
-    fft_in[i]=store[i]*s;
+    fft_in[i]=store[i+fifo_now*W*H]*s;
   }
 }
 
@@ -107,13 +107,15 @@ void* gl(void*ignore)
   }  
   glEnable(GL_TEXTURE_2D);
   
-  while (read_dontquit()) {
-    pthread_mutex_lock( &mutex_texture );
+  while (1 //read_dontquit()
+	 ) {
+    //pthread_mutex_lock( &mutex_texture );
     // Wait while reader function new_buffer_cb copies data
     // mutex unlocked if condition variable in new_buffer_cb  signaled.
     //pthread_cond_wait( &condition_new_image, &mutex_texture );
     glBindTexture( GL_TEXTURE_2D, texture[0] );
-    glTexSubImage2D(GL_TEXTURE_2D,0,0,0,W,H,GL_LUMINANCE,GL_UNSIGNED_SHORT,store);
+    int fifo_now=fifo;
+    glTexSubImage2D(GL_TEXTURE_2D,0,0,0,W,H,GL_LUMINANCE,GL_UNSIGNED_SHORT,store+fifo_now*W*H);
     
 
     /*    FILE*f=fopen("/dev/shm/bla.pgm","w");
@@ -122,9 +124,9 @@ void* gl(void*ignore)
     fclose(f);
     */
 
-    pthread_mutex_unlock( &mutex_texture );
+    //pthread_mutex_unlock( &mutex_texture );
     
-    fft_fill(); fft_run();
+    fft_fill(fifo_now); fft_run();
     glBindTexture( GL_TEXTURE_2D, texture[1] );
     glTexSubImage2D(GL_TEXTURE_2D,0,0,0,W,H,GL_LUMINANCE,GL_UNSIGNED_SHORT,store2);
 
@@ -146,7 +148,7 @@ void* gl(void*ignore)
     draw_quad(texture[1],H);
      
     glfwSwapBuffers(window);
-    usleep(16000);
+    usleep(164000);
   }
 
   glfwTerminate();
@@ -187,7 +189,7 @@ new_buffer_cb (ArvStream *stream, ApplicationData *data)
 		fwrite(buffer->data,buffer->size,1,f);
 		fclose(f);
 		*/
-		pthread_mutex_lock(&mutex_texture);
+		//pthread_mutex_lock(&mutex_texture);
 	      
 		int i,byte;
 		//printf("%d %d\n",W*H,buffer->size);
@@ -203,15 +205,15 @@ new_buffer_cb (ArvStream *stream, ApplicationData *data)
 		/*   store[i]=(c<<8+b<<4+a)*16; */
 		/*   store[i+1]=(f<<8+e<<4+d)*16; */
 		/* } */
-		
+		int fifo_now=count%NFIFO;
 		for(i=0;i<W*H;i++)
-		  store[i]=(buf[2*i]+256*buf[2*i+1])*16;
-
+		  store[i+fifo_now*W*H]=(buf[2*i]+256*buf[2*i+1])*16;
+		fifo=fifo_now;
 	       	//memcpy(store,buffer->data,min(sizeof(store),buffer->size));
 		//pthread_cond_signal( &condition_new_image );
-		pthread_mutex_unlock(&mutex_texture);
+		//pthread_mutex_unlock(&mutex_texture);
 		
-
+		count++;
 		if (count==1000){
 		  //g_main_loop_quit (data->main_loop);
 		}
@@ -293,7 +295,7 @@ main (int argc, char **argv)
 		/* Set frame rate to 10 Hz */
 		arv_camera_set_frame_rate (camera, 100.0);
 		arv_camera_set_gain (camera, 100);
-		arv_camera_set_exposure_time (camera, 390.0 /*us*/);
+		arv_camera_set_exposure_time (camera, 990.0 /*us*/);
 		/* retrieve image payload (number of bytes per image) */
 		payload = arv_camera_get_payload (camera);
 		
@@ -342,7 +344,7 @@ main (int argc, char **argv)
 	} else
 		printf ("No camera found\n");
 
-	write_dontquit(0);
+	//write_dontquit(0);
 	pthread_join( gl_thread, NULL);
 	return 0;
 }
