@@ -61,15 +61,14 @@ void* gl(void*ignore)
     // Wait while reader function new_buffer_cb copies data
     // mutex unlocked if condition variable in new_buffer_cb  signaled.
     //pthread_cond_wait( &condition_new_image, &mutex_texture );
-
     glTexSubImage2D(GL_TEXTURE_2D,0,0,0,W,H,GL_LUMINANCE,GL_UNSIGNED_SHORT,store);
  
 
-    FILE*f=fopen("/dev/shm/bla.pgm","w");
+    /*    FILE*f=fopen("/dev/shm/bla.pgm","w");
     fprintf(f,"P5\n658 494\n65535\n");
     fwrite(store,sizeof(store),1,f);
     fclose(f);
-
+    */
 
     //pthread_mutex_unlock( &mutex_texture );
     int width,height;
@@ -125,6 +124,7 @@ new_buffer_cb (ArvStream *stream, ApplicationData *data)
 		if (buffer->status == ARV_BUFFER_STATUS_SUCCESS)
 			data->buffer_count++;
 		/* Image processing here */
+		/*
 		char s[100];
 		snprintf(s,sizeof(s),"/dev/shm/dat/o%04d.pgm",count);
 		FILE*f=fopen(s,"w");
@@ -132,11 +132,23 @@ new_buffer_cb (ArvStream *stream, ApplicationData *data)
 		count++;
 		fwrite(buffer->data,buffer->size,1,f);
 		fclose(f);
-
+		*/
 		//pthread_mutex_lock(&mutex_texture);
-		int i;
-		for(i=0;i<W*H;i++)
-		store[i]=(1<<16)/(1<<12)*(buffer->data[2*i]+256*buffer->data[2*i+1]);
+	      
+		int i,byte;
+		unsigned char*buf=&(buffer->data[0]);
+		//printf("%d %d\n",W*H,buffer->size);
+		for(i=0,byte=0;i<W*H && byte<buffer->size;i+=2, byte+=3){
+		  char 
+		    a=(buf[byte+0] & 0xf0) >> 4,
+		    b=(buf[byte+0] & 0x0f),
+		    c=(buf[byte+1] & 0xf0) >> 4,
+		    d=(buf[byte+1] & 0x0f),
+		    e=(buf[byte+2] & 0xf0) >> 4,
+		    f=(buf[byte+2] & 0x0f);
+		  store[i]=(c<<8+b<<4+a)*32;
+		  store[i+1]=(f<<8+e<<4+d)*32;
+		}
 		//memcpy(store,buffer->data,min(sizeof(store),buffer->size));
 		/*pthread_cond_signal( &condition_new_image );
 		pthread_mutex_unlock(&mutex_texture);
@@ -208,7 +220,7 @@ main (int argc, char **argv)
 		  for(i=0;i<n_pixel_formats;i++)
 		    printf("format %03d = 0x%llx\n",i,(guint64)formats[i]);
 		  printf("current format = 0x%llx\n",(guint64)arv_camera_get_pixel_format(camera));
-		  arv_camera_set_pixel_format(camera,ARV_PIXEL_FORMAT_MONO_12);
+		  arv_camera_set_pixel_format(camera,ARV_PIXEL_FORMAT_MONO_12_PACKED);
 		}
 /* format 000 = 0x1080001 MONO_8 */
 /* format 001 = 0x1100005 MONO_12 i need Byte_Swapper.class to view the data in imagej */
