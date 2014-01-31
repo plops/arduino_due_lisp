@@ -290,16 +290,31 @@ main (int argc, char **argv)
 /* format 003 = 0x210001f YUV_422_PACKED (it was in this setting in the beginning) */
 /* format 004 = 0x2100032 YUV_422_YUYV_PACKED */
 
+/* red camera (photon focus) */
+/* format 000 = 0x1080001 MONO_8 */
+/* format 001 = 0x1100003 MONO_10 */
+/* format 002 = 0x10c0004 MONO_10_PACKED */
+/* format 003 = 0x1100005 MONO_12 */
+/* format 004 = 0x10c0006 MONO_12_PACKED */
+
+
 		/* Set region of interrest to a ...x... pixel area */
 		gint sensor_w,sensor_h;
 		arv_camera_get_sensor_size(camera,&sensor_w,&sensor_h);
 		// red camera is 2080x2080
 		printf("sensor size %dx%d\n",sensor_w,sensor_h);
-		arv_camera_set_region (camera, 0, 0, W, H);
+		gint center_x=sensor_w/2, center_y=sensor_h/2;
+		gint cx=center_x-W/2, cy=center_y-H/2;
+		  printf("setting size: %dx%d+%d+%d\n", W, H, cx, cy);
+		arv_camera_set_region (camera, cx, cy, W, H);
+		double fmin,fmax;
+		arv_camera_get_frame_rate_bounds(camera,&fmin,&fmax);
+		printf("frame-rate min: %f max: %f \n",fmin,fmax);
+
 		/* Set frame rate to 10 Hz */
-		arv_camera_set_frame_rate (camera, 5.0);
-		arv_camera_set_gain (camera, 100);
-		arv_camera_set_exposure_time (camera, 50090.0 /*us*/);
+		arv_camera_set_frame_rate (camera, 25.0);
+		arv_camera_set_gain (camera, 1);
+		arv_camera_set_exposure_time (camera, 490.0 /*us*/);
 		/* retrieve image payload (number of bytes per image) */
 		payload = arv_camera_get_payload (camera);
 		
