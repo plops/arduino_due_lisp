@@ -51,7 +51,7 @@ void* gl(void*ignore)
   //double o=0;
   //glScaled(s,s,s);
   //glTranslated(-o,-o,-o);
-  glTexImage2D(GL_TEXTURE_2D,0,GL_LUMINANCE16,W,H,0,GL_LUMINANCE,GL_UNSIGNED_SHORT,0);
+  glTexImage2D(GL_TEXTURE_2D,0,GL_LUMINANCE,W,H,0,GL_LUMINANCE,GL_UNSIGNED_SHORT,0);
   //glPopMatrix();
   //glMatrixMode(GL_MODELVIEW);
   glEnable(GL_TEXTURE_2D);
@@ -136,19 +136,21 @@ new_buffer_cb (ArvStream *stream, ApplicationData *data)
 		//pthread_mutex_lock(&mutex_texture);
 	      
 		int i,byte;
-		unsigned char*buf=&(buffer->data[0]);
 		//printf("%d %d\n",W*H,buffer->size);
-		for(i=0,byte=0;i<W*H && byte<buffer->size;i+=2, byte+=3){
+		/*for(i=0,byte=0; byte<buffer->size;i+=2, byte+=3){
 		  char 
-		    a=(buf[byte+0] & 0xf0) >> 4,
-		    b=(buf[byte+0] & 0x0f),
-		    c=(buf[byte+1] & 0xf0) >> 4,
-		    d=(buf[byte+1] & 0x0f),
-		    e=(buf[byte+2] & 0xf0) >> 4,
-		    f=(buf[byte+2] & 0x0f);
+		    a=(buffer->data[byte+0] & 0xf0) >> 4,
+		    b=(buffer->data[byte+0] & 0x0f),
+		    c=(buffer->data[byte+1] & 0xf0) >> 4,
+		    d=(buffer->data[byte+1] & 0x0f),
+		    e=(buffer->data[byte+2] & 0xf0) >> 4,
+		    f=(buffer->data[byte+2] & 0x0f);
 		  store[i]=(c<<8+b<<4+a)*32;
 		  store[i+1]=(f<<8+e<<4+d)*32;
-		}
+		  }*/
+		unsigned char *buf=buffer->data;
+		for(i=0;i<W*H;i++)
+		  store[i]=(buf[2*i]+256*buf[2*i+1])*16;
 		//memcpy(store,buffer->data,min(sizeof(store),buffer->size));
 		/*pthread_cond_signal( &condition_new_image );
 		pthread_mutex_unlock(&mutex_texture);
@@ -220,7 +222,7 @@ main (int argc, char **argv)
 		  for(i=0;i<n_pixel_formats;i++)
 		    printf("format %03d = 0x%llx\n",i,(guint64)formats[i]);
 		  printf("current format = 0x%llx\n",(guint64)arv_camera_get_pixel_format(camera));
-		  arv_camera_set_pixel_format(camera,ARV_PIXEL_FORMAT_MONO_12_PACKED);
+		  arv_camera_set_pixel_format(camera,ARV_PIXEL_FORMAT_MONO_12);
 		}
 /* format 000 = 0x1080001 MONO_8 */
 /* format 001 = 0x1100005 MONO_12 i need Byte_Swapper.class to view the data in imagej */
