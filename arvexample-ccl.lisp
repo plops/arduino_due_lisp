@@ -61,20 +61,62 @@ ccl::*eeps* ;; hash table with external functions
 ;;   (int ()))))
 
 
+;; let's have a look at a function with a variable number of
+;; arguments (snprintf):
 
+;; this is the definition in stdio.h:
 
+;; __BEGIN_NAMESPACE_C99
+;; /* Maximum chars of output to write in MAXLEN.  */
+;; extern int snprintf (char *__restrict __s, size_t __maxlen,
+;;                      __const char *__restrict __format, ...)
+;;      __THROW __attribute__ ((__format__ (__printf__, 3, 4)));
+
+;; extern int vsnprintf (char *__restrict __s, size_t __maxlen,
+;;                       __const char *__restrict __format, _G_va_list __arg)
+;;      __THROW __attribute__ ((__format__ (__printf__, 3, 0)));
+;; __END_NAMESPACE_C99
+
+;; again the attributes are lost. i think they help the c compiler to
+;; check if the supplied arguments correspond to the format string
+
+;; more importantly, the variable number of arguments don't seem to be
+;; present in the ffi definition. but i wouldn't know how this should
+;; be written, anyway.
+
+(ccl::db-lookup-function *fun* "snprintf")
+;; => #S(CCL::EXTERNAL-FUNCTION-DEFINITION :ENTRY-NAME "snprintf"
+;; :ARG-SPECS (:ADDRESS :SIZE_T :ADDRESS :VOID) :RESULT-SPEC
+;; :SIGNED-FULLWORD :MIN-ARGS 4)
 
 (ccl::db-lookup-function *fun* "vsnprintf")
 ;; => #S(CCL::EXTERNAL-FUNCTION-DEFINITION :ENTRY-NAME "vsnprintf"
 ;; :ARG-SPECS (:ADDRESS :SIZE_T :ADDRESS :ADDRESS) :RESULT-SPEC
 ;; :SIGNED-FULLWORD :MIN-ARGS 4)
 
-;; let's have a look at a function with a variable number of
-;; arguments:
-(ccl::db-lookup-function *fun* "snprintf")
-;; => #S(CCL::EXTERNAL-FUNCTION-DEFINITION :ENTRY-NAME "snprintf"
-;; :ARG-SPECS (:ADDRESS :SIZE_T :ADDRESS :VOID) :RESULT-SPEC
-;; :SIGNED-FULLWORD :MIN-ARGS 4)
+
+;; a search for 'variable' and 'arg' in the ccl
+;; code points to compiler/X86/X8664/x8664-vinsns.lisp but i'm not
+;; sure how they use this
+
+;; (define-x8664-vinsn save-lisp-context-variable-arg-count (()
+;;                                                           ()
+;;                                                           ((temp :u64)))
+;;   (movl (:%l x8664::nargs) (:%l temp))
+;;   (subq (:$b (* $numx8664argregs x8664::node-size)) (:%q temp))
+;;   (jle :push)
+;;   (movq (:%q x8664::rbp) (:@ x8664::node-size (:%q x8664::rsp) (:%q temp)))
+;;   (leaq (:@ x8664::node-size (:%q x8664::rsp) (:%q temp)) (:%q x8664::rbp))
+;;   (popq  (:@ 8 (:%q x8664::rbp)))
+;;   (jmp :done)
+;;   :push
+;;   (pushq (:%q x8664::rbp))
+;;   (movq (:%q x8664::rsp) (:%q x8664::rbp))
+;;   :done)
+
+
+
+
 
 
 ;; ftd .. foreign type data, this contains a list of the directories
