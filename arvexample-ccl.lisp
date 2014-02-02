@@ -223,38 +223,42 @@ ccl::*parse-ffi-target-ftd*
 
 ;; turns out, this only works, if i disable slime-fancy in quicklisp/slime-helper.el
 ;; this code was added to swank.lisp
-#.(require :parse-ffi)
-(defun get-all-ffi-function-names ()
- (let* ((my-dll-header (ccl::ftd-dirlist ccl::*parse-ffi-target-ftd*))
-	(my-dll-header-list (let ((res nil))
-			      (ccl::do-dll-nodes (n my-dll-header)
-				(push n res))
-			      (reverse res))))
-   (mapcar #'(lambda (x) (concatenate 'string "#_|" x "|"))
-	   (reduce #'append
-		   (mapcar #'(lambda (x)
-			       (ccl::cdb-enumerate-keys (ccl::db-functions x)))
-			   my-dll-header-list)))))
+;; #+ccl
+;; (require :parse-ffi)
+;; #+ccl
+;; (defun get-all-ffi-function-names ()
+;;  (let* ((my-dll-header (ccl::ftd-dirlist ccl::*parse-ffi-target-ftd*))
+;; 	(my-dll-header-list (let ((res nil))
+;; 			      (ccl::do-dll-nodes (n my-dll-header)
+;; 				(push n res))
+;; 			      (reverse res))))
+;;    (mapcar #'(lambda (x) (concatenate 'string "#_|" x "|"))
+;; 	   (reduce #'append
+;; 		   (mapcar #'(lambda (x)
+;; 			       (ccl::cdb-enumerate-keys (ccl::db-functions x)))
+;; 			   my-dll-header-list)))))
 
-(defun all-completions (prefix package)
-  (multiple-value-bind (name pname intern) (tokenize-symbol prefix)
-    (let* ((extern (and pname (not intern)))
-	   (pkg (cond ((equal pname "") keyword-package)
-                      ((not pname) (guess-buffer-package package))
-                      (t (guess-package pname))))
-	   (test (lambda (sym) (prefix-match-p name (symbol-name sym))))
-	   (syms (and pkg (matching-symbols pkg extern test)))
-           (strings (append
-		     (loop for sym in syms
-			for str = (unparse-symbol sym)
-			when (prefix-match-p name str) ; remove |Foo|
-			collect str)
-		     (loop for s in (get-all-ffi-function-names) 
-			when (prefix-match-p name s) collect s))))
-      (format-completion-set strings intern pname))))
+;; (defun all-completions (prefix package)
+;;   (multiple-value-bind (name pname intern) (tokenize-symbol prefix)
+;;     (let* ((extern (and pname (not intern)))
+;; 	   (pkg (cond ((equal pname "") keyword-package)
+;;                       ((not pname) (guess-buffer-package package))
+;;                       (t (guess-package pname))))
+;; 	   (test (lambda (sym) (prefix-match-p name (symbol-name sym))))
+;; 	   (syms (and pkg (matching-symbols pkg extern test)))
+;;            (strings (append
+;; 		     (loop for sym in syms
+;; 			for str = (unparse-symbol sym)
+;; 			when (prefix-match-p name str) ; remove |Foo|
+;; 			collect str)
+;; 		     #+ccl (loop for s in (get-all-ffi-function-names) 
+;;                               when (prefix-match-p name s) collect s))))
+;;       (format-completion-set strings intern pname))))
 
 
 
+;; i think i will instead try to modify swank-fuzzy.lisp
+;; i read through this but it's too complicated.
 
 (#_arv_g_type_init)
 (defparameter *cam* (#_arv_camera_new (cffi:null-pointer)))
