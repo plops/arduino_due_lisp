@@ -247,3 +247,8 @@ ccl::*parse-ffi-target-ftd*
 
 ;; i think i will instead try to modify swank-fuzzy.lisp
 ;; i read through this but it's too complicated.
+
+;; what i really would like to have as well is the argument
+;; list. unfortunately, ffigen only stores the types of the arguments
+;; and drops their names. the names are very useful, when working with
+;; most c libraries.
