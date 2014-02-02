@@ -1,18 +1,15 @@
-
-
 (load "/home/martin/quicklisp/setup.lisp")
 (ql:quickload :cffi)
 (require :parse-ffi)
 (ccl::parse-standard-ffi-files :arv)
 (ccl::parse-standard-ffi-files :v4l2)
 (ccl:use-interface-dir :arv)
-(open-shared-library "libaravis-0.4.so")
+(cffi:load-foreign-library "libaravis-0.4.so")
 ccl::*shared-libraries*
 ccl::*eeps* ;; hash table with external functions
-
 (cffi:with-foreign-string (s "Fake")
   (#_arv_enable_interface s))
-
+ 
 ;; the following code opens a cdb file, a read-only data structure,
 ;; that ccl uses to store foreign function definitions. 
 (defparameter *fun*
@@ -138,7 +135,6 @@ ccl::*parse-ffi-target-ftd*
 ;; i can make ccl open the function database by applying db-functions:
 (ccl::db-functions (first *my-dll-header-list*))
 
-
 ;; we can then use cdb-enumerate-keys to find all possible ffi functions:
 (ccl::cdb-enumerate-keys (ccl::db-functions (first *my-dll-header-list*)))
 
@@ -225,8 +221,40 @@ ccl::*parse-ffi-target-ftd*
 ;; hoped that i can just redefine this particular function without
 ;; restarting the lisp.
 
+;; turns out, this only works, if i disable slime-fancy in quicklisp/slime-helper.el
+;; this code was added to swank.lisp
+#.(require :parse-ffi)
+(defun get-all-ffi-function-names ()
+ (let* ((my-dll-header (ccl::ftd-dirlist ccl::*parse-ffi-target-ftd*))
+	(my-dll-header-list (let ((res nil))
+			      (ccl::do-dll-nodes (n my-dll-header)
+				(push n res))
+			      (reverse res))))
+   (mapcar #'(lambda (x) (concatenate 'string "#_|" x "|"))
+	   (reduce #'append
+		   (mapcar #'(lambda (x)
+			       (ccl::cdb-enumerate-keys (ccl::db-functions x)))
+			   my-dll-header-list)))))
 
-(cffi:defcfun)
+(defun all-completions (prefix package)
+  (multiple-value-bind (name pname intern) (tokenize-symbol prefix)
+    (let* ((extern (and pname (not intern)))
+	   (pkg (cond ((equal pname "") keyword-package)
+                      ((not pname) (guess-buffer-package package))
+                      (t (guess-package pname))))
+	   (test (lambda (sym) (prefix-match-p name (symbol-name sym))))
+	   (syms (and pkg (matching-symbols pkg extern test)))
+           (strings (append
+		     (loop for sym in syms
+			for str = (unparse-symbol sym)
+			when (prefix-match-p name str) ; remove |Foo|
+			collect str)
+		     (loop for s in (get-all-ffi-function-names) 
+			when (prefix-match-p name s) collect s))))
+      (format-completion-set strings intern pname))))
+
+
+
 
 (#_arv_g_type_init)
 (defparameter *cam* (#_arv_camera_new (cffi:null-pointer)))
