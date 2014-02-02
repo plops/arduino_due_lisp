@@ -1,9 +1,11 @@
+
+
 (load "/home/martin/quicklisp/setup.lisp")
 (ql:quickload :cffi)
 (require :parse-ffi)
 (ccl::parse-standard-ffi-files :arv)
 (ccl::parse-standard-ffi-files :v4l2)
-(use-interface-dir :arv)
+(ccl:use-interface-dir :arv)
 (open-shared-library "libaravis-0.4.so")
 ccl::*shared-libraries*
 ccl::*eeps* ;; hash table with external functions
@@ -94,7 +96,6 @@ ccl::*eeps* ;; hash table with external functions
 ;; :ARG-SPECS (:ADDRESS :SIZE_T :ADDRESS :ADDRESS) :RESULT-SPEC
 ;; :SIGNED-FULLWORD :MIN-ARGS 4)
 
-
 ;; a search for 'variable' and 'arg' in the ccl
 ;; code points to compiler/X86/X8664/x8664-vinsns.lisp but i'm not
 ;; sure how they use this
@@ -116,9 +117,6 @@ ccl::*eeps* ;; hash table with external functions
 
 
 
-
-
-
 ;; ftd .. foreign type data, this contains a list of the directories
 ;; to search, can be expanded with use-interface-dir (which in turn
 ;; calls move-dll-nodes from compiler/dll-node.lisp)
@@ -137,6 +135,48 @@ ccl::*parse-ffi-target-ftd*
      (push n res))
    (reverse res)))
 
+;; i can make ccl open the function database by applying db-functions:
+(ccl::db-functions (first *my-dll-header-list*))
+
+
+;; we can then use cdb-enumerate-keys to find all possible ffi functions:
+(ccl::cdb-enumerate-keys (ccl::db-functions (first *my-dll-header-list*)))
+
+;; i want to do this for all elements of *my-dll-header-list*
+(reduce #'append
+	(mapcar #'(lambda (x)
+		    (ccl::cdb-enumerate-keys (ccl::db-functions x)))
+		*my-dll-header-list*))
+
+;; now i try to understand swank
+;; defun all-completions (prefix package) calls tokenize symbol
+;; multiple-value-bind (name pname intern) (tokenize-symbol prefix)
+(swank::tokenize-symbol "cffi:sy")
+;; => "sy", "cffi", NIL
+(swank::tokenize-symbol "cffi::sy")
+;; => "sy", "cffi", T
+(swank::all-completions "cffi:defc" "cffi")
+;; => ("cffi:defcallback" "cffi:defcenum" "cffi:defcfun" "cffi:defcstruct" "cffi:defctype" "cffi:defcunion" "cffi:defcvar")
+(swank::all-completions "defc" "cffi")
+;; => ("defcallback" "defcenum" "defcfun" "defcfun-helper-forms" "defclass" "defconstant" "defcstruct" "defctype" "defctype*" "defcunion" "defcvar")
+
+(in-package :swank)
+(defun all-completions (prefix package)
+  (multiple-value-bind (name pname intern) (tokenize-symbol prefix)
+    (let* ((extern (and pname (not intern)))
+	   (pkg (cond ((equal pname "") keyword-package)
+                      ((not pname) (guess-buffer-package package))
+                      (t (guess-package pname))))
+	   (test (lambda (sym) (prefix-match-p name (symbol-name sym))))
+	   (syms (and pkg (matching-symbols pkg extern test)))
+           (strings (loop for sym in syms
+                          for str = (unparse-symbol sym)
+                          when (prefix-match-p name str) ; remove |Foo|
+                          collect str)))
+      (format-completion-set strings intern pname))))
+
+
+(cffi:defcfun)
 
 (#_arv_g_type_init)
 (defparameter *cam* (#_arv_camera_new (cffi:null-pointer)))
