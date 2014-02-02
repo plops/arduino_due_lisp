@@ -220,7 +220,7 @@ ccl::*parse-ffi-target-ftd*
 ;; 			      (ccl::do-dll-nodes (n my-dll-header)
 ;; 				(push n res))
 ;; 			      (reverse res))))
-;;    (mapcar #'(lambda (x) (concatenate 'string "#_|" x "|"))
+;;    (mapcar #'(lambda (x) (concatenate 'string "#_" x))
 ;; 	   (reduce #'append
 ;; 		   (mapcar #'(lambda (x)
 ;; 			       (ccl::cdb-enumerate-keys (ccl::db-functions x)))
