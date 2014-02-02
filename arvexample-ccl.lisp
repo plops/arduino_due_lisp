@@ -29,13 +29,39 @@
 (defparameter *fake* (cffi:with-foreign-string (s "bla")
    (#_arv_fake_camera_new s)))
 
+(#_arv_fake_camera_ *fake*)
 (#_arv_fake_camera_get_acquisition_status *fake*)
 
-(cffi:with-foreign-object (buf :uchar :size (#_arv_fake_camera_get_payload *fake*))
-  (#_arv_fake_camera_wait_for_next_frame *fake*)
-  (#_arv_fake_))
+(defun wait-and-get-image (cam)
+ (let* ((n (#_arv_fake_camera_get_payload cam))
+	(buf (#_arv_buffer_new n (cffi:null-pointer))))
+   (#_arv_fake_camera_wait_for_next_frame cam)
+   (#_arv_fake_camera_fill_buffer cam buf (cffi:null-pointer))
+   (destructuring-bind (h w) (fake-camera-get-size cam)
+     (assert (= n (* h w)))
+     (let* ((a (make-array (list h w) :element-type 'unsigned-byte))
+	    (a1 (make-array n :element-type 'unsigned-byte
+			    :displaced-to a)))
+       (dotimes (i n)
+	 (setf (aref a1 i)
+	       (cffi:mem-aref (pref buf :<A>rv<B>uffer.data) :uchar i)))
+       a))))
 
-(#_arv_fake_camera_get_type *fake*)
+(defparameter *img* (wait-and-get-image *fake*))
+
+
+(defun fake-camera-get-size (cam)
+  "returns list (height width)"
+  (list
+   (cffi:with-foreign-object (val :uint32)
+     (#_arv_fake_camera_read_register cam #$ARV_FAKE_CAMERA_REGISTER_HEIGHT val)
+     (cffi:mem-ref val :uint32))
+   (cffi:with-foreign-object (val :uint32)
+     (#_arv_fake_camera_read_register cam #$ARV_FAKE_CAMERA_REGISTER_WIDTH val)
+     (cffi:mem-ref val :uint32))
+   ))
+
+
 
 (defun get-sensor-size (cam)
  (cffi:with-foreign-objects ((w :int)
