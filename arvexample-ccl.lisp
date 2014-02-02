@@ -25,6 +25,17 @@
 
 #+nil
 (#_arv_get_n_devices)
+#+nil
+(#_arv_get_n_interfaces)
+
+#+nil
+(defparameter *fake*
+  (cffi:with-foreign-string (s "Fake")
+    (#_arv_camera_new s)))
+
+;; apparently, i can download the xml files from the cameras using
+;; this:
+;;arv_device_get_genicam_xml
 
 (defparameter *fake* (cffi:with-foreign-string (s "bla")
    (#_arv_fake_camera_new s)))
