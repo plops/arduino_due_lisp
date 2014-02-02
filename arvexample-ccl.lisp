@@ -130,7 +130,7 @@ ccl::*parse-ffi-target-ftd*
 (ccl::dll-header-length *my-dll-header*)
 ;; and using the internal function do-dll-nodes, we can collect them into a list
 (defparameter *my-dll-header-list*
- (let ((res nil))
+  (let ((res nil))
    (ccl::do-dll-nodes (n *my-dll-header*)
      (push n res))
    (reverse res)))
@@ -148,6 +148,22 @@ ccl::*parse-ffi-target-ftd*
 		    (ccl::cdb-enumerate-keys (ccl::db-functions x)))
 		*my-dll-header-list*))
 
+;; now, get rid of global variables. also prepend #_
+(defun get-all-ffi-function-names ()
+ (let* ((my-dll-header (ccl::ftd-dirlist ccl::*parse-ffi-target-ftd*))
+	(my-dll-header-list (let ((res nil))
+			      (ccl::do-dll-nodes (n my-dll-header)
+				(push n res))
+			      (reverse res))))
+   (mapcar #'(lambda (x) (concatenate 'string "#_|" x "|"))
+	   (reduce #'append
+		   (mapcar #'(lambda (x)
+			       (ccl::cdb-enumerate-keys (ccl::db-functions x)))
+			   my-dll-header-list)))))
+#+nil
+(get-all-ffi-function-names)
+
+
 ;; now i try to understand swank
 ;; defun all-completions (prefix package) calls tokenize symbol
 ;; multiple-value-bind (name pname intern) (tokenize-symbol prefix)
@@ -160,6 +176,30 @@ ccl::*parse-ffi-target-ftd*
 (swank::all-completions "defc" "cffi")
 ;; => ("defcallback" "defcenum" "defcfun" "defcfun-helper-forms" "defclass" "defconstant" "defcstruct" "defctype" "defctype*" "defcunion" "defcvar")
 
+;; this is the original definition of all-completions, i'm going to add a check for ffi functions
+;; (in-package :swank)
+;; (defun all-completions (prefix package)
+;;   (multiple-value-bind (name pname intern) (tokenize-symbol prefix)
+;;     (let* ((extern (and pname (not intern)))
+;; 	   (pkg (cond ((equal pname "") keyword-package)
+;;                       ((not pname) (guess-buffer-package package))
+;;                       (t (guess-package pname))))
+;; 	   (test (lambda (sym) (prefix-match-p name (symbol-name sym))))
+;; 	   (syms (and pkg (matching-symbols pkg extern test)))
+;;            (strings (loop for sym in syms
+;; 		       for str = (unparse-symbol sym)
+;; 		       when (prefix-match-p name str) ; remove |Foo|
+;; 		       collect str)))
+;;       (format-completion-set strings intern pname))))
+
+
+;; search for a prefix in all ffi function names:
+(loop for s in (get-all-ffi-function-names) 
+   when (prefix-match-p "#_|fprin" s) collect s)
+;; => ("#_|fprintf|")
+
+
+;; i will append these results to the slime function:
 (in-package :swank)
 (defun all-completions (prefix package)
   (multiple-value-bind (name pname intern) (tokenize-symbol prefix)
@@ -169,11 +209,21 @@ ccl::*parse-ffi-target-ftd*
                       (t (guess-package pname))))
 	   (test (lambda (sym) (prefix-match-p name (symbol-name sym))))
 	   (syms (and pkg (matching-symbols pkg extern test)))
-           (strings (loop for sym in syms
-                          for str = (unparse-symbol sym)
-                          when (prefix-match-p name str) ; remove |Foo|
-                          collect str)))
+           (strings (append
+		     (loop for sym in syms
+			for str = (unparse-symbol sym)
+			when (prefix-match-p name str) ; remove |Foo|
+			collect str)
+		     (loop for s in (get-all-ffi-function-names) 
+			when (prefix-match-p name s) collect s))))
       (format-completion-set strings intern pname))))
+
+;; this works now:
+(swank::all-completions "#_|fpr" "cffi")
+
+;; unfortunately, it doesn't work in my current slime. i would have
+;; hoped that i can just redefine this particular function without
+;; restarting the lisp.
 
 
 (cffi:defcfun)
