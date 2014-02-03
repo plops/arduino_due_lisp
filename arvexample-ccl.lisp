@@ -71,8 +71,71 @@
 		(s (make-string n)))
 	   (dotimes (i n)
 	     (setf (elt s i) (code-char (ccl:%get-unsigned-byte str-pointer i))))
-	   s)))
+	   (values s str-pointer n))))
 
+(defun gc-new (cam)
+ (multiple-value-bind (xml xmlp n) (camera-get-genicam-xml cam)
+   (declare (ignorable xml))
+   (#_arv_gc_new (#_arv_camera_get_device cam) xmlp n)))
+
+(defparameter *gc1* (gc-new *cam1*))
+(defparameter *gc2* (gc-new *cam2*))
+
+(defun gc-get-node (genicam str)
+  (cffi:with-foreign-string (s str)
+			    (#_arv_gc_get_node genicam s)))
+
+(defparameter *temp-node2*  (gc-get-node *gc1* "TemperatureAbs"))
+
+(#_arv_gc_enumeration_get_int_value 
+ (gc-get-node *gc2* "TemperatureSelector")
+ (cffi:null-pointer))
+
+
+(defparameter *al* )
+
+(defun basler-temperatures ()
+  (loop for (i name) in '((0 sensor)
+			  (1 core)
+			  (2 framegrabber)
+			  (3 case))
+	collect 
+	(progn
+	  (#_arv_gc_enumeration_set_int_value 
+	   (gc-get-node *gc2* "TemperatureSelector")
+	   i (cffi:null-pointer))
+	  (list name
+		(#_arv_gc_float_get_value (gc-get-node *gc2* "TemperatureAbs") 
+				    (cffi:null-pointer))))))
+
+
+#+nil
+(basler-temperatures)
+
+(defun photonfocus-temperatures ()
+  (loop for (i name) in '((0 sensor)
+			 (1 sensor-board)
+			 (2 adc-board))
+       collect 
+       (progn
+	 (#_arv_gc_integer_set_value
+	  (gc-get-node *gc1* "DeviceTemperatureSelectorVal")
+	  i (cffi:null-pointer))
+	 (#_arv_gc_command_execute
+	  (gc-get-node *gc1* "DeviceTemperature_Update")
+	  (cffi:null-pointer))
+	 (list name
+	  (#_arv_gc_float_get_value (gc-get-node *gc1* "DeviceTemperature") 
+				    (cffi:null-pointer))))))
+
+ 
+
+#+nil
+(photonfocus-temperatures)
+
+
+
+(#_arv_gc_float_get_value *temp-node* (cffi:null-pointer))
 (defun store-genicam-xml (fn cam)
   (with-open-file (s fn :direction :output :if-exists :supersede :if-does-not-exist :create)
 		  (write-sequence (camera-get-genicam-xml cam) s)))
