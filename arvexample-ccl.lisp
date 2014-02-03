@@ -28,13 +28,21 @@
 #+nil
 (#_arv_get_n_interfaces)
 
+(defun camera-new (&key (name nil))
+  (if name
+      (cffi:with-foreign-string (s name)
+				(#_arv_camera_new s))
+    (#_arv_camera_new (cffi:null-pointer))))
+
 #+nil
-(defparameter *fake*
-  (cffi:with-foreign-string (s "Fake")
-			    (#_arv_camera_new s)))
+(defparameter *fake* (camera-new "Fake"))
+#+nil
+(defparameter *cam1* (camera-new))
 
-(defparameter *cam1* (#_arv_camera_new (cffi:null-pointer)))
 
+
+#+nil
+(defparameter *cam2* (camera-new :name "Basler-21211553"))
 
 ;; apparently, i can download the xml files from the cameras using
 ;; this:
@@ -52,7 +60,7 @@
 (get-interface-ids)
 
 
-
+#+nil
 (defun interface-get-n-devices ()
   (#_arv_interface_get_n_devices ))
 
@@ -65,12 +73,12 @@
 	     (setf (elt s i) (code-char (ccl:%get-unsigned-byte str-pointer i))))
 	   s)))
 
+(defun store-genicam-xml (fn cam)
+  (with-open-file (s fn :direction :output :if-exists :supersede :if-does-not-exist :create)
+		  (write-sequence (camera-get-genicam-xml cam) s)))
+
 #+nil
-(with-open-file 
- (s "/dev/shm/cam1.xml" :direction :output
-    :if-exists :supersede :if-does-not-exist :create)
- (defparameter *xml1* (camera-get-genicam-xml *cam1*))
- (write-sequence *xml1* s))
+(store-genicam-xml "/dev/shm/cam2.xml" *cam2*)
 
 #+nil
 (defparameter *fake* (cffi:with-foreign-string (s "bla")
