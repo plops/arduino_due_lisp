@@ -73,6 +73,22 @@ void draw_quad(int obj, int y){
   glEnd();
 }
 
+double photonfocus_temperature()
+{
+  ArvCamera *cam=arv_camera_new(NULL);
+  ArvDevice *dev=arv_camera_get_device(cam);
+  int n;
+  const char*xml=arv_device_get_genicam_xml(dev,&n);
+  ArvGc*gc=arv_gc_new(dev,xml,n);
+  ArvGcNode*sel=arv_gc_get_node(gc,"DeviceTemperatureSelectorVal");
+  arv_gc_integer_set_value(ARV_GC_INTEGER(sel),0,NULL);
+  ArvGcNode*temp_update=arv_gc_get_node(gc,"DeviceTemperature_Update");
+  arv_gc_command_execute(ARV_GC_COMMAND(temp_update),NULL);
+  ArvGcNode*temp=arv_gc_get_node(gc,"DeviceTemperature");
+  return arv_gc_float_get_value(ARV_GC_FLOAT(temp),NULL);
+}
+
+
 void* gl(void*str)
 {
   ArvStream*stream=(ArvStream*)str;
@@ -110,7 +126,7 @@ void* gl(void*str)
     buffer = arv_stream_pop_buffer (stream); // blocks until image is available
     if (buffer != NULL) {
       if (buffer->status != ARV_BUFFER_STATUS_SUCCESS){
-	printf("error: %d\n",buffer->status);
+	//printf("error: %d\n",buffer->status);
       } else {
 	buffer_count++;
       }
@@ -145,7 +161,8 @@ void* gl(void*str)
 	}
       }
       
-      
+      if(count%200==0)
+	printf("temperature: %g\n",photonfocus_temperature());
       glBindTexture( GL_TEXTURE_2D, texture[0] );
       glTexSubImage2D(GL_TEXTURE_2D,0,0,0,W,H,GL_LUMINANCE,GL_UNSIGNED_SHORT,store);
       
@@ -155,9 +172,9 @@ void* gl(void*str)
 	    fclose(f);
       */
       
-      fft_fill(); fft_run();
+      // fft_fill(); fft_run();
       glBindTexture( GL_TEXTURE_2D, texture[1] );
-      glTexSubImage2D(GL_TEXTURE_2D,0,0,0,W,H,GL_LUMINANCE,GL_UNSIGNED_SHORT,store2);
+      //glTexSubImage2D(GL_TEXTURE_2D,0,0,0,W,H,GL_LUMINANCE,GL_UNSIGNED_SHORT,store2);
       
 
       int width,height;
@@ -176,7 +193,7 @@ void* gl(void*str)
       draw_quad(texture[0],0);
       draw_quad(texture[1],H);
       
-      glfwSwapBuffers(window);
+      //glfwSwapBuffers(window);
       
       count++;
       if (count==1000){
@@ -236,7 +253,7 @@ main (int argc, char **argv)
 	arv_g_type_init ();
 
 	/* Instantiation of the first available camera */
-	camera = arv_camera_new ("Basler-21211553");
+	camera = arv_camera_new (NULL);//"Basler-21211553");
 
 	if (camera != NULL) {
 		void (*old_sigint_handler)(int);
@@ -280,9 +297,9 @@ main (int argc, char **argv)
 		}
 
 		/* Set frame rate to 10 Hz */
-		arv_camera_set_frame_rate (camera, 20.0);
+		arv_camera_set_frame_rate (camera, 120.0);
 		arv_camera_set_gain (camera, 100);
-		arv_camera_set_exposure_time (camera, 190.0 /*us*/);
+		arv_camera_set_exposure_time (camera, 490.0 /*us*/);
 		/* retrieve image payload (number of bytes per image) */
 		payload = arv_camera_get_payload (camera);
 		
