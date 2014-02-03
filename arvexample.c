@@ -12,27 +12,6 @@
 enum { W = 658, H = 494};
 unsigned short store[W*H],store2[W*H];
 
-/* pthread_mutex_t mutex_texture = PTHREAD_MUTEX_INITIALIZER; */
-/* pthread_cond_t  condition_new_image   = PTHREAD_COND_INITIALIZER; */
-/* pthread_mutex_t mutex_dontquit = PTHREAD_MUTEX_INITIALIZER; */
-/* int dontquit=1; */
-
-/* void write_dontquit(int b) */
-/* { */
-/*   pthread_mutex_lock( &mutex_texture ); */
-/*   dontquit=b; */
-/*   pthread_mutex_unlock( &mutex_texture ); */
-/* } */
-
-
-/* int read_dontquit() */
-/* { */
-/*   pthread_mutex_lock( &mutex_texture ); */
-/*   int b=dontquit; */
-/*   pthread_mutex_unlock( &mutex_texture ); */
-/*   return b; */
-/* } */
-
 fftw_complex *fft_in, *fft_out;
 fftw_plan fft_plan;
 
@@ -117,24 +96,15 @@ void* gl(void*str)
       if (buffer->status == ARV_BUFFER_STATUS_SUCCESS){
 	//data->buffer_count++;
       }
-    
-  
-    //pthread_mutex_lock( &mutex_texture );
-    // Wait while reader function new_buffer_cb copies data
-    // mutex unlocked if condition variable in new_buffer_cb  signaled.
-    //pthread_cond_wait( &condition_new_image, &mutex_texture );
+ 
     glBindTexture( GL_TEXTURE_2D, texture[0] );
-
     glTexSubImage2D(GL_TEXTURE_2D,0,0,0,W,H,GL_LUMINANCE,GL_UNSIGNED_SHORT,store);
     
-
     /*    FILE*f=fopen("/dev/shm/bla.pgm","w");
     fprintf(f,"P5\n658 494\n65535\n");
     fwrite(store,sizeof(store),1,f);
     fclose(f);
     */
-
-    //pthread_mutex_unlock( &mutex_texture );
     
     fft_fill(); fft_run();
     glBindTexture( GL_TEXTURE_2D, texture[1] );
@@ -314,11 +284,6 @@ main (int argc, char **argv)
 			/* Start the video stream */
 			arv_camera_start_acquisition (camera);
 
-			/* Connect the new-buffer signal */
-			//g_signal_connect (stream, "new-buffer", G_CALLBACK (new_buffer_cb), &data);
-			/* And enable emission of this signal (it's disabled by default for performance reason) */
-			//arv_stream_set_emit_signals (stream, TRUE);
-
 			int iret1 = pthread_create( &gl_thread, NULL, gl, (void*) stream);
 
 			/* Connect the control-lost signal */
@@ -351,7 +316,6 @@ main (int argc, char **argv)
 	} else
 		printf ("No camera found\n");
 
-	//write_dontquit(0);
 	pthread_join( gl_thread, NULL);
 	return 0;
 }
