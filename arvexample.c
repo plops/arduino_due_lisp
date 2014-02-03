@@ -88,6 +88,49 @@ double photonfocus_temperature()
   return arv_gc_float_get_value(ARV_GC_FLOAT(temp),NULL);
 }
 
+double photonfocus_framerate()
+{
+  ArvCamera *cam=arv_camera_new(NULL);
+  ArvDevice *dev=arv_camera_get_device(cam);
+  int n;
+  const char*xml=arv_device_get_genicam_xml(dev,&n);
+  ArvGc*gc=arv_gc_new(dev,xml,n);
+  ArvGcNode*f=arv_gc_get_node(gc,"AcquisitionFrameRateReg");
+  return arv_gc_float_get_value(ARV_GC_FLOAT(f),NULL);
+}
+
+void set_photonfocus_framerate_enable(gboolean val)
+{
+  ArvCamera *cam=arv_camera_new(NULL);
+  ArvDevice *dev=arv_camera_get_device(cam);
+  int n;
+  const char*xml=arv_device_get_genicam_xml(dev,&n);
+  ArvGc*gc=arv_gc_new(dev,xml,n);
+  ArvGcNode*f=arv_gc_get_node(gc,"AcquisitionFrameRateEnable");
+  arv_gc_boolean_set_value(ARV_GC_BOOLEAN(f),val,NULL);
+}
+
+void set_photonfocus_framerate_enable_reg(int val)
+{
+  ArvCamera *cam=arv_camera_new(NULL);
+  ArvDevice *dev=arv_camera_get_device(cam);
+  int n;
+  const char*xml=arv_device_get_genicam_xml(dev,&n);
+  ArvGc*gc=arv_gc_new(dev,xml,n);
+  ArvGcNode*f=arv_gc_get_node(gc,"AcquisitionFrameRateEnableReg");
+  arv_gc_integer_set_value(ARV_GC_INTEGER(f),val,NULL);
+}
+
+gboolean get_photonfocus_framerate_enable()
+{
+  ArvCamera *cam=arv_camera_new(NULL);
+  ArvDevice *dev=arv_camera_get_device(cam);
+  int n;
+  const char*xml=arv_device_get_genicam_xml(dev,&n);
+  ArvGc*gc=arv_gc_new(dev,xml,n);
+  ArvGcNode*f=arv_gc_get_node(gc,"AcquisitionFrameRateEnable");
+  return arv_gc_boolean_get_value(ARV_GC_BOOLEAN(f),NULL);
+}
 
 void* gl(void*str)
 {
@@ -172,9 +215,9 @@ void* gl(void*str)
 	    fclose(f);
       */
       
-      // fft_fill(); fft_run();
+      fft_fill(); fft_run();
       glBindTexture( GL_TEXTURE_2D, texture[1] );
-      //glTexSubImage2D(GL_TEXTURE_2D,0,0,0,W,H,GL_LUMINANCE,GL_UNSIGNED_SHORT,store2);
+      glTexSubImage2D(GL_TEXTURE_2D,0,0,0,W,H,GL_LUMINANCE,GL_UNSIGNED_SHORT,store2);
       
 
       int width,height;
@@ -193,7 +236,7 @@ void* gl(void*str)
       draw_quad(texture[0],0);
       draw_quad(texture[1],H);
       
-      //glfwSwapBuffers(window);
+      glfwSwapBuffers(window);
       
       count++;
       if (count==1000){
@@ -297,7 +340,11 @@ main (int argc, char **argv)
 		}
 
 		/* Set frame rate to 10 Hz */
-		arv_camera_set_frame_rate (camera, 120.0);
+		arv_camera_set_frame_rate (camera, 20.0);
+		set_photonfocus_framerate_enable_reg(0xfff);
+		printf("frame-rate set to: %g Hz, framerate_enable=%d\n",
+		       photonfocus_framerate(),
+		       get_photonfocus_framerate_enable());
 		arv_camera_set_gain (camera, 100);
 		arv_camera_set_exposure_time (camera, 490.0 /*us*/);
 		/* retrieve image payload (number of bytes per image) */
