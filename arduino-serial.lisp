@@ -191,7 +191,7 @@
 				:external-format :latin-1 
 				:buffering :full)))
     (ensure-response-buffer-clear fd s)
-    (talk-arduino fd s "(dac 1900 2000)")))
+    (talk-arduino fd s "(dac 2048 2048)")))
 
 
 #+nil
