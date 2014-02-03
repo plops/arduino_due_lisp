@@ -9,10 +9,8 @@
 #include <signal.h>
 #include <stdio.h>
 
-enum { W = 658, H = 494, NFIFO=4};
-const int do_store=0;
-int fifo=0;
-unsigned short store[W*H*NFIFO],store2[W*H];
+enum { W = 658, H = 494};
+unsigned short store[W*H],store2[W*H];
 
 /* pthread_mutex_t mutex_texture = PTHREAD_MUTEX_INITIALIZER; */
 /* pthread_cond_t  condition_new_image   = PTHREAD_COND_INITIALIZER; */
@@ -47,12 +45,12 @@ void fft_init()
   fft_plan=fftw_plan_dft_2d(H,W,fft_in, fft_out, FFTW_FORWARD, FFTW_ESTIMATE);
 }
 
-void fft_fill(int fifo_now)
+void fft_fill()
 {
   int i;
   double s=1/65535.0;
   for(i=0;i<W*H;i++){
-    fft_in[i]=store[i+fifo_now*W*H]*s;
+    fft_in[i]=store[i]*s;
   }
 }
 
@@ -66,6 +64,7 @@ void fft_run()
   }
 }
 
+int count=0;
 
 void draw_quad(int obj, int y){
   glBindTexture( GL_TEXTURE_2D, obj );
@@ -77,8 +76,9 @@ void draw_quad(int obj, int y){
   glEnd();
 }
 
-void* gl(void*ignore)
+void* gl(void*str)
 {
+  ArvStream*stream=(ArvStream*)str;
   fft_init();
   if (!glfwInit())
     exit(EXIT_FAILURE);
@@ -106,16 +106,26 @@ void* gl(void*ignore)
   //glMatrixMode(GL_MODELVIEW);
   }  
   glEnable(GL_TEXTURE_2D);
+
+  ArvBuffer *buffer;
   
   while (1 //read_dontquit()
 	 ) {
+    
+    buffer = arv_stream_pop_buffer (stream); // blocks until image is available
+    if (buffer != NULL) {
+      if (buffer->status == ARV_BUFFER_STATUS_SUCCESS){
+	//data->buffer_count++;
+      }
+    
+  
     //pthread_mutex_lock( &mutex_texture );
     // Wait while reader function new_buffer_cb copies data
     // mutex unlocked if condition variable in new_buffer_cb  signaled.
     //pthread_cond_wait( &condition_new_image, &mutex_texture );
     glBindTexture( GL_TEXTURE_2D, texture[0] );
-    int fifo_now=fifo;
-    glTexSubImage2D(GL_TEXTURE_2D,0,0,0,W,H,GL_LUMINANCE,GL_UNSIGNED_SHORT,store+fifo_now*W*H);
+
+    glTexSubImage2D(GL_TEXTURE_2D,0,0,0,W,H,GL_LUMINANCE,GL_UNSIGNED_SHORT,store);
     
 
     /*    FILE*f=fopen("/dev/shm/bla.pgm","w");
@@ -126,7 +136,7 @@ void* gl(void*ignore)
 
     //pthread_mutex_unlock( &mutex_texture );
     
-    fft_fill(fifo_now); fft_run();
+    fft_fill(); fft_run();
     glBindTexture( GL_TEXTURE_2D, texture[1] );
     glTexSubImage2D(GL_TEXTURE_2D,0,0,0,W,H,GL_LUMINANCE,GL_UNSIGNED_SHORT,store2);
 
@@ -148,9 +158,35 @@ void* gl(void*ignore)
     draw_quad(texture[1],H);
      
     glfwSwapBuffers(window);
-    usleep(164000);
-  }
+    //usleep(164000);
+    unsigned char *buf=buffer->data;
+    /* for(i=0,byte=0; byte<buffer->size;i+=2, byte+=3){ */
+    /*   char  */
+    /*     a=(buf[byte+0] & 0xf0) >> 4, */
+    /*     b=(buf[byte+0] & 0x0f), */
+    /*     c=(buf[byte+1] & 0xf0) >> 4, */
+    /*     d=(buf[byte+1] & 0x0f), */
+    /*     e=(buf[byte+2] & 0xf0) >> 4, */
+    /*     f=(buf[byte+2] & 0x0f); */
+    /*   store[i]=(c<<8+b<<4+a)*16; */
+    /*   store[i+1]=(f<<8+e<<4+d)*16; */
+    /* } */
+    for(i=0;i<W*H;i++)
+      store[i]=(buf[2*i]+256*buf[2*i+1])*16;
 
+    //memcpy(store,buffer->data,min(sizeof(store),buffer->size));
+    //pthread_cond_signal( &condition_new_image );
+    //pthread_mutex_unlock(&mutex_texture);
+    
+    count++;
+    if (count==1000){
+      //g_main_loop_quit (data->main_loop);
+    }
+    arv_stream_push_buffer (stream, buffer);
+    }
+
+  }
+  
   glfwTerminate();
 }
 
@@ -166,60 +202,9 @@ set_cancel (int signal)
 {
 	cancel = TRUE;
 }
-int count=0;
+
 
 #define min(a,b) (((a)<(b))?(a):(b))
-
-static void
-new_buffer_cb (ArvStream *stream, ApplicationData *data)
-{
-	ArvBuffer *buffer;
-
-	buffer = arv_stream_try_pop_buffer (stream);
-	if (buffer != NULL) {
-		if (buffer->status == ARV_BUFFER_STATUS_SUCCESS)
-			data->buffer_count++;
-		/* Image processing here */
-		if(do_store){
-		char s[100];
-		snprintf(s,sizeof(s),"/dev/shm/dat/o%04d.pgm",count);
-		FILE*f=fopen(s,"w");
-		fprintf(f,"P5\n658 494\n65535\n");
-		count++;
-		fwrite(buffer->data,buffer->size,1,f);
-		fclose(f);
-		}
-		//pthread_mutex_lock(&mutex_texture);
-	      
-		int i,byte;
-		//printf("%d %d\n",W*H,buffer->size);
-		unsigned char *buf=buffer->data;
-		/* for(i=0,byte=0; byte<buffer->size;i+=2, byte+=3){ */
-		/*   char  */
-		/*     a=(buf[byte+0] & 0xf0) >> 4, */
-		/*     b=(buf[byte+0] & 0x0f), */
-		/*     c=(buf[byte+1] & 0xf0) >> 4, */
-		/*     d=(buf[byte+1] & 0x0f), */
-		/*     e=(buf[byte+2] & 0xf0) >> 4, */
-		/*     f=(buf[byte+2] & 0x0f); */
-		/*   store[i]=(c<<8+b<<4+a)*16; */
-		/*   store[i+1]=(f<<8+e<<4+d)*16; */
-		/* } */
-		int fifo_now=count%NFIFO;
-		for(i=0;i<W*H;i++)
-		  store[i+fifo_now*W*H]=(buf[2*i]+256*buf[2*i+1])*16;
-		fifo=fifo_now;
-	       	//memcpy(store,buffer->data,min(sizeof(store),buffer->size));
-		//pthread_cond_signal( &condition_new_image );
-		//pthread_mutex_unlock(&mutex_texture);
-		
-		count++;
-		if (count==1000){
-		  //g_main_loop_quit (data->main_loop);
-		}
-		arv_stream_push_buffer (stream, buffer);
-	}
-}
 
 static gboolean
 periodic_task_cb (void *abstract_data)
@@ -259,7 +244,8 @@ main (int argc, char **argv)
 
 	pthread_t gl_thread;
       
-	int iret1 = pthread_create( &gl_thread, NULL, gl, (void*) NULL);
+
+	
 	
 	data.buffer_count = 0;
 
@@ -329,9 +315,11 @@ main (int argc, char **argv)
 			arv_camera_start_acquisition (camera);
 
 			/* Connect the new-buffer signal */
-			g_signal_connect (stream, "new-buffer", G_CALLBACK (new_buffer_cb), &data);
+			//g_signal_connect (stream, "new-buffer", G_CALLBACK (new_buffer_cb), &data);
 			/* And enable emission of this signal (it's disabled by default for performance reason) */
-			arv_stream_set_emit_signals (stream, TRUE);
+			//arv_stream_set_emit_signals (stream, TRUE);
+
+			int iret1 = pthread_create( &gl_thread, NULL, gl, (void*) stream);
 
 			/* Connect the control-lost signal */
 			g_signal_connect (arv_camera_get_device (camera), "control-lost",

@@ -41,6 +41,19 @@
 ;;arv_device_get_genicam_xml
 
 
+(defun get-interface-ids ()
+  (let ((n (#_arv_get_n_interfaces)))
+    (loop for i below n collect
+	  (let* ((str-pointer (#_arv_get_interface_id i))
+		 (name (loop for j from 0 and c = (ccl:%get-unsigned-byte str-pointer j) until (= c 0)
+			     collect (code-char c)))) ;; first char is collected twice
+	    (make-array (1- (length name)) :element-type 'character :initial-contents (rest name))))))
+#+nil
+(get-interface-ids)
+
+(defun interface-get-n-devices ()
+  (#_arv_interface_get_n_devices ))
+
 (defun camera-get-genicam-xml (cam)
   (rletz ((size :size_t))
 	 (let* ((str-pointer (#_arv_device_get_genicam_xml (#_arv_camera_get_device cam) size))
