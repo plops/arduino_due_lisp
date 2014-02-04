@@ -26,7 +26,7 @@
 (defun get-interface-ids ()
   (let ((n (#_arv_get_n_interfaces)))
     (loop for i below n collect
-	  (let* ((str-pointer (#_arv_get_interface_id i))
+	 (let* ((str-pointer (#_arv_get_interface_id i))
 		 (name (loop for j from 0 and c = (ccl:%get-unsigned-byte str-pointer j) until (= c 0)
 			     collect (code-char c)))) ;; first char is collected twice
 	    (make-array (1- (length name)) :element-type 'character :initial-contents (rest name))))))
@@ -40,7 +40,10 @@
       (#_arv_camera_new (cffi:null-pointer))))
 
 (defclass camera ()
-  ((name :reader camera-name :initarg :name :type string)
+  ((name :reader arv-camera-name :initarg :name :type (or null string) :initform nil)
+   (arv-model-name :reader arv-model-name :type string)
+   (arv-vendor-name :reader arv-vendor-name :type string)
+   (arv-device-id :reader arv-device-id :type string)
    (arv-camera :reader arv-camera)
    (arv-device :reader arv-device)
    (arv-gc :reader arv-gc)
@@ -53,6 +56,9 @@
 #+nil
 (defparameter *cam2*
  (make-instance 'camera :name "Basler-21211553"))
+#+nil
+(defparameter *cam1*
+ (make-instance 'camera))
 
 (defmethod camera-get-genicam-xml ((camera camera))
   (with-slots (arv-device) camera
@@ -65,11 +71,20 @@
 	 (setf (elt s i) (code-char (ccl:%get-unsigned-byte str-pointer i))))
        (values s str-pointer n)))))
 
+(defun char*-to-lisp (str-pointer)
+  (let* ((name (loop for j from 0 and c = (ccl:%get-unsigned-byte str-pointer j) until (= c 0)
+		  collect (code-char c)))) ;; first char is collected twice
+    (make-array (1- (length name)) :element-type 'character :initial-contents (rest name))))
+
 (defmethod initialize-instance :after ((cam camera) &key)
   (with-slots (arv-camera arv-device name arv-xml arv-xml-size
-			  sensor-width sensor-height arv-gc) cam
+			  sensor-width sensor-height arv-gc
+			  arv-model-name arv-vendor-name arv-device-id) cam
     (setf arv-camera (camera-new :name name)
-	  arv-device (#_arv_camera_get_device arv-camera))
+	  arv-device (#_arv_camera_get_device arv-camera)
+	  arv-vendor-name (char*-to-lisp (#_arv_camera_get_vendor_name arv-camera)) 
+	  arv-model-name (char*-to-lisp (#_arv_camera_get_model_name arv-camera)) 
+	  arv-device-id (char*-to-lisp (#_arv_camera_get_device_id arv-camera)) )
     (assert (not (cffi:null-pointer-p arv-camera)))
     (assert (not (cffi:null-pointer-p arv-device)))
     (cffi:with-foreign-objects ((w :int)
