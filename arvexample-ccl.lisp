@@ -103,7 +103,7 @@
   (cffi:with-foreign-string (s str)
     (#_arv_gc_get_node (arv-gc cam) s)))
 
-(defmethod basler-temperatures ((cam camera))
+(defmethod %basler-temperatures ((cam camera))
   (loop for (i name) in '((0 sensor)
 			  (1 core)
 			  (2 framegrabber)
@@ -116,7 +116,7 @@
 		(#_arv_gc_float_get_value (gc-get-node cam "TemperatureAbs") 
 					  (cffi:null-pointer))))))
 
-(defmethod photonfocus-temperatures ((cam camera))
+(defmethod %photonfocus-temperatures ((cam camera))
   (loop for (i name) in '((0 sensor)
 			  (1 sensor-board)
 			  (2 adc-board))
@@ -132,10 +132,17 @@
 	  (#_arv_gc_float_get_value (gc-get-node cam "DeviceTemperature") 
 				    (cffi:null-pointer))))))
 
- 
+(defmethod temperatures ((cam camera))
+  (cond
+    ((string= "Photonfocus AG" (arv-vendor-name cam))
+     (%photonfocus-temperatures cam))
+    ((string= "Basler" (arv-vendor-name cam))
+     (%basler-temperatures cam))))
 
 #+nil
-(photonfocus-temperatures)
+
+#+nil
+(temperatures *cam1*)
 
 (defmethod set-region ((cam camera) &key (x 0) (y 0)
 				      (w (- (sensor-width cam) x))
@@ -153,3 +160,66 @@
 	  (cffi:mem-ref fw :int) w
 	  (cffi:mem-ref fh :int) h)
     (#_arv_camera_set_region (arv-camera cam) fx fy fw fh)))
+
+
+(defmethod start-acquisition ((cam camera))
+  (#_arv_camera_start_acquisition (arv-camera cam)))
+
+(defmethod stop-acquisition ((cam camera))
+  (#_arv_camera_stop_acquisition (arv-camera cam)))
+
+(defparameter *basler-acquisition-modes*
+  '((single-frame . 0)
+    (multi-frame . 1)
+    (continuous . 2)))
+
+(defparameter *photonfocus-acquisition-modes*
+  '((continuous . 0)
+    (single-frame . 1)
+    (multi-frame . 2)
+    (continuous-recording . 3)
+    (continuous-readout . 4)
+    (single-frame-recording . 5)
+    (single-frame-readout . 6)))
+
+(defun all-possible-acquisition-modes ()
+  (let ((res nil))
+    (loop for (mode . code) in (append *basler-acquisition-modes* *photonfocus-acquisition-modes*) do
+	 (setf res (adjoin mode res)))
+    res))
+
+#+nil
+(all-possible-acquisition-modes)
+
+(defmethod acquisition-mode-code ((cam camera) mode)
+  (unless (member mode (all-possible-acquisition-modes))
+    (break "invalid mode. use one of ~a." (all-possible-acquisition-modes)))
+  (cdr (assoc mode (cond
+		      ((string= "Photonfocus AG" (arv-vendor-name cam))
+		       *photonfocus-acquisition-modes*)
+		      ((string= "Basler" (arv-vendor-name cam))
+		       *basler-acquisition-modes*)))))
+
+(defmethod acquisition-code-mode ((cam camera) code)
+  (car (rassoc code (cond
+		      ((string= "Photonfocus AG" (arv-vendor-name cam))
+		       *photonfocus-acquisition-modes*)
+		      ((string= "Basler" (arv-vendor-name cam))
+		       *basler-acquisition-modes*)))))
+
+(defmethod set-acquisition-mode ((cam camera) mode)
+  (#_arv_gc_enumeration_set_int_value 
+   (gc-get-node cam "AcquisitionMode") (acquisition-mode-code cam mode)
+   (cffi:null-pointer)))
+
+(defmethod get-acquisition-mode ((cam camera))
+  (acquisition-code-mode cam
+			 (#_arv_gc_enumeration_get_int_value 
+			  (gc-get-node cam "AcquisitionMode")
+			  (cffi:null-pointer))))
+
+#+nil
+(progn
+ (set-acquisition-mode *cam2* 'single-frame)
+ (get-acquisition-mode *cam2*))
+
