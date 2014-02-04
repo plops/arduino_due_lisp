@@ -67,19 +67,16 @@
   (assert (<= 0 y (1- (sensor-height cam))))
   (assert (<= 0 (+ x w) (sensor-width cam)))
   (assert (<= 0 (+ y h) (sensor-height cam)))
-  (cffi:with-foreign-objects ((fx :int)
-			      (fy :int)
-			      (fw :int)
-			      (fh :int))
-    (setf (cffi:mem-ref fx :int) x
-	  (cffi:mem-ref fy :int) y
-	  (cffi:mem-ref fw :int) w
-	  (cffi:mem-ref fh :int) h
-	  (aoi-x cam) x
-	  (aoi-y cam) y
-	  (aoi-width cam) w
-	  (aoi-height cam) h)
-    (#_arv_camera_set_region (arv-camera cam) fx fy fw fh)))
+  (gc-integer-set-value cam "Width" w)
+  (gc-integer-set-value cam "Height" h)
+  (gc-integer-set-value cam "OffsetX" x)
+  (gc-integer-set-value cam "OffsetY" y))
+
+(defmethod get-region ((cam camera))
+  `((x . ,(gc-integer-get-value cam "OffsetX"))
+    (y . ,(gc-integer-get-value cam "OffsetY"))
+    (width . ,(gc-integer-get-value cam "Width"))
+    (height . ,(gc-integer-get-value cam "Height"))))
 
 (defmethod camera-get-genicam-xml ((camera camera))
   (with-slots (arv-device) camera
@@ -136,6 +133,9 @@
 
 (defmethod gc-integer-set-value ((cam camera) name val)
   (#_arv_gc_integer_set_value (gc-get-node cam name) val (cffi:null-pointer)))
+
+(defmethod gc-integer-get-value ((cam camera) name)
+  (#_arv_gc_integer_get_value (gc-get-node cam name) (cffi:null-pointer)))
 
 (defmethod gc-float-get-value ((cam camera) name)
   (#_arv_gc_float_get_value (gc-get-node cam name) (cffi:null-pointer)))
@@ -299,6 +299,10 @@
 (push-buffer *cam2*)
 #+nil
 (start-acquisition *cam2*)
+#+nil
+(get-region *cam2*)
+#+nil
+(set-region *cam2*)
 #+nil
 (defparameter *img* (pop-block-copy-push-buffer *cam2*))
 #+nil
