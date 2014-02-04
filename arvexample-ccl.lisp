@@ -161,6 +161,13 @@
 	  (cffi:mem-ref fh :int) h)
     (#_arv_camera_set_region (arv-camera cam) fx fy fw fh)))
 
+(defmethod get-payload ((cam camera))
+  (#_arv_gc_integer_get_value 
+   (gc-get-node cam "PayloadSize")
+   (cffi:null-pointer)))
+
+#+nil
+(get-payload *cam1*)
 
 (defmethod start-acquisition ((cam camera))
   (#_arv_camera_start_acquisition (arv-camera cam)))
