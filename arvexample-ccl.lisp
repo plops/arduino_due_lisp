@@ -131,6 +131,18 @@
   (cffi:with-foreign-string (s str)
     (#_arv_gc_get_node (arv-gc cam) s)))
 
+(defmethod gc-enumeration-set-int-value ((cam camera) name val)
+  (#_arv_gc_enumeration_set_int_value (gc-get-node cam name) val (cffi:null-pointer)))
+
+(defmethod gc-integer-set-value ((cam camera) name val)
+  (#_arv_gc_integer_set_value (gc-get-node cam name) val (cffi:null-pointer)))
+
+(defmethod gc-float-get-value ((cam camera) name)
+  (#_arv_gc_float_get_value (gc-get-node cam name) (cffi:null-pointer)))
+
+(defmethod gc-command-execute ((cam camera) name)
+  (#_arv_gc_command_execute (gc-get-node cam name) (cffi:null-pointer)))
+
 (defmethod %basler-temperatures ((cam camera))
   (loop for (i name) in '((0 sensor)
 			  (1 core)
@@ -138,11 +150,9 @@
 			  (3 case))
 	collect 
 	(progn
-	  (#_arv_gc_enumeration_set_int_value 
-	   (gc-get-node cam "TemperatureSelector") i (cffi:null-pointer))
+	  (gc-enumeration-set-int-value cam "TemperatureSelector" i)
 	  (list name
-		(#_arv_gc_float_get_value (gc-get-node cam "TemperatureAbs") 
-					  (cffi:null-pointer))))))
+		(gc-float-get-value cam "TemperatureAbs")))))
 
 (defmethod %photonfocus-temperatures ((cam camera))
   (loop for (i name) in '((0 sensor)
@@ -150,15 +160,11 @@
 			  (2 adc-board))
      collect 
        (progn
-	 (#_arv_gc_integer_set_value
-	  (gc-get-node cam "DeviceTemperatureSelectorVal")
-	  i (cffi:null-pointer))
-	 (#_arv_gc_command_execute
-	  (gc-get-node cam "DeviceTemperature_Update") (cffi:null-pointer))
+	 (gc-integer-set-value cam "DeviceTemperatureSelectorVal" i)
+	 (gc-command-execute cam "DeviceTemperature_Update")
 	 (list
 	  name
-	  (#_arv_gc_float_get_value (gc-get-node cam "DeviceTemperature") 
-				    (cffi:null-pointer))))))
+	  (gc-float-get-value cam "DeviceTemperature")))))
 
 (defmethod temperatures ((cam camera))
   (cond
