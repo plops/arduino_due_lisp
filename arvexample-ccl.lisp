@@ -70,13 +70,23 @@
   (gc-integer-set-value cam "Width" w)
   (gc-integer-set-value cam "Height" h)
   (gc-integer-set-value cam "OffsetX" x)
-  (gc-integer-set-value cam "OffsetY" y))
+  (gc-integer-set-value cam "OffsetY" y)
+  (get-region cam))
 
 (defmethod get-region ((cam camera))
-  `((x . ,(gc-integer-get-value cam "OffsetX"))
-    (y . ,(gc-integer-get-value cam "OffsetY"))
-    (width . ,(gc-integer-get-value cam "Width"))
-    (height . ,(gc-integer-get-value cam "Height"))))
+  (let ((x (gc-integer-get-value cam "OffsetX"))
+	(y (gc-integer-get-value cam "OffsetY"))
+	(w (gc-integer-get-value cam "Width"))
+	(h (gc-integer-get-value cam "Height")))
+    (with-slots (aoi-width aoi-height aoi-x aoi-y) cam
+	(setf aoi-width w
+	      aoi-height h
+	      aoi-x x
+	      aoi-y y))
+    `((x . ,x)
+      (y . ,y)
+      (width . ,w)
+      (height . ,h))))
 
 (defmethod camera-get-genicam-xml ((camera camera))
   (with-slots (arv-device) camera
@@ -122,7 +132,8 @@
       (setf arv-xml xml
 	    arv-xml-size n
 	    arv-gc (#_arv_gc_new arv-device xml n))
-      (assert (not (cffi:null-pointer-p arv-gc))))))
+      (assert (not (cffi:null-pointer-p arv-gc))))
+    (set-region cam)))
 
 (defmethod gc-get-node ((cam camera) str)
   (cffi:with-foreign-string (s str)
@@ -244,7 +255,9 @@
 (defmethod push-buffer ((cam camera) &optional buffer)
   (#_arv_stream_push_buffer (arv-stream cam)
 			    (or buffer
-				(#_arv_buffer_new (get-payload cam) (cffi:null-pointer)))))
+				(let ((b (#_arv_buffer_new (get-payload cam) (cffi:null-pointer))))
+				  (assert (not (cffi:null-pointer-p b)))
+				  b))))
 
 
 
@@ -260,23 +273,26 @@
 		      (make-array (list (aoi-height cam)
 					(aoi-width cam))
 				  :element-type '(unsigned-byte 16))))
-	       (n (reduce #'* (array-dimensions a)))
-	       (a1 (make-array n
+	       (a1 (make-array (reduce #'* (array-dimensions a))
 			       :element-type '(unsigned-byte 16)
-			       :displaced-to a)))
-	  (dotimes (i n)
-	    (setf (aref a1 i) (%get-unsigned-byte b (* 2 i))))
+			       :displaced-to a))
+	       (data (pref b #>ArvBuffer.data)))
+	  (dotimes (i (min (length a1) (floor (get-payload cam) 2)))
+	    (setf (aref a1 i) (%get-unsigned-word data i)))
 	  a)
 	(push-buffer cam b))))
 
+
+#+nil
+(ccl:%get-unsigned-byte *bsafe* 5)
 (defmethod get-statistics ((cam camera))
   (cffi:with-foreign-objects ((completed :uint64)
 			      (failures :uint64)
 			      (underruns :uint64))
     (#_arv_stream_get_statistics (arv-stream cam) completed failures underruns)
-    `((completed . ,completed)
-      (failures . ,failures)
-      (underruns . ,underruns))))
+    `((completed . ,(cffi:mem-ref completed :uint64))
+      (failures . ,(cffi:mem-ref failures :uint64))
+      (underruns . ,(cffi:mem-ref underruns :uint64)))))
 
 
 #+nil
@@ -290,7 +306,7 @@
 #+nil (aoi-height *cam2*)
 
 #+nil
-(sensor-width *cam1*)
+(sensor-width *cam2*)
 #+nil
 (set-region *cam2*)
 #+nil
@@ -304,15 +320,40 @@
 #+nil
 (set-region *cam2*)
 #+nil
+(defparameter *bla*
+  (pop-buffer-blocking *cam2*))
+#+nil
+(pop-buffer-blocking *cam2*)
+
+;; (defparameter *a* (make-array (list (aoi-height *cam2*)
+;; 				    (aoi-width *cam2*))
+;; 			      :element-type '(unsigned-byte 16)))
+;; (defparameter *a1* (make-array (reduce #'* (array-dimensions *a*))
+;; 			       :element-type '(unsigned-byte 16)
+;; 			       :displaced-to *a*))
+
+;; (list (* 2 (length *a1*)) (get-payload *cam2*))
+;; (dotimes (i (min (length *a1*)))
+;; 	    (setf (aref *a1* i) (cffi:mem-aref *bla* :uint16 i
+;; 					       )))
+;; #+nil
+
+#+nil
+(get-statistics *cam2*)
+#+nil
 (defparameter *img* (pop-block-copy-push-buffer *cam2*))
 #+nil
 (let* ((c *cam2*)
        (n (get-payload c)))
-  (dotimes (i 10) (push-buffer c))
+  (dotimes (i 1) (push-buffer c))
   (start-acquisition c)
   (defparameter *img* (pop-block-copy-push-buffer c))
   (format t "statistics: ~a~%" (get-statistics c))
+  (sleep .3)
+  (format t "statistics: ~a~%" (get-statistics c))
   (stop-acquisition c))
+#+nil
+(stop-acquisition *cam2*)
 #+nil
 (progn
  (set-acquisition-mode *cam2* 'single-frame)
