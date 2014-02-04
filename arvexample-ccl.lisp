@@ -39,6 +39,8 @@
 	(#_arv_camera_new s))
       (#_arv_camera_new (cffi:null-pointer))))
 
+
+
 (defclass camera ()
   ((name :reader arv-camera-name :initarg :name :type (or null string) :initform nil)
    (arv-model-name :reader arv-model-name :type string)
@@ -46,19 +48,38 @@
    (arv-device-id :reader arv-device-id :type string)
    (arv-camera :reader arv-camera)
    (arv-device :reader arv-device)
+   (arv-stream :reader arv-stream)
    (arv-gc :reader arv-gc)
    (arv-xml :reader arv-xml)
    (arv-xml-size :reader arv-xml-size :type fixnum)
    (sensor-width :reader sensor-width)
    (sensor-height :reader sensor-height)
+   (aoi-x :accessor aoi-x :initform 0 :type fixnum)
+   (aoi-y :accessor aoi-y :initform 0 :type fixnum)
+   (aoi-width :accessor aoi-width :type fixnum)
+   (aoi-height :accessor aoi-height :type fixnum)
    ))
 
-#+nil
-(defparameter *cam2*
- (make-instance 'camera :name "Basler-21211553"))
-#+nil
-(defparameter *cam1*
- (make-instance 'camera))
+(defmethod set-region ((cam camera) &key (x 0) (y 0)
+				      (w (- (sensor-width cam) x))
+				      (h (- (sensor-height cam) y)))
+  (assert (<= 0 x (1- (sensor-width cam))))
+  (assert (<= 0 y (1- (sensor-height cam))))
+  (assert (<= 0 (+ x w) (sensor-width cam)))
+  (assert (<= 0 (+ y h) (sensor-height cam)))
+  (cffi:with-foreign-objects ((fx :int)
+			      (fy :int)
+			      (fw :int)
+			      (fh :int))
+    (setf (cffi:mem-ref fx :int) x
+	  (cffi:mem-ref fy :int) y
+	  (cffi:mem-ref fw :int) w
+	  (cffi:mem-ref fh :int) h
+	  (aoi-x cam) x
+	  (aoi-y cam) y
+	  (aoi-width cam) w
+	  (aoi-height cam) h)
+    (#_arv_camera_set_region (arv-camera cam) fx fy fw fh)))
 
 (defmethod camera-get-genicam-xml ((camera camera))
   (with-slots (arv-device) camera
@@ -76,15 +97,21 @@
 		  collect (code-char c)))) ;; first char is collected twice
     (make-array (1- (length name)) :element-type 'character :initial-contents (rest name))))
 
+(defmethod create-stream ((cam camera))
+  (#_arv_camera_create_stream (arv-camera cam) (cffi:null-pointer)
+			      (cffi:null-pointer)))
+
 (defmethod initialize-instance :after ((cam camera) &key)
   (with-slots (arv-camera arv-device name arv-xml arv-xml-size
 			  sensor-width sensor-height arv-gc
-			  arv-model-name arv-vendor-name arv-device-id) cam
+			  arv-model-name arv-vendor-name
+			  arv-device-id arv-stream) cam
     (setf arv-camera (camera-new :name name)
+	  arv-stream (create-stream cam)
 	  arv-device (#_arv_camera_get_device arv-camera)
 	  arv-vendor-name (char*-to-lisp (#_arv_camera_get_vendor_name arv-camera)) 
 	  arv-model-name (char*-to-lisp (#_arv_camera_get_model_name arv-camera)) 
-	  arv-device-id (char*-to-lisp (#_arv_camera_get_device_id arv-camera)) )
+	  arv-device-id (char*-to-lisp (#_arv_camera_get_device_id arv-camera)))
     (assert (not (cffi:null-pointer-p arv-camera)))
     (assert (not (cffi:null-pointer-p arv-device)))
     (cffi:with-foreign-objects ((w :int)
@@ -92,6 +119,7 @@
       (#_arv_camera_get_sensor_size arv-camera w h)
       (setf sensor-width (cffi:mem-ref w :int)
 	    sensor-height (cffi:mem-ref h :int)))
+   
     (multiple-value-bind (sxml xml n) (camera-get-genicam-xml cam)
       (declare (ignorable sxml))
       (setf arv-xml xml
@@ -140,34 +168,12 @@
      (%basler-temperatures cam))))
 
 #+nil
-
-#+nil
 (temperatures *cam1*)
-
-(defmethod set-region ((cam camera) &key (x 0) (y 0)
-				      (w (- (sensor-width cam) x))
-				      (h (- (sensor-height cam) y)))
-  (assert (<= 0 x (1- (sensor-width cam))))
-  (assert (<= 0 y (1- (sensor-height cam))))
-  (assert (<= 0 (+ x w) (1- (sensor-width cam))))
-  (assert (<= 0 (+ y h) (1- (sensor-height cam))))
-  (cffi:with-foreign-objects ((fx :int)
-			      (fy :int)
-			      (fw :int)
-			      (fh :int))
-    (setf (cffi:mem-ref fx :int) x
-	  (cffi:mem-ref fy :int) y
-	  (cffi:mem-ref fw :int) w
-	  (cffi:mem-ref fh :int) h)
-    (#_arv_camera_set_region (arv-camera cam) fx fy fw fh)))
 
 (defmethod get-payload ((cam camera))
   (#_arv_gc_integer_get_value 
    (gc-get-node cam "PayloadSize")
    (cffi:null-pointer)))
-
-#+nil
-(get-payload *cam1*)
 
 (defmethod start-acquisition ((cam camera))
   (#_arv_camera_start_acquisition (arv-camera cam)))
@@ -200,7 +206,8 @@
 
 (defmethod acquisition-mode-code ((cam camera) mode)
   (unless (member mode (all-possible-acquisition-modes))
-    (break "invalid mode. use one of ~a." (all-possible-acquisition-modes)))
+    (break "invalid mode. use one of ~a."
+	   (all-possible-acquisition-modes)))
   (cdr (assoc mode (cond
 		      ((string= "Photonfocus AG" (arv-vendor-name cam))
 		       *photonfocus-acquisition-modes*)
@@ -225,6 +232,77 @@
 			  (gc-get-node cam "AcquisitionMode")
 			  (cffi:null-pointer))))
 
+;; 			for (i = 0; i < 50; i++)
+;; 				arv_stream_push_buffer (stream, arv_buffer_new (payload, NULL));
+
+(defmethod push-buffer ((cam camera) &optional buffer)
+  (#_arv_stream_push_buffer (arv-stream cam)
+			    (or buffer
+				(#_arv_buffer_new (get-payload cam) (cffi:null-pointer)))))
+
+
+
+(defmethod pop-buffer-blocking ((cam camera))
+  (#_arv_stream_pop_buffer (arv-stream cam)))
+
+(defmethod pop-block-copy-push-buffer ((cam camera) &optional out)
+  (let ((b (pop-buffer-blocking cam)))
+    (when (cffi:null-pointer-p b)
+      (error "pop-buffer returned NULL."))
+    (prog1
+	(let* ((a (or out
+		      (make-array (list (aoi-height cam)
+					(aoi-width cam))
+				  :element-type '(unsigned-byte 16))))
+	       (n (reduce #'* (array-dimensions a)))
+	       (a1 (make-array n
+			       :element-type '(unsigned-byte 16)
+			       :displaced-to a)))
+	  (dotimes (i n)
+	    (setf (aref a1 i) (%get-unsigned-byte b (* 2 i))))
+	  a)
+	(push-buffer cam b))))
+
+(defmethod get-statistics ((cam camera))
+  (cffi:with-foreign-objects ((completed :uint64)
+			      (failures :uint64)
+			      (underruns :uint64))
+    (#_arv_stream_get_statistics (arv-stream cam) completed failures underruns)
+    `((completed . ,completed)
+      (failures . ,failures)
+      (underruns . ,underruns))))
+
+
+#+nil
+(defparameter *cam2*
+ (make-instance 'camera :name "Basler-21211553"))
+#+nil
+(defparameter *cam1*
+ (make-instance 'camera))
+
+
+#+nil (aoi-height *cam2*)
+
+#+nil
+(sensor-width *cam1*)
+#+nil
+(set-region *cam2*)
+#+nil
+(get-payload *cam2*)
+#+nil
+(push-buffer *cam2*)
+#+nil
+(start-acquisition *cam2*)
+#+nil
+(defparameter *img* (pop-block-copy-push-buffer *cam2*))
+#+nil
+(let* ((c *cam2*)
+       (n (get-payload c)))
+  (dotimes (i 10) (push-buffer c))
+  (start-acquisition c)
+  (defparameter *img* (pop-block-copy-push-buffer c))
+  (format t "statistics: ~a~%" (get-statistics c))
+  (stop-acquisition c))
 #+nil
 (progn
  (set-acquisition-mode *cam2* 'single-frame)
