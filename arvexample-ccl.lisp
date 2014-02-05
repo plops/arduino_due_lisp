@@ -23,13 +23,18 @@
 (#_g_type_init)
 
 
+(defun char*-to-lisp (str-pointer &key (max-length 100))
+  (let* ((name (loop for j from 0 below max-length
+		  and c = (ccl:%get-unsigned-byte str-pointer j) until (= c 0)
+		  collect (code-char c)))) ;; first char is collected twice
+    (make-array (1- (length name)) :element-type 'character :initial-contents (rest name))))
+
+
 (defun get-interface-ids ()
   (let ((n (#_arv_get_n_interfaces)))
     (loop for i below n collect
-	 (let* ((str-pointer (#_arv_get_interface_id i))
-		 (name (loop for j from 0 and c = (ccl:%get-unsigned-byte str-pointer j) until (= c 0)
-			     collect (code-char c)))) ;; first char is collected twice
-	    (make-array (1- (length name)) :element-type 'character :initial-contents (rest name))))))
+	 (let* ((str-pointer (#_arv_get_interface_id i)))
+	   (char*-to-lisp str-pointer)))))
 #+nil
 (get-interface-ids)
 
@@ -58,6 +63,7 @@
    (aoi-y :accessor aoi-y :initform 0 :type fixnum)
    (aoi-width :accessor aoi-width :type fixnum)
    (aoi-height :accessor aoi-height :type fixnum)
+   (pixel-formats :reader pixel-formats)
    ))
 
 (defmethod set-region ((cam camera) &key (x 0) (y 0)
@@ -99,10 +105,7 @@
 	 (setf (elt s i) (code-char (ccl:%get-unsigned-byte str-pointer i))))
        (values s str-pointer n)))))
 
-(defun char*-to-lisp (str-pointer)
-  (let* ((name (loop for j from 0 and c = (ccl:%get-unsigned-byte str-pointer j) until (= c 0)
-		  collect (code-char c)))) ;; first char is collected twice
-    (make-array (1- (length name)) :element-type 'character :initial-contents (rest name))))
+
 
 (defmethod create-stream ((cam camera))
   (#_arv_camera_create_stream (arv-camera cam) (cffi:null-pointer)
@@ -112,7 +115,7 @@
   (with-slots (arv-camera arv-device name arv-xml arv-xml-size
 			  sensor-width sensor-height arv-gc
 			  arv-model-name arv-vendor-name
-			  arv-device-id arv-stream) cam
+			  arv-device-id arv-stream pixel-formats) cam
     (setf arv-camera (camera-new :name name)
 	  arv-stream (create-stream cam)
 	  arv-device (#_arv_camera_get_device arv-camera)
@@ -133,9 +136,11 @@
 	    arv-xml-size n
 	    arv-gc (#_arv_gc_new arv-device xml n))
       (assert (not (cffi:null-pointer-p arv-gc))))
-    (set-region cam)))
+    (set-region cam)
+    (setf pixel-formats  (gc-enumeration-get-available-string-values cam "PixelFormat"))))
 
 (defmethod gc-get-node ((cam camera) str)
+  (declare (type string str))
   (cffi:with-foreign-string (s str)
     (#_arv_gc_get_node (arv-gc cam) s)))
 
@@ -153,6 +158,54 @@
 
 (defmethod gc-command-execute ((cam camera) name)
   (#_arv_gc_command_execute (gc-get-node cam name) (cffi:null-pointer)))
+
+
+(defmethod gc-enumeration-get-available-string-values ((cam camera) name)
+  (cffi:with-foreign-object (n-values :unsigned-int)
+    (let* ((c-strs (#_arv_gc_enumeration_get_available_string_values (gc-get-node cam name) n-values (cffi:null-pointer)))
+	   (n (cffi:mem-ref n-values :unsigned-int)))
+      (loop for i below n collect
+	   (let ((c-str (cffi:mem-aref c-strs :pointer i)))
+	     (prog1 
+		 (char*-to-lisp c-str)
+	       (#_g_free c-str)))))))
+
+#+nil
+(gc-enumeration-get-available-string-values *cam1* "PixelFormat")
+
+(defmethod gc-enumeration-set-string-value ((cam camera) name val)
+  (declare (type string val))
+  (cffi:with-foreign-string (s val)
+    (#_arv_gc_enumeration_set_string_value (gc-get-node cam name) s (cffi:null-pointer)))) 
+
+(defmethod gc-enumeration-get-string-value ((cam camera) name)
+  ;; call arv_gc_feature_node_get_name which returns node->priv->name
+  ;; i believe i must not call g_free on this string. perhaps there is
+  ;; a bug in aravis, because it's not returning the expected values
+  (char*-to-lisp
+   (#_arv_gc_enumeration_get_string_value (gc-get-node cam name) (cffi:null-pointer))))
+
+(defmethod gc-enumeration-get-int-value ((cam camera) name)
+  (#_arv_gc_enumeration_get_int_value (gc-get-node cam name) (cffi:null-pointer)))
+(defmethod gc-enumeration-set-int-value ((cam camera) name val)
+  (#_arv_gc_enumeration_set_int_value (gc-get-node cam name) val (cffi:null-pointer)))
+
+(defmethod gc-enumeration-get-available-int-values ((cam camera) name)
+  (cffi:with-foreign-object (n-values :unsigned-int)
+    (let* ((int-ptr (#_arv_gc_enumeration_get_available_int_values (gc-get-node cam name) n-values (cffi:null-pointer)))
+	   (n (cffi:mem-ref n-values :unsigned-int)))
+      (loop for i below n collect (cffi:mem-aref int-ptr :unsigned-long-long i)))))
+
+#+nil
+(gc-enumeration-get-available-int-values *cam1* "PixelFormat")
+
+
+(defmethod set-pixel-format ((cam camera) format)
+  (unless (member format (pixel-formats cam) :test #'string=)
+    (error "This camera only supports the formats ~a. You requested '~a'." 
+	   (pixel-formats cam)
+	   format))
+  (gc-enumeration-set-string-value cam "PixelFormat" format))
 
 (defmethod %basler-temperatures ((cam camera))
   (loop for (i name) in '((0 sensor)
@@ -296,11 +349,12 @@
 
 
 #+nil
-(defparameter *cam2*
- (make-instance 'camera :name "Basler-21211553"))
-#+nil
-(defparameter *cam1*
- (make-instance 'camera))
+(progn
+  (defparameter *cam2*
+    (make-instance 'camera :name "Basler-21211553"))
+
+  (defparameter *cam1*
+    (make-instance 'camera)))
 
 
 #+nil (aoi-height *cam2*)
@@ -324,6 +378,14 @@
   (pop-buffer-blocking *cam2*))
 #+nil
 (pop-buffer-blocking *cam2*)
+
+#+nil
+(set-pixel-format *cam2* "Mono8")
+
+#+nil
+(gc-enumeration-get-string-value *cam2* "PixelFormat")
+#+nil
+(gc-enumeration-get-int-value *cam2* "PixelFormat")
 
 ;; (defparameter *a* (make-array (list (aoi-height *cam2*)
 ;; 				    (aoi-width *cam2*))
