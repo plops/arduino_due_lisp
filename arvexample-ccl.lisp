@@ -44,8 +44,6 @@
 	(#_arv_camera_new s))
       (#_arv_camera_new (cffi:null-pointer))))
 
-
-
 (defclass camera ()
   ((name :reader arv-camera-name :initarg :name :type (or null string) :initform nil)
    (arv-model-name :reader arv-model-name :type string)
@@ -62,8 +60,7 @@
    (aoi-x :accessor aoi-x :initform 0 :type fixnum)
    (aoi-y :accessor aoi-y :initform 0 :type fixnum)
    (aoi-width :accessor aoi-width :type fixnum)
-   (aoi-height :accessor aoi-height :type fixnum)
-   ))
+   (aoi-height :accessor aoi-height :type fixnum)))
 
 (defmethod set-region ((cam camera) &key (x 0) (y 0)
 				      (w (- (sensor-width cam) x))
@@ -103,8 +100,6 @@
        (dotimes (i n)
 	 (setf (elt s i) (code-char (ccl:%get-unsigned-byte str-pointer i))))
        (values s str-pointer n)))))
-
-
 
 (defmethod create-stream ((cam camera))
   (#_arv_camera_create_stream (arv-camera cam) (cffi:null-pointer)
@@ -157,7 +152,6 @@
 (defmethod gc-command-execute ((cam camera) name)
   (#_arv_gc_command_execute (gc-get-node cam name) (cffi:null-pointer)))
 
-
 (defmethod gc-enumeration-get-available-string-values ((cam camera) name)
   (cffi:with-foreign-object (n-values :unsigned-int)
     (let* ((c-strs (#_arv_gc_enumeration_get_available_string_values (gc-get-node cam name) n-values (cffi:null-pointer)))
@@ -167,9 +161,6 @@
 	       (let ((c-str (cffi:mem-aref c-strs :pointer i)))
 		 (char*-to-lisp c-str)))
 	(#_g_free c-strs)))))
-
-#+nil
-(gc-enumeration-get-available-string-values *cam1* "PixelFormat")
 
 (defmethod gc-enumeration-set-string-value ((cam camera) name val)
   (declare (type string val))
@@ -191,10 +182,6 @@
     (let* ((int-ptr (#_arv_gc_enumeration_get_available_int_values (gc-get-node cam name) n-values (cffi:null-pointer)))
 	   (n (cffi:mem-ref n-values :unsigned-int)))
       (loop for i below n collect (cffi:mem-aref int-ptr :unsigned-long-long i)))))
-
-#+nil
-(gc-enumeration-get-available-int-values *cam1* "PixelFormat")
-
 
 (defmethod set-pixel-format ((cam camera) format)
   (declare (type string format))
@@ -233,9 +220,6 @@
      (%photonfocus-temperatures cam))
     ((string= "Basler" (arv-vendor-name cam))
      (%basler-temperatures cam))))
-
-#+nil
-(temperatures *cam1*)
 
 (defmethod get-payload ((cam camera))
   (#_arv_gc_integer_get_value 
@@ -299,17 +283,13 @@
 			  (gc-get-node cam "AcquisitionMode")
 			  (cffi:null-pointer))))
 
-;; 			for (i = 0; i < 50; i++)
-;; 				arv_stream_push_buffer (stream, arv_buffer_new (payload, NULL));
-
 (defmethod push-buffer ((cam camera) &optional buffer)
-  (#_arv_stream_push_buffer (arv-stream cam)
-			    (or buffer
-				(let ((b (#_arv_buffer_new (get-payload cam) (cffi:null-pointer))))
-				  (assert (not (cffi:null-pointer-p b)))
-				  b))))
-
-
+  (#_arv_stream_push_buffer 
+   (arv-stream cam)
+   (or buffer
+       (let ((b (#_arv_buffer_new (get-payload cam) (cffi:null-pointer))))
+	 (assert (not (cffi:null-pointer-p b)))
+	 b))))
 
 (defmethod pop-buffer-blocking ((cam camera))
   (#_arv_stream_pop_buffer (arv-stream cam)))
@@ -328,13 +308,10 @@
 			       :displaced-to a))
 	       (data (pref b #>ArvBuffer.data)))
 	  (dotimes (i (min (length a1) (floor (get-payload cam) 2)))
-	    (setf (aref a1 i) (%get-unsigned-word data i)))
+	    (setf (aref a1 i) (%get-unsigned-word data (* 2 i))))
 	  a)
 	(push-buffer cam b))))
 
-
-#+nil
-(ccl:%get-unsigned-byte *bsafe* 5)
 (defmethod get-statistics ((cam camera))
   (cffi:with-foreign-objects ((completed :uint64)
 			      (failures :uint64)
@@ -344,82 +321,49 @@
       (failures . ,(cffi:mem-ref failures :uint64))
       (underruns . ,(cffi:mem-ref underruns :uint64)))))
 
+(defmethod acquire-single-image ((c camera))
+  (let* ((n (get-payload c)))
+    (dotimes (i 1) (push-buffer c))
+    (start-acquisition c)
+    (prog1
+	(pop-block-copy-push-buffer c)
+      (stop-acquisition c))))
+
+(defun write-pgm (filename img)
+  (declare (simple-string filename)
+           ((array (unsigned-byte 16) 2) img)
+           (values null &optional))
+  (destructuring-bind (h w) (array-dimensions img)
+    (declare (type fixnum w h))
+    (with-open-file (s filename
+                       :direction :output
+                       :if-exists :supersede
+                       :if-does-not-exist :create)
+      (declare (stream s))
+      (format s "P5~%~D ~D~%65535~%" w h))
+    (with-open-file (s filename 
+                       :element-type '(unsigned-byte 16)
+                       :direction :output
+                       :if-exists :append)
+      (let ((data-1d (make-array 
+                      (* h w)
+                      :element-type '(unsigned-byte 16)
+                      :displaced-to img)))
+        (write-sequence data-1d s)))
+    nil))
 
 #+nil
 (progn
   (defparameter *cam2*
     (make-instance 'camera :name "Basler-21211553"))
-
   (defparameter *cam1*
     (make-instance 'camera)))
 
-
-#+nil (aoi-height *cam2*)
-
-#+nil
-(sensor-width *cam2*)
-#+nil
-(set-region *cam2*)
-#+nil
-(get-payload *cam2*)
-#+nil
-(push-buffer *cam2*)
-#+nil
-(start-acquisition *cam2*)
-#+nil
-(get-region *cam2*)
-#+nil
-(set-region *cam2*)
-#+nil
-(defparameter *bla*
-  (pop-buffer-blocking *cam2*))
-#+nil
-(pop-buffer-blocking *cam2*)
-
-#+nil
-(set-pixel-format *cam2* "Mono12Packed")
-
-#+nil
-(gc-enumeration-get-string-value *cam2* "PixelFormat")
-#+nil
-(gc-enumeration-get-int-value *cam2* "PixelFormat")
-
-#+nil
-(gc-enumeration-get-available-int-values *cam2* "PixelFormat")
-#+nil
-(gc-enumeration-get-available-string-values *cam2* "PixelFormat")
-
-;; (defparameter *a* (make-array (list (aoi-height *cam2*)
-;; 				    (aoi-width *cam2*))
-;; 			      :element-type '(unsigned-byte 16)))
-;; (defparameter *a1* (make-array (reduce #'* (array-dimensions *a*))
-;; 			       :element-type '(unsigned-byte 16)
-;; 			       :displaced-to *a*))
-
-;; (list (* 2 (length *a1*)) (get-payload *cam2*))
-;; (dotimes (i (min (length *a1*)))
-;; 	    (setf (aref *a1* i) (cffi:mem-aref *bla* :uint16 i
-;; 					       )))
-;; #+nil
-
-#+nil
-(get-statistics *cam2*)
-#+nil
-(defparameter *img* (pop-block-copy-push-buffer *cam2*))
-#+nil
-(let* ((c *cam2*)
-       (n (get-payload c)))
-  (dotimes (i 1) (push-buffer c))
-  (start-acquisition c)
-  (defparameter *img* (pop-block-copy-push-buffer c))
-  (format t "statistics: ~a~%" (get-statistics c))
-  (sleep .3)
-  (format t "statistics: ~a~%" (get-statistics c))
-  (stop-acquisition c))
-#+nil
-(stop-acquisition *cam2*)
 #+nil
 (progn
- (set-acquisition-mode *cam2* 'single-frame)
- (get-acquisition-mode *cam2*))
+  (set-pixel-format *cam1* "Mono12")
+  (set-pixel-format *cam2* "Mono12")
+  (write-pgm "/dev/shm/1.pgm" (acquire-single-image *cam1*))
+  (write-pgm "/dev/shm/2.pgm" (acquire-single-image *cam2*)))
+
 
