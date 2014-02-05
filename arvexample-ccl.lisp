@@ -63,7 +63,6 @@
    (aoi-y :accessor aoi-y :initform 0 :type fixnum)
    (aoi-width :accessor aoi-width :type fixnum)
    (aoi-height :accessor aoi-height :type fixnum)
-   (pixel-formats :reader pixel-formats)
    ))
 
 (defmethod set-region ((cam camera) &key (x 0) (y 0)
@@ -136,8 +135,7 @@
 	    arv-xml-size n
 	    arv-gc (#_arv_gc_new arv-device xml n))
       (assert (not (cffi:null-pointer-p arv-gc))))
-    (set-region cam)
-    (setf pixel-formats  (gc-enumeration-get-available-string-values cam "PixelFormat"))))
+    (set-region cam)))
 
 (defmethod gc-get-node ((cam camera) str)
   (declare (type string str))
@@ -164,11 +162,11 @@
   (cffi:with-foreign-object (n-values :unsigned-int)
     (let* ((c-strs (#_arv_gc_enumeration_get_available_string_values (gc-get-node cam name) n-values (cffi:null-pointer)))
 	   (n (cffi:mem-ref n-values :unsigned-int)))
-      (loop for i below n collect
-	   (let ((c-str (cffi:mem-aref c-strs :pointer i)))
-	     (prog1 
-		 (char*-to-lisp c-str)
-	       (#_g_free c-str)))))))
+      (prog1
+	  (loop for i below n collect
+	       (let ((c-str (cffi:mem-aref c-strs :pointer i)))
+		 (char*-to-lisp c-str)))
+	(#_g_free c-strs)))))
 
 #+nil
 (gc-enumeration-get-available-string-values *cam1* "PixelFormat")
@@ -187,8 +185,6 @@
 
 (defmethod gc-enumeration-get-int-value ((cam camera) name)
   (#_arv_gc_enumeration_get_int_value (gc-get-node cam name) (cffi:null-pointer)))
-(defmethod gc-enumeration-set-int-value ((cam camera) name val)
-  (#_arv_gc_enumeration_set_int_value (gc-get-node cam name) val (cffi:null-pointer)))
 
 (defmethod gc-enumeration-get-available-int-values ((cam camera) name)
   (cffi:with-foreign-object (n-values :unsigned-int)
@@ -201,11 +197,11 @@
 
 
 (defmethod set-pixel-format ((cam camera) format)
-  (unless (member format (pixel-formats cam) :test #'string=)
-    (error "This camera only supports the formats ~a. You requested '~a'." 
-	   (pixel-formats cam)
-	   format))
-  (gc-enumeration-set-string-value cam "PixelFormat" format))
+  (let ((formats (gc-enumeration-get-available-int-values cam "PixelFormat")))
+   (unless (member format formats)
+     (error "This camera only supports the formats ~{#x~x~}. You requested #x~x." 
+	    formats format)))
+  (gc-enumeration-set-int-value cam "PixelFormat" format))
 
 (defmethod %basler-temperatures ((cam camera))
   (loop for (i name) in '((0 sensor)
@@ -386,6 +382,11 @@
 (gc-enumeration-get-string-value *cam2* "PixelFormat")
 #+nil
 (gc-enumeration-get-int-value *cam2* "PixelFormat")
+
+#+nil
+(gc-enumeration-get-available-int-values *cam2* "PixelFormat")
+#+nil
+(gc-enumeration-get-available-string-values *cam2* "PixelFormat")
 
 ;; (defparameter *a* (make-array (list (aoi-height *cam2*)
 ;; 				    (aoi-width *cam2*))
