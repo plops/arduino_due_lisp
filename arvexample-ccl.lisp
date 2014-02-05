@@ -60,7 +60,8 @@
    (aoi-x :accessor aoi-x :initform 0 :type fixnum)
    (aoi-y :accessor aoi-y :initform 0 :type fixnum)
    (aoi-width :accessor aoi-width :type fixnum)
-   (aoi-height :accessor aoi-height :type fixnum)))
+   (aoi-height :accessor aoi-height :type fixnum)
+   (pixel-format :accessor pixel-format :type string :initform "none")))
 
 (defmethod set-region ((cam camera) &key (x 0) (y 0)
 				      (w (- (sensor-width cam) x))
@@ -189,7 +190,8 @@
    (unless (member format formats :test #'string=)
      (error "This camera only supports the formats ~{#x~x~}. You requested #x~x." 
 	    formats format)))
-  (gc-enumeration-set-string-value cam "PixelFormat" format))
+  (gc-enumeration-set-string-value cam "PixelFormat" format)
+  (setf (pixel-format cam) format))
 
 (defmethod %basler-temperatures ((cam camera))
   (loop for (i name) in '((0 sensor)
@@ -303,12 +305,30 @@
 		      (make-array (list (aoi-height cam)
 					(aoi-width cam))
 				  :element-type '(unsigned-byte 16))))
-	       (a1 (make-array (reduce #'* (array-dimensions a))
+	       (n (reduce #'* (array-dimensions a)))
+	       (a1 (make-array n
 			       :element-type '(unsigned-byte 16)
 			       :displaced-to a))
 	       (data (pref b #>ArvBuffer.data)))
-	  (dotimes (i (min (length a1) (floor (get-payload cam) 2)))
-	    (setf (aref a1 i) (%get-unsigned-word data (* 2 i))))
+	  (cond
+	    ((string= (pixel-format cam) "Mono12")
+	     (dotimes (i (min (length a1) (floor (get-payload cam) 2)))
+	       (setf (aref a1 i) (%get-unsigned-word data (* 2 i)))))
+	    ((string= (pixel-format cam) "Mono12Packed")
+	     (loop for byte below (min (* 100 200) (get-payload cam)) by 3
+		and short from 0 below n by 2
+		do
+		;; 3 bytes in the data stream correspond to two data
+		;; elements: AB CD EF -> ABD, EFC 
+		;; A is the most signifcant nibble
+		  (let ((ab (%get-unsigned-byte data byte))
+			(c (ldb (byte 4 0) (%get-unsigned-byte data (+ 1 byte))))
+			(d (ldb (byte 4 4) (%get-unsigned-byte data (+ 1 byte))))
+			(ef (%get-unsigned-byte data (+ 2 byte))))
+		    (setf (aref a1 short) (* 16 (+ (* 64 ab) d))
+			  (aref a1 (1+ short)) (* 16 (+ (* 64 ef) c))
+			  ))))
+	    (t (error "datatype is undefined.")))
 	  a)
 	(push-buffer cam b))))
 
@@ -330,9 +350,9 @@
       (stop-acquisition c))))
 
 (defun write-pgm (filename img)
-  (declare (simple-string filename)
+  (declare (type simple-string filename)
            ((array (unsigned-byte 16) 2) img)
-           (values null &optional))
+           #+sbcl (values null &optional))
   (destructuring-bind (h w) (array-dimensions img)
     (declare (type fixnum w h))
     (with-open-file (s filename
@@ -358,11 +378,17 @@
     (make-instance 'camera :name "Basler-21211553"))
   (defparameter *cam1*
     (make-instance 'camera)))
+#+nil
+(set-pixel-format *cam1* "Mono12Packed")
+#+nil
+(defparameter *bla* (acquire-single-image *cam1*))
+#+nil
+(write-pgm "/dev/shm/2.pgm" (acquire-single-image *cam2*))
 
 #+nil
 (progn
-  (set-pixel-format *cam1* "Mono12")
-  (set-pixel-format *cam2* "Mono12")
+  (set-pixel-format *cam1* "Mono12Packed")
+  (set-pixel-format *cam2* "Mono12Packed")
   (write-pgm "/dev/shm/1.pgm" (acquire-single-image *cam1*))
   (write-pgm "/dev/shm/2.pgm" (acquire-single-image *cam2*)))
 
