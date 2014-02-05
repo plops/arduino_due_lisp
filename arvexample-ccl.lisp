@@ -197,11 +197,12 @@
 
 
 (defmethod set-pixel-format ((cam camera) format)
-  (let ((formats (gc-enumeration-get-available-int-values cam "PixelFormat")))
-   (unless (member format formats)
+  (declare (type string format))
+  (let ((formats (gc-enumeration-get-available-string-values cam "PixelFormat")))
+   (unless (member format formats :test #'string=)
      (error "This camera only supports the formats ~{#x~x~}. You requested #x~x." 
 	    formats format)))
-  (gc-enumeration-set-int-value cam "PixelFormat" format))
+  (gc-enumeration-set-string-value cam "PixelFormat" format))
 
 (defmethod %basler-temperatures ((cam camera))
   (loop for (i name) in '((0 sensor)
@@ -376,7 +377,7 @@
 (pop-buffer-blocking *cam2*)
 
 #+nil
-(set-pixel-format *cam2* "Mono8")
+(set-pixel-format *cam2* "Mono12Packed")
 
 #+nil
 (gc-enumeration-get-string-value *cam2* "PixelFormat")
