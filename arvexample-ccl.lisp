@@ -279,6 +279,16 @@
    (gc-get-node cam "AcquisitionMode") (acquisition-mode-code cam mode)
    (cffi:null-pointer)))
 
+(defmethod set-exposure ((cam camera) time-us)
+  (#_arv_gc_float_set_value (gc-get-node cam "ExposureTimeAbs") 
+   time-us
+   (cffi:null-pointer)))
+
+(defmethod get-exposure ((cam camera))
+  (#_arv_gc_float_get_value (gc-get-node cam "ExposureTimeAbs") 
+			    (cffi:null-pointer)))
+
+
 (defmethod get-acquisition-mode ((cam camera))
   (acquisition-code-mode cam
 			 (#_arv_gc_enumeration_get_int_value 
@@ -306,16 +316,17 @@
 					(aoi-width cam))
 				  :element-type '(unsigned-byte 16))))
 	       (n (reduce #'* (array-dimensions a)))
+	       (np (get-payload cam))
 	       (a1 (make-array n
-			       :element-type '(unsigned-byte 16)
+			       :element-type (array-element-type a)
 			       :displaced-to a))
 	       (data (pref b #>ArvBuffer.data)))
 	  (cond
 	    ((string= (pixel-format cam) "Mono12")
-	     (dotimes (i (min (length a1) (floor (get-payload cam) 2)))
+	     (dotimes (i (min (length a1) (floor np 2)))
 	       (setf (aref a1 i) (%get-unsigned-word data (* 2 i)))))
 	    ((string= (pixel-format cam) "Mono12Packed")
-	     (loop for byte below (min (* 100 200) (get-payload cam)) by 3
+	     (loop for byte below (get-payload cam) by 3
 		and short from 0 below n by 2
 		do
 		;; 3 bytes in the data stream correspond to two data
@@ -325,9 +336,8 @@
 			(c (ldb (byte 4 0) (%get-unsigned-byte data (+ 1 byte))))
 			(d (ldb (byte 4 4) (%get-unsigned-byte data (+ 1 byte))))
 			(ef (%get-unsigned-byte data (+ 2 byte))))
-		    (setf (aref a1 short) (* 16 (+ (* 64 ab) d))
-			  (aref a1 (1+ short)) (* 16 (+ (* 64 ef) c))
-			  ))))
+		    (setf (aref a1 short) (+ (ash ab 4) d)
+			  (aref a1 (1+ short)) (+ (ash ef 4) c)))))
 	    (t (error "datatype is undefined.")))
 	  a)
 	(push-buffer cam b))))
@@ -379,17 +389,49 @@
   (defparameter *cam1*
     (make-instance 'camera)))
 #+nil
+(set-exposure *cam2* 0d0)
+#+nil
+(set-exposure *cam1* 0d0)
+#+nil
+(let ((w 256)
+      (h 256)
+      (cx 1078)
+      (cy 1159))
+ (set-region *cam1* :x (- cx (floor w 2))
+	     :y (- cy (floor h 2))
+	     :w w
+	     :h h))
+#+nil
+(set-region *cam1*)
+#+nil
 (set-pixel-format *cam1* "Mono12Packed")
 #+nil
 (defparameter *bla* (acquire-single-image *cam1*))
 #+nil
+(set-acquisition-mode *cam1* 'single-frame)
+#+nil
+(set-acquisition-mode *cam2* 'single-frame)
+#+nil
+(let ((a (make-array (reduce #'* (array-dimensions *bla*))
+		     :element-type (array-element-type *bla*)
+		     :displaced-to *bla*)))
+  (list
+   (reduce #'max a)
+   (reduce #'min a)))
+#+nil
 (write-pgm "/dev/shm/2.pgm" (acquire-single-image *cam2*))
 
 #+nil
+(temperatures *cam2*)
+#+nil
 (progn
-  (set-pixel-format *cam1* "Mono12Packed")
-  (set-pixel-format *cam2* "Mono12Packed")
-  (write-pgm "/dev/shm/1.pgm" (acquire-single-image *cam1*))
-  (write-pgm "/dev/shm/2.pgm" (acquire-single-image *cam2*)))
+  ;(delete-file "/dev/shm/1.pgm")
+  ;(delete-file "/dev/shm/2.pgm")
+  (loop for c in (list *cam1* *cam2*) and i from 1 do 
+       (set-exposure c 200d0)
+       (set-acquisition-mode c 'single-frame)
+       (set-pixel-format c "Mono12Packed")
+       (write-pgm (format nil "/dev/shm/~d.pgm" i)
+		  (acquire-single-image c))))
 
 

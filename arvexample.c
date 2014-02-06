@@ -296,7 +296,11 @@ main (int argc, char **argv)
 	arv_g_type_init ();
 
 	/* Instantiation of the first available camera */
-	camera = arv_camera_new (NULL);//"Basler-21211553");
+	char*cam_name=NULL;
+	if(argc==2){
+	  cam_name=argv[1];
+	}
+	camera = arv_camera_new (cam_name);//"Basler-21211553");
 
 	if (camera != NULL) {
 		void (*old_sigint_handler)(int);
