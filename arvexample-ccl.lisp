@@ -438,9 +438,34 @@
 		  (acquire-single-image c))))
 
 
+
+
+#.(load "/home/martin/src/ccl/library/serial-streams.lisp")
+
+(defvar *serial* nil)
 #+nil
-(dotimes (i 100)
- (loop for c in (list *cam1* *cam2*) and i from 1 do 
-      (write-pgm (format nil "/dev/shm/~d.pgm" i)
-		 (acquire-single-image c))))
+(defparameter *serial*
+  (ccl::make-serial-stream "/dev/ttyACM0"
+                           ;:format 'character
+                           :baud-rate 115200
+                           :parity nil
+                           :char-bits 8
+                           :stop-bits 1
+                           :flow-control nil))
+
+#+nil
+(let ((i 0))
+ (progn
+   (format *serial* "(dac ~d 2048)~%" (+ 2048 (* i 100)))
+   (force-output *serial*)
+   (sleep .1)
+   (list 
+    (read-line *serial*))))
+
+#+nil
+(loop for c in (list *cam1* *cam2*) and i from 1 do 
+     (write-pgm (format nil "/dev/shm/~d.pgm" i)
+		(acquire-single-image c)))
+
+
 
