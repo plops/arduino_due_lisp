@@ -10,16 +10,9 @@
 int main()
 {
   int fd=inotify_init();
-  
   int in=inotify_add_watch(fd,"/dev/shm",IN_CLOSE_WRITE);
-  //  int in1=inotify_add_watch(fd,"/dev/shm/1.pgm",IN_CLOSE_WRITE);
-
-  //  int in2=inotify_add_watch(fd,"/dev/shm/2.pgm",IN_CLOSE_WRITE);
-
-
   char buf[BUF_LEN];
   while (1){
-  
     int len, i = 0;
     len = read (fd, buf, BUF_LEN);
     
@@ -48,8 +41,6 @@ int main()
 	printf("\n");
       i += EVENT_SIZE + event->len;
     }
-    //    inotify_rm_watch(fd,in1);
-    //inotify_rm_watch(fd,in2);
   }
 }
 
