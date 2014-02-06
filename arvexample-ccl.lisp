@@ -450,22 +450,24 @@
                            :baud-rate 115200
                            :parity nil
                            :char-bits 8
-                           :stop-bits 1
+                           :stop-bits 1 
                            :flow-control nil))
 
 #+nil
-(let ((i 0))
- (progn
-   (format *serial* "(dac ~d 2048)~%" (+ 2048 (* i 100)))
-   (force-output *serial*)
-   (sleep .1)
-   (list 
-    (read-line *serial*))))
+(loop for i from 1000 upto 3000 by 100 do
+     (progn
+       (format *serial* "(dac ~d 2048)~%" i)
+       (force-output *serial*)
+       (sleep .1)
+       (list 
+	(read-line *serial*)))
+     (loop for c in (list *cam1* *cam2*) and j from 1 do 
+	  (let ((im (acquire-single-image c)))
+	    (write-pgm (format nil "/dev/shm/~d.pgm" j) im)
+	    (write-pgm (format nil "/dev/shm/dat/i~4,'0d_~d.pgm" i j) im))))
 
-#+nil
-(loop for c in (list *cam1* *cam2*) and i from 1 do 
-     (write-pgm (format nil "/dev/shm/~d.pgm" i)
-		(acquire-single-image c)))
+
+
 
 
 
