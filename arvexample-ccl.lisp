@@ -454,17 +454,19 @@
                            :flow-control nil))
 
 #+nil
-(loop for i from 1000 upto 3000 by 100 do
-     (progn
-       (format *serial* "(dac ~d 2048)~%" i)
-       (force-output *serial*)
-       (sleep .1)
-       (list 
-	(read-line *serial*)))
-     (loop for c in (list *cam1* *cam2*) and j from 1 do 
-	  (let ((im (acquire-single-image c)))
-	    (write-pgm (format nil "/dev/shm/~d.pgm" j) im)
-	    (write-pgm (format nil "/dev/shm/dat/i~4,'0d_~d.pgm" i j) im))))
+(loop for j from 1000 upto 3000 by 100 do
+     (loop for i from 1000 upto 3000 by 100 do
+	  (format t "~a~%" (list 'i i 'j j))
+	  (progn
+	    (format *serial* "(dac ~d ~d)~%" i j) 
+	    (force-output *serial*)
+	    (sleep .1)
+	    (list 
+	     (read-line *serial*)))
+	  (loop for c in (list *cam1* *cam2*) and k from 1 do 
+	       (let ((im (acquire-single-image c)))
+		 (write-pgm (format nil "/dev/shm/~d.pgm" k) im)
+		 (write-pgm (format nil "/dev/shm/dat/i~4,'0d_j~4,'0d_~d.pgm" i j k) im)))))
 
 
 
