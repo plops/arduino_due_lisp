@@ -336,8 +336,8 @@
 			(c (ldb (byte 4 0) (%get-unsigned-byte data (+ 1 byte))))
 			(d (ldb (byte 4 4) (%get-unsigned-byte data (+ 1 byte))))
 			(ef (%get-unsigned-byte data (+ 2 byte))))
-		    (setf (aref a1 short) (+ (ash ab 4) d)
-			  (aref a1 (1+ short)) (+ (ash ef 4) c)))))
+		    (setf (aref a1 short) (ash (+ (ash ab 4) d) 4)
+			  (aref a1 (1+ short)) (ash (+ (ash ef 4) c) 4)))))
 	    (t (error "datatype is undefined.")))
 	  a)
 	(push-buffer cam b))))
@@ -402,6 +402,9 @@
 	     :w w
 	     :h h))
 #+nil
+(set-region *cam2* :x (- 659 512) :w 512  :h 494)
+
+#+nil
 (set-region *cam1*)
 #+nil
 (set-pixel-format *cam1* "Mono12Packed")
@@ -428,10 +431,16 @@
   ;(delete-file "/dev/shm/1.pgm")
   ;(delete-file "/dev/shm/2.pgm")
   (loop for c in (list *cam1* *cam2*) and i from 1 do 
-       (set-exposure c 200d0)
+       (set-exposure c 300d0)
        (set-acquisition-mode c 'single-frame)
        (set-pixel-format c "Mono12Packed")
        (write-pgm (format nil "/dev/shm/~d.pgm" i)
 		  (acquire-single-image c))))
 
+
+#+nil
+(dotimes (i 100)
+ (loop for c in (list *cam1* *cam2*) and i from 1 do 
+      (write-pgm (format nil "/dev/shm/~d.pgm" i)
+		 (acquire-single-image c))))
 
