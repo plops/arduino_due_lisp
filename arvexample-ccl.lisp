@@ -457,8 +457,11 @@
        (write-pgm (format nil "/dev/shm/~d.pgm" i)
 		  (acquire-single-image c))))
 
+#+nil 
+(+ 14 22 16) ;; path camera 1 (bad interference)
+
 #+nil
-(+ 14 22 16)
+(+ 30 3.5 2.5 13.5 9) ;; path camera 2 (good interference)
 
 #+nil
 (dotimes (j 3000)
