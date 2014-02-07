@@ -394,10 +394,11 @@
 
 #+nil
 (progn
-  (defparameter *cam2*
-    (make-instance 'camera :name "Basler-21211553"))
-  (defparameter *cam1*
-    (make-instance 'camera))
+  (progn (defparameter *cam2*
+	   (make-instance 'camera :name "Basler-21211553"))
+	 
+	 (defparameter *cam1*
+	   (make-instance 'camera)))
   (let ((w 256)
 	(h 256)
 	(cx 1078)
@@ -460,6 +461,11 @@
 #+nil 
 (+ 14 22 16) ;; path camera 1 (bad interference)
 
+(+ 23 8 34)
+(+ 21 25 16)
+(+ 14 11 21)
+(+ 14 22 16)
+(+ 19 25 15)
 #+nil
 (+ 30 3.5 2.5 13.5 9) ;; path camera 2 (good interference)
 
