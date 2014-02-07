@@ -153,7 +153,7 @@ enum {
     // functions
     F_EQ, F_ATOM, F_CONS, F_CAR, F_CDR, F_READ, F_EVAL, F_PRINT, F_SET, F_NOT,
     F_LOAD, F_SYMBOLP, F_NUMBERP, F_ADD, F_SUB, F_MUL, F_DIV, F_LT, F_PROG1,
-    F_APPLY, F_RPLACA, F_RPLACD, F_BOUNDP, F_DAC, F_ADC, F_DELAY, F_DELAYMICROSECONDS, F_MICROS, F_ROOM, N_BUILTINS
+    F_APPLY, F_RPLACA, F_RPLACD, F_BOUNDP, F_DAC, F_DIGITALWRITE, F_PINMODE, F_ADC, F_DELAY, F_DELAYMICROSECONDS, F_MICROS, F_ROOM, N_BUILTINS
 };
 #define isspecial(v) (intval(v) <= (int)F_PROGN)
 
@@ -161,7 +161,8 @@ static char *builtin_names[] =
     { "quote", "cond", "if", "and", "or", "while", "lambda", "macro", "label",
       "progn", "eq", "atom", "cons", "car", "cdr", "read", "eval", "print",
       "set", "not", "load", "symbolp", "numberp", "+", "-", "*", "/", "<",
-      "prog1", "apply", "rplaca", "rplacd", "boundp", "dac", "adc", "delay", "delay-microseconds", "micros", "room" };
+      "prog1", "apply", "rplaca", "rplacd", "boundp", "dac", "digital-write", "pin-mode",
+      "adc", "delay", "delay-microseconds", "micros", "room" };
 
 static char *stack_bottom;
 #define PROCESS_STACK_SIZE (1024)
@@ -928,6 +929,16 @@ value_t eval_sexpr(value_t e, value_t *penv)
 	  argcount("dac", nargs, 2);
 	  writeDAC(tonumber(Stack[SP-2],"dac"),tonumber(Stack[SP-1],"dac"));
 	    v=T;
+	  break;
+	case F_DIGITALWRITE:
+	  argcount("digital-write", nargs, 2);
+	  digitalWrite(tonumber(Stack[SP-2],"digital-write"),tonumber(Stack[SP-1],"digital-write"));
+	    v=T;
+	  break;
+	case F_PINMODE:
+	  argcount("pin-mode", nargs, 2);
+	  pinMode(tonumber(Stack[SP-2],"pin-mode"),tonumber(Stack[SP-1],"pin-mode"));
+	  v=T;
 	  break;
 	case F_ADC:
 	  argcount("adc", nargs, 1);

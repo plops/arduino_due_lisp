@@ -459,18 +459,12 @@
 		  (acquire-single-image c))))
 
 #+nil 
-(+ 14 22 16) ;; path camera 1 (bad interference)
-
-(+ 23 8 34)
-(+ 21 25 16)
-(+ 14 11 21)
-(+ 14 22 16)
 (+ 19 25 15)
 #+nil
 (+ 30 3.5 2.5 13.5 9) ;; path camera 2 (good interference)
 
 #+nil
-(dotimes (j 3000)
+(dotimes (j 10)
   (sleep .2)
   (loop for c in (list *cam1* *cam2*) and i from 1 do 
        (write-pgm (format nil "/dev/shm/~d.pgm" i)
@@ -503,6 +497,27 @@
   (sleep .1)
   (list 
    (read-line *serial*)))
+#+nil
+(read-line *serial*)
+
+(defun talk-arduino (cmd)
+  (format *serial* cmd) 
+  (force-output *serial*)
+  (sleep .1)
+  (list 
+   (read-line *serial*)))
+
+#+nil
+(talk-arduino "(+ 1 2)")
+
+;; pin 8 is connected to thorlab shutter controller (shows x-gate and enabled)
+
+#+nil
+(talk-arduino "(pin-mode 8 1)") ;; set pin 8 to output
+
+#+nil
+(talk-arduino "(digital-write 8 1)") ;; set pin 8 to high
+
 
 #+nil
 (loop for j from 1000 upto 3000 by 100 do
