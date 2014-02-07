@@ -310,9 +310,9 @@
 (defmethod pop-block-copy-push-buffer ((cam camera) &key out (use-dark t))
   (let ((b (pop-buffer-blocking cam))
 	(dark1 (when (and use-dark (dark-image cam))
-		    (let ((d (dark-image cam)))
-		      (assert (equal (list (aoi-height cam) (aoi-width cam))
-				     (array-dimensions d)))
+		 (let ((d (dark-image cam)))
+		   (assert (equal (list (aoi-height cam) (aoi-width cam))
+				  (array-dimensions d)))
 		      (make-array (reduce #'* (array-dimensions d))
 				  :element-type (array-element-type d)
 				  :displaced-to d)))))
@@ -349,7 +349,7 @@
 	    (t (error "datatype is undefined.")))
 	  (when dark1 
 	    (dotimes (i n)
-	      (setf (aref a1 i) (max 0 (+ (aref a1 i)  (- (aref dark1 i)) 100)))))
+	      (setf (aref a1 i) (min 65535 (max 0 (+ (aref a1 i)  (- (aref dark1 i)) 100))))))
 	  a)
 	(push-buffer cam b))))
 
@@ -362,8 +362,13 @@
       (failures . ,(cffi:mem-ref failures :uint64))
       (underruns . ,(cffi:mem-ref underruns :uint64)))))
 
+
+#+nil
+(push-buffer *cam1*)
+#+nil
+(push-buffer *cam2*)
 (defmethod acquire-single-image ((c camera) &key (use-dark t))
-  (dotimes (i 1) (push-buffer c))
+  ;(dotimes (i 1) (push-buffer c))
   (start-acquisition c)
   (prog1
       (pop-block-copy-push-buffer c :use-dark use-dark)
@@ -399,22 +404,33 @@
 	 
 	 (defparameter *cam1*
 	   (make-instance 'camera)))
-  (let ((w 256)
-	(h 256)
-	(cx 1078)
-	(cy 1159))
-    (set-region *cam1* :x (- cx (floor w 2))
-		:y (- cy (floor h 2))
-		:w w
-		:h h))
+  (set-region-centered *cam1* :cx 1024 :cy 1024 :w 512 :h 512)
   
   (set-region *cam2* :x (- 659 512) :w 512  :h 494)
   (loop for c in (list *cam1* *cam2*) and i from 1 do 
-       (set-exposure c 300d0)
+       (set-exposure c 10000d0)
        (set-acquisition-mode c 'single-frame)
        (set-pixel-format c "Mono12Packed")
+       (push-buffer c)
        (write-pgm (format nil "/dev/shm/~d.pgm" i)
 		  (acquire-single-image c :use-dark nil))))
+
+#+nil
+(loop for c in (list *cam1* *cam2*) and i from 1 do 
+       (set-exposure c 4000d0)
+       (set-acquisition-mode c 'single-frame)
+       (set-pixel-format c "Mono12Packed")
+       (push-buffer c)
+       (write-pgm (format nil "/dev/shm/~d.pgm" i)
+		  (acquire-single-image c :use-dark t)))
+
+(defmethod set-region-centered ((c camera) &key cx cy w h)
+  (set-region c :x (- cx (floor w 2))
+	      :y (- cy (floor h 2))
+	      :w w
+	      :h h))
+#+nil
+
 #+nil
 (set-exposure *cam2* 0d0)
 #+nil
@@ -459,6 +475,8 @@
        (write-pgm (format nil "/dev/shm/~d.pgm" i)
 		  (acquire-single-image c))))
 
+#+nil
+(set-exposure *cam2* 900d0)
 #+nil 
 (+ 19 25 15)
 #+nil
@@ -469,8 +487,11 @@
   (sleep .2)
   (loop for c in (list *cam1* *cam2*) and i from 1 do 
        (write-pgm (format nil "/dev/shm/~d.pgm" i)
-		  (acquire-single-image c))))
+		  (if t
+		      (average-images c :number 50 :use-dark t)
+		      (acquire-single-image c :use-dark t)))))
 
+(+ 21 24 11)
 
 #+nil
 (gc-enumeration-get-int-value *cam1* "Correction_Mode")
@@ -480,7 +501,7 @@
 #.(load "/home/martin/src/ccl/library/serial-streams.lisp")
 
 (defvar *serial* nil)
-#+nil
+
 (defparameter *serial*
   (ccl::make-serial-stream "/dev/ttyACM0"
                            ;:format 'character
@@ -518,12 +539,14 @@
 (talk-arduino "(digital-write 8 1)") ;; set pin 8 to high
 
 #+nil
-(talk-arduino "(dac 1100 1560)")
+(talk-arduino "(dac 1420 1860)")
+#+nil
+(talk-arduino "(dac 1300 1760)")
 
 #+nil
 (let ((res nil))
- (loop for j from 1500 below 1600 by 10 do
-      (loop for i from 1000 below 1200 by 10 do
+ (loop for j from 100 below 3000 by 100 do
+      (loop for i from 100 below 3000 by 100 do
 	   (talk-arduino (format nil "(dac ~d ~d)" i j))
 	   (let* ((a (acquire-single-image *cam1*))
 		  (a1 (make-array (reduce #'* (array-dimensions a))
@@ -545,26 +568,29 @@
 	      :element-type (array-element-type a)
 	      :displaced-to a))
 
-(defmethod average-images ((c camera) &key (number 100))
+(defmethod average-images ((c camera) &key (number 100) (use-dark t))
   (let* ((a (acquire-single-image c))
 	 (a1 (.linear a))
 	 (accum (make-array (array-dimensions a)
 			    :element-type '(unsigned-byte 32)
 			    :initial-element 0))
 	 (accum1 (.linear accum)))
-    (push-buffer c)
-    
+    ;(push-buffer c)
+    (format t "averaging ")
     (dotimes (i number)
+      (format t ".")
       (progn 
 	(progn (start-acquisition c)
 	       (prog1 ;; acquire raw images
-		   (pop-block-copy-push-buffer c :use-dark nil :out a)
+		   (pop-block-copy-push-buffer c :use-dark use-dark :out a)
 		 (stop-acquisition c)))
 	(dotimes (i (length a1))
 	 (incf (aref accum1 i) (ash (aref a1 i) -4)))))
     (dotimes (i (length accum1))
-      (setf (aref a1 i) (ash (floor (aref accum1 i) number) 4)))
+      (setf (aref a1 i) (floor (* 16 (aref accum1 i)) number)))
+    (terpri)
     a))
+
 
 #+nil
 (defparameter *bla*
@@ -575,15 +601,19 @@
 (progn
   (talk-arduino "(pin-mode 8 1)")
   (talk-arduino "(digital-write 8 0)")
-  (setf (dark-image *cam1*) (average-images *cam1*))
-  (setf (dark-image *cam2*) (average-images *cam2* :number 10))
+  (setf (dark-image *cam1*) (average-images *cam1* :number 100 :use-dark nil))
+  (setf (dark-image *cam2*) (average-images *cam2* :number 100 :use-dark nil))
   (sleep .2)
   (talk-arduino "(digital-write 8 1)"))
 
+#+nil
+(loop for i from 0 below 300 by 3 do
+     (format t "~a~%" i)
+     (talk-arduino (format nil "(dac ~d 2048)" (floor (+ 2000 (* 1000 (sin (* 2 pi (/ i 100)))))))))
 
 #+nil
-(loop for j from 1000 upto 3000 by 100 do
-     (loop for i from 1000 upto 3000 by 100 do
+(loop for j from 1000 upto 3000 by 10 do
+     (loop for i from 1000 upto 3000 by 10 do
 	  (format t "~a~%" (list 'i i 'j j))
 	  (progn
 	    (format *serial* "(dac ~d ~d)~%" i j) 
@@ -594,7 +624,7 @@
 	  (loop for c in (list *cam1* *cam2*) and k from 1 do 
 	       (let ((im (acquire-single-image c)))
 		 (write-pgm (format nil "/dev/shm/~d.pgm" k) im)
-		 (write-pgm (format nil "/dev/shm/dat/i~4,'0d_j~4,'0d_~d.pgm" i j k) im)))))
+		 (write-pgm (format nil "/home/martin/dat/i~4,'0d_j~4,'0d_~d.pgm" i j k) im)))))
 
 
 
