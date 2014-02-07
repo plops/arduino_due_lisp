@@ -518,12 +518,12 @@
 (talk-arduino "(digital-write 8 1)") ;; set pin 8 to high
 
 #+nil
-(talk-arduino "(dac 2000 2000)")
+(talk-arduino "(dac 1100 1560)")
 
 #+nil
 (let ((res nil))
- (loop for j from 1400 below 1700 by 20 do
-      (loop for i from 1100 below 1300 by 20 do
+ (loop for j from 1500 below 1600 by 10 do
+      (loop for i from 1000 below 1200 by 10 do
 	   (talk-arduino (format nil "(dac ~d ~d)" i j))
 	   (let* ((a (acquire-single-image *cam1*))
 		  (a1 (make-array (reduce #'* (array-dimensions a))
@@ -539,6 +539,30 @@
 
 #+nil
 (defparameter *scan1* *scan*)
+
+(defun .linear (a)
+  (make-array (array-dimensions a)
+	      :element-type (array-element-type a)
+	      :displaced-to a))
+
+#+nil
+(let* ((c *cam1*)
+       (a (acquire-single-image *cam2*))
+       (a1 (.linear a))
+       (accum (make-array (array-dimensions a)
+			  :element-type '(unsigned-byte 32)
+			  :initial-element 0))
+       (accum1 (.linear accum)))
+  (push-buffer c)
+  (progn 
+    (progn (start-acquisition c)
+	   (prog1
+	       (pop-block-copy-push-buffer c :use-dark use-dark)
+	     (stop-acquisition c)))
+    (dotimes (i (length a1))
+      (incf (aref accum1 i) (ash (aref a1 i) -4))))
+  )
+
 
 #+nil
 (progn
