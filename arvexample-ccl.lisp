@@ -452,9 +452,10 @@
   ;(delete-file "/dev/shm/1.pgm")
   ;(delete-file "/dev/shm/2.pgm")
   (loop for c in (list *cam1* *cam2*) and i from 1 do 
-       (set-exposure c 300d0)
+       (set-exposure c 3000d0)
        (set-acquisition-mode c 'single-frame)
        (set-pixel-format c "Mono12Packed")
+       (talk-arduino "(dac 1000 2000)")
        (write-pgm (format nil "/dev/shm/~d.pgm" i)
 		  (acquire-single-image c))))
 
@@ -464,14 +465,12 @@
 (+ 30 3.5 2.5 13.5 9) ;; path camera 2 (good interference)
 
 #+nil
-(dotimes (j 10)
+(dotimes (j 1)
   (sleep .2)
   (loop for c in (list *cam1* *cam2*) and i from 1 do 
        (write-pgm (format nil "/dev/shm/~d.pgm" i)
 		  (acquire-single-image c))))
 
-#+nil
-(setf (dark-image *cam1*) (acquire-single-image *cam1*))
 
 #+nil
 (gc-enumeration-get-int-value *cam1* "Correction_Mode")
@@ -517,6 +516,38 @@
 
 #+nil
 (talk-arduino "(digital-write 8 1)") ;; set pin 8 to high
+
+#+nil
+(talk-arduino "(dac 2000 2000)")
+
+#+nil
+(let ((res nil))
+ (loop for j from 1400 below 1700 by 20 do
+      (loop for i from 1100 below 1300 by 20 do
+	   (talk-arduino (format nil "(dac ~d ~d)" i j))
+	   (let* ((a (acquire-single-image *cam1*))
+		  (a1 (make-array (reduce #'* (array-dimensions a))
+				  :element-type (array-element-type a)
+				  :displaced-to a))
+		  (val (reduce #'+ a1)))
+	     (push (list i j val) res)
+	     (format t "~a~%" (list i j val)))))
+ (defparameter *scan* (reverse res)))
+
+#+nil
+(sort (copy-list *scan*) #'< :key #'third)
+
+#+nil
+(defparameter *scan1* *scan*)
+
+#+nil
+(progn
+  (talk-arduino "(pin-mode 8 1)")
+  (talk-arduino "(digital-write 8 0)")
+  (setf (dark-image *cam1*) (acquire-single-image *cam1*))
+  (setf (dark-image *cam2*) (acquire-single-image *cam2*))
+  (sleep .2)
+  (talk-arduino "(digital-write 8 1)"))
 
 
 #+nil
