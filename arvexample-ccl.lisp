@@ -61,7 +61,8 @@
    (aoi-y :accessor aoi-y :initform 0 :type fixnum)
    (aoi-width :accessor aoi-width :type fixnum)
    (aoi-height :accessor aoi-height :type fixnum)
-   (pixel-format :accessor pixel-format :type string :initform "none")))
+   (pixel-format :accessor pixel-format :type string :initform "none")
+   (dark-image :accessor dark-image :initform nil)))
 
 (defmethod set-region ((cam camera) &key (x 0) (y 0)
 				      (w (- (sensor-width cam) x))
@@ -306,8 +307,15 @@
 (defmethod pop-buffer-blocking ((cam camera))
   (#_arv_stream_pop_buffer (arv-stream cam)))
 
-(defmethod pop-block-copy-push-buffer ((cam camera) &optional out)
-  (let ((b (pop-buffer-blocking cam)))
+(defmethod pop-block-copy-push-buffer ((cam camera) &key out (use-dark t))
+  (let ((b (pop-buffer-blocking cam))
+	(dark1 (when (and use-dark (dark-image cam))
+		    (let ((d (dark-image cam)))
+		      (assert (equal (list (aoi-height cam) (aoi-width cam))
+				     (array-dimensions d)))
+		      (make-array (reduce #'* (array-dimensions d))
+				  :element-type (array-element-type d)
+				  :displaced-to d)))))
     (when (cffi:null-pointer-p b)
       (error "pop-buffer returned NULL."))
     (prog1
@@ -339,6 +347,9 @@
 		    (setf (aref a1 short) (ash (+ (ash ab 4) d) 4)
 			  (aref a1 (1+ short)) (ash (+ (ash ef 4) c) 4)))))
 	    (t (error "datatype is undefined.")))
+	  (when dark1 
+	    (dotimes (i n)
+	      (setf (aref a1 i) (max 0 (+ (aref a1 i)  (- (aref dark1 i)) 100)))))
 	  a)
 	(push-buffer cam b))))
 
@@ -351,13 +362,12 @@
       (failures . ,(cffi:mem-ref failures :uint64))
       (underruns . ,(cffi:mem-ref underruns :uint64)))))
 
-(defmethod acquire-single-image ((c camera))
-  (let* ((n (get-payload c)))
-    (dotimes (i 1) (push-buffer c))
-    (start-acquisition c)
-    (prog1
-	(pop-block-copy-push-buffer c)
-      (stop-acquisition c))))
+(defmethod acquire-single-image ((c camera) &key (use-dark t))
+  (dotimes (i 1) (push-buffer c))
+  (start-acquisition c)
+  (prog1
+      (pop-block-copy-push-buffer c :use-dark use-dark)
+    (stop-acquisition c)))
 
 (defun write-pgm (filename img)
   (declare (type simple-string filename)
@@ -387,22 +397,32 @@
   (defparameter *cam2*
     (make-instance 'camera :name "Basler-21211553"))
   (defparameter *cam1*
-    (make-instance 'camera)))
+    (make-instance 'camera))
+  (let ((w 256)
+	(h 256)
+	(cx 1078)
+	(cy 1159))
+    (set-region *cam1* :x (- cx (floor w 2))
+		:y (- cy (floor h 2))
+		:w w
+		:h h))
+  
+  (set-region *cam2* :x (- 659 512) :w 512  :h 494)
+  (loop for c in (list *cam1* *cam2*) and i from 1 do 
+       (set-exposure c 300d0)
+       (set-acquisition-mode c 'single-frame)
+       (set-pixel-format c "Mono12Packed")
+       (write-pgm (format nil "/dev/shm/~d.pgm" i)
+		  (acquire-single-image c :use-dark nil))))
 #+nil
 (set-exposure *cam2* 0d0)
 #+nil
 (set-exposure *cam1* 0d0)
+
 #+nil
-(let ((w 256)
-      (h 256)
-      (cx 1078)
-      (cy 1159))
- (set-region *cam1* :x (- cx (floor w 2))
-	     :y (- cy (floor h 2))
-	     :w w
-	     :h h))
-#+nil
-(set-region *cam2* :x (- 659 512) :w 512  :h 494)
+(progn
+  (setf (slot-value *cam1* 'dark-image) (acquire-single-image *cam1* :use-dark nil))
+ nil)
 
 #+nil
 (set-region *cam1*)
@@ -425,7 +445,7 @@
 (write-pgm "/dev/shm/2.pgm" (acquire-single-image *cam2*))
 
 #+nil
-(temperatures *cam2*)
+(temperatures *cam1*)
 #+nil
 (progn
   ;(delete-file "/dev/shm/1.pgm")
@@ -437,8 +457,23 @@
        (write-pgm (format nil "/dev/shm/~d.pgm" i)
 		  (acquire-single-image c))))
 
+#+nil
+(+ 14 22 16)
 
+#+nil
+(dotimes (j 3000)
+  (sleep .2)
+  (loop for c in (list *cam1* *cam2*) and i from 1 do 
+       (write-pgm (format nil "/dev/shm/~d.pgm" i)
+		  (acquire-single-image c))))
 
+#+nil
+(setf (dark-image *cam1*) (acquire-single-image *cam1*))
+
+#+nil
+(gc-enumeration-get-int-value *cam1* "Correction_Mode")
+#+nil
+(gc-enumeration-set-int-value *cam1* "Correction_Mode" 0)
 
 #.(load "/home/martin/src/ccl/library/serial-streams.lisp")
 
@@ -452,6 +487,13 @@
                            :char-bits 8
                            :stop-bits 1 
                            :flow-control nil))
+#+nil
+(progn
+  (format *serial* "(dac ~d ~d)~%" 2048 2048) 
+  (force-output *serial*)
+  (sleep .1)
+  (list 
+   (read-line *serial*)))
 
 #+nil
 (loop for j from 1000 upto 3000 by 100 do
