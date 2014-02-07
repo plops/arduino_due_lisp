@@ -541,35 +541,42 @@
 (defparameter *scan1* *scan*)
 
 (defun .linear (a)
-  (make-array (array-dimensions a)
+  (make-array (reduce #'* (array-dimensions a))
 	      :element-type (array-element-type a)
 	      :displaced-to a))
 
+(defmethod average-images ((c camera) &key (number 100))
+  (let* ((a (acquire-single-image c))
+	 (a1 (.linear a))
+	 (accum (make-array (array-dimensions a)
+			    :element-type '(unsigned-byte 32)
+			    :initial-element 0))
+	 (accum1 (.linear accum)))
+    (push-buffer c)
+    
+    (dotimes (i number)
+      (progn 
+	(progn (start-acquisition c)
+	       (prog1 ;; acquire raw images
+		   (pop-block-copy-push-buffer c :use-dark nil :out a)
+		 (stop-acquisition c)))
+	(dotimes (i (length a1))
+	 (incf (aref accum1 i) (ash (aref a1 i) -4)))))
+    (dotimes (i (length accum1))
+      (setf (aref a1 i) (ash (floor (aref accum1 i) number) 4)))
+    a))
+
 #+nil
-(let* ((c *cam1*)
-       (a (acquire-single-image *cam2*))
-       (a1 (.linear a))
-       (accum (make-array (array-dimensions a)
-			  :element-type '(unsigned-byte 32)
-			  :initial-element 0))
-       (accum1 (.linear accum)))
-  (push-buffer c)
-  (progn 
-    (progn (start-acquisition c)
-	   (prog1
-	       (pop-block-copy-push-buffer c :use-dark use-dark)
-	     (stop-acquisition c)))
-    (dotimes (i (length a1))
-      (incf (aref accum1 i) (ash (aref a1 i) -4))))
-  )
+(defparameter *bla*
+ (average-images *cam1*))
 
 
 #+nil
 (progn
   (talk-arduino "(pin-mode 8 1)")
   (talk-arduino "(digital-write 8 0)")
-  (setf (dark-image *cam1*) (acquire-single-image *cam1*))
-  (setf (dark-image *cam2*) (acquire-single-image *cam2*))
+  (setf (dark-image *cam1*) (average-images *cam1*))
+  (setf (dark-image *cam2*) (average-images *cam2* :number 10))
   (sleep .2)
   (talk-arduino "(digital-write 8 1)"))
 
