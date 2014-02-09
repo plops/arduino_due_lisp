@@ -54,19 +54,9 @@ void writeDAC(unsigned short b, unsigned short a)
 }  break;~%"
 	  enum-name
 	  name (length args)
-	  name args))
-
-
-(defmacro gen-c-chunks (name arglist &key init global fun)
-  (let ((enum-name (string-upcase (concatenate 'string "F_" name))))
-    `(progn
-       (emit-global ,global)
-       (emit-enum ,enum-name)
-       (emit-c-fun ,(concatenate 'string name "_init")
-		   '() ,init)
-       (emit-c-fun ,(concatenate 'string name "_fun")
-		   ',arglist ,fun)
-       (emit-case ,name ,enum-name ',arglist))))
+	  name (loop for i from (- (length args)) upto -1 collect
+		    (format nil "tonumber(Stack[SP~a],\"~a\")"
+			    i name))))
 
 (gen-c-chunks "dac" ("unsigned short b" "unsigned short a")
 	      :global "const int dac_chip_select_pin = 16;"
@@ -87,6 +77,19 @@ void writeDAC(unsigned short b, unsigned short a)
   SPI.transfer(z); 
   digitalWrite(dac_chip_select_pin, HIGH);
   return T;")
+
+(defmacro gen-c-chunks (name arglist &key init global fun)
+  (let ((enum-name (string-upcase (concatenate 'string "F_" name))))
+    `(progn
+       (emit-global ,global)
+       (emit-enum ,enum-name)
+       (emit-c-fun ,(concatenate 'string name "_init")
+		   '() ,init)
+       (emit-c-fun ,(concatenate 'string name "_fun")
+		   ',arglist ,fun)
+       (emit-case ,name ,enum-name ',arglist))))
+
+
 
 +FUNCTIONS_ENUM+
 F_DAC, F_DIGITALWRITE, F_PINMODE, F_ADC, F_DELAY, F_DELAYMICROSECONDS, F_MICROS, F_ROOM

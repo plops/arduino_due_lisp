@@ -34,7 +34,8 @@ void setup_max532()
 {
   // start the SPI library:
   SPI.begin();
-  SPI.setBitOrder(MSBFIRST);
+  SPI.setBitOrder(MSBFIRST
+		  );
   SPI.setDataMode(SPI_MODE2);
  //SPI.setClockDivider(); //default clock of 4MHz should work
   
