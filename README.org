@@ -1,0 +1,110 @@
+Der Arduino Due besitzt eine Taktfrequenz von 84MHz, 96kB RAM und
+512kB Flash Speicher.  Damit kann er deutlich groessere Programme
+ausfuehren als der Arduino Uno. Leider dauert das Hochladen von
+Programmen auch deutlich laenger (ich habe 16s fuer 50kB gemessen).
+
+Das ist inkompatibel mit der iterativen Methode mit der ich oft
+Programme schreibe.  Deshalb, und weil mich Lisp sowieso interessiert,
+habe ich ein kleines Lisp auf den Arduino Due portiert.
+
+Ich habe mich fuer femtolisp/tiny/lisp.c entschieden, weil nur wenige
+Aenderungen erforderlich waren.  Ich musste nur die Funktionen fuer
+Ein und Ausgabe auf den seriellen Port anpassen und die Groessen fuer
+Heap und Stack anpassen.
+
+Dieses Lisp implementiert (wie viele andere) nur wenige built-in
+Primitiven wie cons, macro und set in C.  Der Rest der Sprache wird
+zur Laufzeit mit Hilfe dieser Primitiven definiert.
+
+Um auf diverse Funktionen des Arduino zugreifen zu koennen (Ein- und
+Ausgabe, Zeitmessung) habe zusaetzlich Primitiven hinzugefuegt.
+
+(room) .. Gibt die Belegung von Stack und Heap aus
+(delay) .. 
+(delay-microseconds n)  .. wartet n Microsekunden
+(dac a b) .. a,b in [0..2047] gibt eine Analogspannung mit einem MAX532 DAC aus
+(adc chan) .. chan in [0..12] liest den Arduino-internen ADC Kanal chan aus, Rueckgabewert 32-bit Zahl (von der nur 12 bit genutzt werden)
+
+Ich nutze meinen Arduino, um einen Spiegel zur Ablenkung eines Lasers
+in zwei Richtungen anzusteuern.  Der Arduino schreibt Zielkorrdinaten
+auf die zwei Kanaele des MAX532 DAC's, der Spiegel stellt sich
+entsprechend ein.  Die Geschwindigkeit der Einstellung kann ich an
+Hand der Monitorausgaenge des Spiegels ueberpruefen, die ich mit den
+ADC Kanaelen 0 und 1 des Arduino digitalisiere.
+
+Diese wenigen Befehle reichten fuer mich bereits aus, um das System zu
+charakterisieren.
+
+
+(progn
+  (set 'list (lambda args args))
+  (set 'x (lambda () (progn (delay-microseconds 100) (list (micros) (adc 0)))))
+  (dac 0 1000)
+  (delay 100)
+  (set 'start (list (micros) (adc 0)))
+  (dac 0 ,(+ 1110 (* 10 i)))
+  (list start ,@(loop for i below 230 collect '(x))))
+
+
+
+
+- list of things that i have to make available for experiments with arducam
+  - i will try to find the minimum amount of new functions that will
+    make working with the camera from lisp possible
+- UTFT myGLCD(slaveSelectPin);
+  - this library already defines a font!
+  - portOutputRegister(digitalPinToPort(CS));
+  - digitalPinToBitMask(CS);
+  - sbi cbi
+  - it's a lot of code to control it, also a bunch of register settings
+    i can't understand without the datasheet
+    - i don't care enough about the display to include this
+    - therefore, for now i don't look at this stuff in detail:
+    - myGLCD.InitLCD();
+    - myGLCD.resetXY();
+
+- Wire1.begin(); 
+  - this contains a lot of low level stuff, interrupts and (ARM)
+    device dependent register settings. i will try to initialize the
+    port for communication and introduce bindings for the necessary
+    function calls
+- SPI.begin(); 
+- ArduCAM myCAM(OV2640,slaveSelectPin);
+- myCAM.write_reg(ARDUCHIP_MODE, 0x00);
+  - bus_write(addr | 0x80, data);
+    - cbi(P_CS, B_CS); // take the SS pin low to select the chip:
+    - SPI.transfer(address); //  send in the address and value via SPI:
+    - sbi(P_CS, B_CS); // take the SS pin high to de-select the chip:
+
+
+- myCAM.set_format(BMP); 
+  - no calls
+
+- myCAM.InitCAM();
+  - wrSensorRegs8_8(OV2640_QVGA);			
+    - Wire.beginTransmission(sensor_addr >> 1);
+    - Wire.write(regID & 0x00FF); 	
+    - Wire.endTransmission()	
+- temp = myCAM.read_reg(ARDUCHIP_TRIG);
+  - bus_read(addr & 0x7F);
+    - the same functions as bus_write
+
+- for transfering data to arduino
+- myCAM.flush_fifo();	
+  - just a write_reg
+- myCAM.start_capture();
+  - write_reg
+- // pgm_read_byte(&bmp_header[i]); this is not important just the bmp header
+- VH = myCAM.read_fifo();
+  - bus_read
+- myCAM.clear_fifo_flag();
+  - write_reg
+
+
+- conclusion: 
+  - i guess i will have to use compile time switches now, in order to
+    select which component is connected to the arduino
+  - here is a list of lisp functions i am going to implement
+  - Wire1: wire-begin wire-write wire-begin-transmission wire-end-transmission
+  - SPI: spi-begin spi-transfer
+  - cbi sbi
