@@ -30,6 +30,42 @@ void writeDAC(unsigned short b, unsigned short a)
   digitalWrite(chipSelectPin, HIGH);
 }
 
+case F_DAC:
+	  argcount("dac", nargs, 2);
+	  writeDAC(tonumber(Stack[SP-2],"dac"),tonumber(Stack[SP-1],"dac"));
+	    v=T;
+	  break;
+
+(defun emit-c-fun (name args fun return)
+  (format t "~a ~a (~{~a,~}) ~%{~a~%}~%"
+	  (or return "void") name args fun))
+
+(defmacro gen-c-chunks (name arglist &key return init global fun)
+  `(progn
+     (emit-c-fun ,(concatenate 'string name "_init")
+		 '() ,init nil)
+     (emit-c-fun ,(concatenate 'string name "_fun")
+		 ',arglist ,fun ,return)))
+
+(gen-c-chunks "dac" ("unsigned short b" "unsigned short a")
+	      :return nil
+	      :global "const int dac_chip_select_pin = 16;"
+	      :init "
+  SPI.begin();
+  SPI.setBitOrder(MSBFIRST);
+  SPI.setDataMode(SPI_MODE2);
+  pinMode(chipSelectPin, OUTPUT);
+  analogReadResolution(12);"
+	      :fun "
+  digitalWrite(dac_chip_select_pin, LOW);
+  byte x,y,z;
+  x = (0xff0 & a) >> 4;
+  y = ((0xf & a) << 4) + ((0xf00 & b) >> 8);
+  z = 0xff & b;
+  SPI.transfer(x); 
+  SPI.transfer(y); 
+  SPI.transfer(z); 
+  digitalWrite(dac_chip_select_pin, HIGH);")
 
 +FUNCTIONS_ENUM+
 F_DAC, F_DIGITALWRITE, F_PINMODE, F_ADC, F_DELAY, F_DELAYMICROSECONDS, F_MICROS, F_ROOM
