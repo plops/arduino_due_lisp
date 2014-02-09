@@ -48,6 +48,29 @@
         (write-sequence data-1d s)))
     nil))
 
+(defun write-pgm-3d (filename vol)
+  (declare (type simple-string filename)
+           (type (array (signed-byte 16) 3) vol)
+           #+sbcl (values null &optional))
+  (destructuring-bind (h w z) (array-dimensions vol)
+    (declare (type fixnum w h z))
+    (with-open-file (s filename
+                       :direction :output
+                       :if-exists :supersede
+                       :if-does-not-exist :create)
+      (declare (stream s))
+      (format s "P5~%~D ~D ~D~%65535~%" w h z))
+    (with-open-file (s filename 
+                       :element-type '(signed-byte 16)
+                       :direction :output
+                       :if-exists :append)
+      (let ((data-1d (make-array 
+                      (reduce #'* (array-dimensions vol))
+                      :element-type '(signed-byte 16)
+                      :displaced-to vol)))
+        (write-sequence data-1d s)))
+    nil))
+
 #+nil
 (defparameter *dat* (loop for f in (directory "/dev/shm/dat/*_2.pgm")
 		       collect (read-pgm f)))
@@ -74,20 +97,39 @@
 (declaim (optimize (speed 3) (safety 3) (debug 3)))
 
 (defun .3d (a-list)
-  (let ((b (make-array (append (array-dimensions (first a-list))
-			       (list (length a-list)))
-		       :element-type (array-element-type (first a-list)))))
-    (declare (type (simple-array (unsigned-byte 16) 3) b))
-    (destructuring-bind (h w z) (array-dimensions b)
-      (declare (fixnum h w z))
-      (dotimes (k z)
-	(format t "slice: ~a~%" (list k z))
-	(let ((slice (elt a-list k)))
-	  ;(declare (type (simple-array (unsigned-byte 16) 2) slice))
-	  (dotimes (j h)
-	    (dotimes (i w)
-	      (setf (aref b j i z) (aref (elt a-list k) j i)))))))
-    b))
+  (destructuring-bind (h w) (array-dimensions (first a-list))
+    (let* ((z (length a-list))
+	   (b (make-array (list h w z)
+			   :element-type (array-element-type (first a-list)))))
+     (declare (type (simple-array (unsigned-byte 16) 3) b))
+     (dotimes (k z)
+       (let ((slice (elt a-list k)))
+	 (declare (type (simple-array (unsigned-byte 16) 2) slice))
+	 (dotimes (j h)
+	   (dotimes (i w)
+	     (setf (aref b j i k) (aref slice j i))))))
+     b)))
 
 #+nil
 (defparameter *dat3* (.3d *dat*))
+
+
+(defun dz (a)
+  (destructuring-bind (h w z) (array-dimensions a)
+   (let ((b (make-array (array-dimensions a)
+			:element-type '(signed-byte 16))))
+     (dotimes (j h)
+       (dotimes (i w)
+	 (setf (aref b j i 0) (ash (aref a j i 0) -4))))
+     (loop for k from 1 below z do
+	  (dotimes (j h)
+	    (dotimes (i w)
+	      (setf (aref b j i k) (- (ash (aref a j i (- k 1)) -4)
+				      (ash (aref a j i k) -4))))))
+     b)))
+
+
+#+nil
+(write-pgm-3d "/dev/shm/o3.pgm" (dz *dat3*))
+
+;; 213M o3.pgm, 95M o3.pgm.gz, 76M o3.pgm.xz
