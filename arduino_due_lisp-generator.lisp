@@ -48,15 +48,36 @@ void writeDAC(unsigned short b, unsigned short a)
 (defun emit-enum (name)
   (format t "~a~%" name))
 
-(defun emit-case (name enum-name args)
-  (format t "case ~a: {~%  argcount(~a,nargs,~a); 
+(defun emit-case (lisp-name name enum-name args)
+  (format t "case ~a: {~%  argcount(~s,nargs,~a); 
   v= ~a(~{~a,~});
 }  break;~%"
 	  enum-name
-	  name (length args)
+	  lisp-name (length args)
 	  name (loop for i from (- (length args)) upto -1 collect
-		    (format nil "tonumber(Stack[SP~a],\"~a\")"
-			    i name))))
+		    (format nil "tonumber(Stack[SP~a],~s)"
+			    i lisp-name))))
+
+(defun parse-name-or-list (name-or-list)
+  (cond ((consp name-or-list) (values (first name-or-list)
+				      (second name-or-list)))
+	(t (values name-or-list
+		   name-or-list))))
+
+(defmacro gen-c-chunks (name-or-list arglist &key init global fun)
+  (multiple-value-bind (lisp-name name) (parse-name-or-list name-or-list)
+    (let ((enum-name (string-upcase (concatenate 'string "F_" name))))
+      `(progn
+	 (when ,global (emit-global ,global))
+	 (when ,enum-name (emit-enum ,enum-name))
+	 (when ,init
+	   (emit-c-fun ,(concatenate 'string name "_init")
+		       '() ,init))
+	 (when ,fun
+	   (emit-c-fun ,(concatenate 'string name "_fun")
+		       ',arglist ,fun))
+	 (emit-case ,lisp-name ,name ,enum-name ',arglist)))))
+
 
 (gen-c-chunks "dac" ("unsigned short b" "unsigned short a")
 	      :global "const int dac_chip_select_pin = 16;"
@@ -78,18 +99,10 @@ void writeDAC(unsigned short b, unsigned short a)
   digitalWrite(dac_chip_select_pin, HIGH);
   return T;")
 
-(defmacro gen-c-chunks (name arglist &key init global fun)
-  (let ((enum-name (string-upcase (concatenate 'string "F_" name))))
-    `(progn
-       (emit-global ,global)
-       (emit-enum ,enum-name)
-       (emit-c-fun ,(concatenate 'string name "_init")
-		   '() ,init)
-       (emit-c-fun ,(concatenate 'string name "_fun")
-		   ',arglist ,fun)
-       (emit-case ,name ,enum-name ',arglist))))
-
-
+(gen-c-chunks ("pin-mode" "pinMode") ("unint8_t pin" "uint8_t mode")
+	      :fun "
+  pinMode(pin,mode);
+  return T;")
 
 +FUNCTIONS_ENUM+
 F_DAC, F_DIGITALWRITE, F_PINMODE, F_ADC, F_DELAY, F_DELAYMICROSECONDS, F_MICROS, F_ROOM
