@@ -50,7 +50,7 @@
 
 (defun write-pgm-3d (filename vol)
   (declare (type simple-string filename)
-           (type (array (signed-byte 16) 3) vol)
+           (type (array (signed-byte 12) 3) vol)
            #+sbcl (values null &optional))
   (destructuring-bind (h w z) (array-dimensions vol)
     (declare (type fixnum w h z))
@@ -61,18 +61,18 @@
       (declare (stream s))
       (format s "P5~%~D ~D ~D~%65535~%" w h z))
     (with-open-file (s filename 
-                       :element-type '(signed-byte 16)
+                       :element-type '(signed-byte 12)
                        :direction :output
                        :if-exists :append)
       (let ((data-1d (make-array 
                       (reduce #'* (array-dimensions vol))
-                      :element-type '(signed-byte 16)
+                      :element-type '(signed-byte 12)
                       :displaced-to vol)))
         (write-sequence data-1d s)))
     nil))
 
 #+nil
-(defparameter *dat* (loop for f in (directory "/dev/shm/dat/*_2.pgm")
+(defparameter *dat* (loop for f in (directory "/dev/shm/dat/2/*_2.pgm")
 		       collect (read-pgm f)))
 
 (defun .linear (a)
@@ -117,7 +117,7 @@
 (defun dz (a)
   (destructuring-bind (h w z) (array-dimensions a)
    (let ((b (make-array (array-dimensions a)
-			:element-type '(signed-byte 16))))
+			:element-type '(signed-byte 12))))
      (dotimes (j h)
        (dotimes (i w)
 	 (setf (aref b j i 0) (ash (aref a j i 0) -4))))
@@ -128,8 +128,10 @@
 				      (ash (aref a j i k) -4))))))
      b)))
 
+#+nil
+(defparameter *datz* (dz *dat3*))
 
 #+nil
-(write-pgm-3d "/dev/shm/o3.pgm" (dz *dat3*))
+(write-pgm-3d "/dev/shm/o3.pgm" *datz*)
 
 ;; 213M o3.pgm, 95M o3.pgm.gz, 76M o3.pgm.xz

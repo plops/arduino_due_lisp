@@ -106,5 +106,47 @@ charakterisieren.
     select which component is connected to the arduino
   - here is a list of lisp functions i am going to implement
   - Wire1: wire-begin wire-write wire-begin-transmission wire-end-transmission
+#+BEGIN_EXAMPLE
+        void begin();
+        void begin(uint8_t);
+        void begin(int);
+        void beginTransmission(uint8_t);
+        void beginTransmission(int);
+        uint8_t endTransmission(void);
+    uint8_t endTransmission(uint8_t);
+        uint8_t requestFrom(uint8_t, uint8_t);
+    uint8_t requestFrom(uint8_t, uint8_t, uint8_t);
+        uint8_t requestFrom(int, int);
+    uint8_t requestFrom(int, int, int);
+        virtual size_t write(uint8_t);
+        virtual size_t write(const uint8_t *, size_t);
+        virtual int available(void);
+        virtual int read(void);
+        virtual int peek(void);
+        virtual void flush(void);
+#+END_EXAMPLE
   - SPI: spi-begin spi-transfer
+#+BEGIN_EXAMPLE
+        SPIClass(Spi *_spi, uint32_t _id, void(*_initCb)(void));
+
+        byte transfer(uint8_t _data, SPITransferMode _mode = SPI_LAST) { return transfer(BOARD_SPI_DEFAULT_SS, _data, _mode); }
+        byte transfer(byte _channel, uint8_t _data, SPITransferMode _mode = SPI_LAST);
+
+        // SPI Configuration methods
+
+        void attachInterrupt(void);
+        void detachInterrupt(void);
+
+        void begin(void);
+        void end(void);
+
+        // Attach/Detach pin to/from SPI controller
+        void begin(uint8_t _pin);
+        void end(uint8_t _pin);
+
+        // These methods sets a parameter on a single pin
+        void setBitOrder(uint8_t _pin, BitOrder);
+        void setDataMode(uint8_t _pin, uint8_t);
+        void setClockDivider(uint8_t _pin, uint8_t);
+#+END_EXAMPLE
   - cbi sbi
