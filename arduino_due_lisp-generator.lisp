@@ -50,7 +50,7 @@ void writeDAC(unsigned short b, unsigned short a)
 
 (defun emit-case (lisp-name name enum-name args)
   (format t "case ~a: {~%  argcount(~s,nargs,~a); 
-  v= ~a(~{~a,~});
+  v= ~a_fun(~{~a,~});
 }  break;~%"
 	  enum-name
 	  lisp-name (length args)
@@ -103,6 +103,15 @@ void writeDAC(unsigned short b, unsigned short a)
 	      :fun "
   pinMode(pin,mode);
   return T;")
+
+(gen-c-chunks ("digital-write" "digitalWrite") ("unint32_t ulPin" "uint32_t ulVal")
+	      :fun "
+  digitalWrite(ulPin,ulVal);
+  return T;")
+
+(gen-c-chunks ("adc" "analogRead") ("unint32_t ulPin")
+	      :fun "
+  return number(analogRead(ulPin));")
 
 +FUNCTIONS_ENUM+
 F_DAC, F_DIGITALWRITE, F_PINMODE, F_ADC, F_DELAY, F_DELAYMICROSECONDS, F_MICROS, F_ROOM
