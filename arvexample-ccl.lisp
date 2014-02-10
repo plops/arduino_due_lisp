@@ -550,17 +550,17 @@
 
 #+nil
 (let ((c (complex (+ -900 2048d0) (+ 130 2048d0)))
-      (r 700d0)
-      (n 12))
+      (r 400d0)
+      (n 120))
   (prog1
-   (loop for i below n collect 
-	(let ((z (+ c (* r (exp (complex 0d0 (* 2 pi i (/ 1d0 n))))))))
-	  (sleep .05)
-	  (let ((cmd (format nil "(dac ~d ~d)" 
-			     (floor (min 4095 (max 0 (realpart z))))
-			     (floor (min 4095 (max 0 (imagpart z)))))))
-	    (talk-arduino cmd)
-	    cmd)))
+      (loop for i below n collect 
+	   (let ((z (+ c (* r (exp (complex 0d0 (* 2 pi i (/ 1d0 n))))))))
+	     ;(sleep .05)
+	     (let ((cmd (format nil "(dac ~d ~d)" 
+				(floor (min 4095 (max 0 (realpart z))))
+				(floor (min 4095 (max 0 (imagpart z)))))))
+	       (talk-arduino cmd)
+	       cmd)))
     (talk-arduino  (format nil "(dac ~d ~d)" (floor (realpart c)) (floor (imagpart c))))))
 
 #+nil
