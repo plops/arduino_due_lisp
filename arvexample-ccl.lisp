@@ -503,7 +503,7 @@
 (defvar *serial* nil)
 
 (defparameter *serial*
-  (ccl::make-serial-stream "/dev/ttyACM0"
+  (ccl::make-serial-stream "/dev/ttyACM1"
                            ;:format 'character
                            :baud-rate 115200
                            :parity nil
@@ -512,7 +512,7 @@
                            :flow-control nil))
 #+nil
 (progn
-  (format *serial* "(dac ~d ~d)~%" 2048 2048) 
+  (format *serial* "(dac ~d ~d)~%" (+ -1200 2048) (+ 2048)) 
   (force-output *serial*)
   (sleep .1)
   (list 
