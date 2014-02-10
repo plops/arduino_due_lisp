@@ -1163,6 +1163,9 @@ value_t load_file(char *fname)
 value_t v;
 
 void setup() {
+  pinMode(8,1); // open shutter
+  digitalWrite(8,1);
+
   Serial.begin(115200);
   stack_bottom = ((char*)&v) - PROCESS_STACK_SIZE;
   lisp_init();
