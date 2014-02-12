@@ -54,6 +54,9 @@ x(defun emit-c-fun (name args fun)
 (defun emit-enum (name)
   (format t "~a~%" name))
 
+(defun emit-to-loop (name)
+  (format t "~a~%" name))
+
 
 
 #+nil
@@ -75,12 +78,13 @@ x(defun emit-c-fun (name args fun)
 	(t (values name-or-list
 		   name-or-list))))
 
-(defmacro gen-c-chunks (name-or-list arglist &key init global fun)
+(defmacro gen-c-chunks (name-or-list arglist &key init global fun to-setup)
   (multiple-value-bind (lisp-name name) (parse-name-or-list name-or-list)
     (let ((enum-name (string-upcase (concatenate 'string "F_" name))))
       `(progn
 	 (when ,global (emit-global ,global))
 	 (when ,enum-name (emit-enum ,enum-name))
+	 (when ,to-setup (emit-to-setup ,to-setup))
 	 (when ,init
 	   (emit-c-fun ,(concatenate 'string name "_init")
 		       '() ,init))
@@ -98,6 +102,9 @@ x(defun emit-c-fun (name args fun)
   SPI.setDataMode(SPI_MODE2);
   pinMode(chipSelectPin, OUTPUT);
   analogReadResolution(12);"
+	      :to-setup "
+  dac_init();
+  dac_fun(2048,2048);"
 	      :fun "
   digitalWrite(dac_chip_select_pin, LOW);
   byte x,y,z;
@@ -113,7 +120,10 @@ x(defun emit-c-fun (name args fun)
 (gen-c-chunks ("pin-mode" "pinMode") ("unint8_t pin" "uint8_t mode")
 	      :fun "
   pinMode(pin,mode);
-  return T;")
+  return T;"
+	      :to-setup "
+  pinMode_fun(8,1);
+  digitalWrite_fun(8,1);")
 
 (gen-c-chunks ("digital-write" "digitalWrite") ("uint32_t ulPin" "uint32_t ulVal")
 	      :fun "
