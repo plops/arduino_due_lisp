@@ -87,4 +87,4 @@ inotify_show: inotify_show.c
 	gcc -ggdb -O0 -o inotify_show inotify_show.c -lglfw -lGL -lfftw3 -lfftw3_threads -lm
 
 vnc_stream: vnc_stream.c
-	gcc -ggdb -O0 -o vnc_stream vnc_stream.c -lvncserver
+	gcc -ggdb -O0 -o vnc_stream vnc_stream.c -lvncserver -lfftw3 -lm -lfftw3_threads
