@@ -30,10 +30,16 @@
 ;;   digitalWrite(chipSelectPin, HIGH);
 ;; }
 
+(defun comma-list (list)
+  "print elements of a list with commas in between"
+  (with-output-to-string (s)
+    (loop for e in (butlast list) do
+	 (format s "~a," e))
+    (format s "~a" (car (last list)))))
 
-(defun emit-c-fun (name args fun)
-  (format t "value_t ~a (~{~a,~}) ~%{~a~%}~%"
-	  name args fun))
+x(defun emit-c-fun (name args fun)
+  (format t "value_t ~a (~a) ~%{~a~%}~%"
+	  name (comma-list args) fun))
 
 (defun emit-global (g)
   (format t "~a~%" g))
@@ -48,15 +54,20 @@
 (defun emit-enum (name)
   (format t "~a~%" name))
 
+
+
+#+nil
+(comma-list '(1 2 3))
+
 (defun emit-case (lisp-name name enum-name args)
   (format t "case ~a: {~%  argcount(~s,nargs,~a); 
-  v= ~a_fun(~{~a,~});
+  v= ~a_fun(~a);
 }  break;~%"
 	  enum-name
 	  lisp-name (length args)
-	  name (loop for i from (- (length args)) upto -1 collect
-		    (format nil "tonumber(Stack[SP~a],~s)"
-			    i lisp-name))))
+	  name (comma-list (loop for i from (- (length args)) upto -1 collect
+		     (format nil "tonumber(Stack[SP~a],~s)"
+			     i lisp-name)))))
 
 (defun parse-name-or-list (name-or-list)
   (cond ((consp name-or-list) (values (first name-or-list)
