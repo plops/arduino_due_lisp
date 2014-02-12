@@ -40,7 +40,7 @@ libraries/SPI/SPI.cpp
 
 OBJS = $(patsubst %,build/%.o,$(DEPS))
 
-all: build/arduino_due_lisp.cpp.bin arv-example inotify_show
+all: build/arduino_due_lisp.cpp.bin arv-example inotify_show vnc_stream
 
 .PHONY: clean
 
@@ -85,3 +85,6 @@ arv-example: arvexample.c
 
 inotify_show: inotify_show.c
 	gcc -ggdb -O0 -o inotify_show inotify_show.c -lglfw -lGL -lfftw3 -lfftw3_threads -lm
+
+vnc_stream: vnc_stream.c
+	gcc -ggdb -O0 -o vnc_stream vnc_stream.c -lvncserver
