@@ -14,7 +14,7 @@ fftw_complex *fft_in[2], *fft_out[2];
 fftw_plan fft_plan[2];
 int width[2],height[2];
 unsigned short*image[2];
-unsigned short*kspace[2];
+unsigned char*kspace[2];
 
 int initialized[]={0,0};
 
@@ -84,8 +84,8 @@ void fft_run()
   int j;
   for(j=0;j<2;j++)
     for(i=0;i<width[j]*height[j];i++){
-      double v=1000*cabs(fft_out[j][i]);
-      kspace[j][i]=(v<65535)?(unsigned short)v:65535; 
+      double v=100*cabs(fft_out[j][i]);
+      kspace[j][i]=(v<255)?(unsigned char)v:255; 
     }
 }
 
@@ -136,9 +136,35 @@ int main(int argc,char** argv)
     fft_fill(); fft_run();
     int j;
     for(j=0;j<height[0];j++)
-      for(i=0;i<width[0];i++)
-	server->frameBuffer[4*(i+w*j)+1]=image[0][i+width[0]*j]%255;
-    rfbMarkRectAsModified(server,0,0,w,h);
+      for(i=0;i<width[0];i++){
+	int p=4*(i+w*j);
+	server->frameBuffer[p+0]=server->frameBuffer[p+1]=server->frameBuffer[p+2]=
+	  (int)(image[0][i+width[0]*j]/65535.0*255.0);
+     } 
+
+    for(j=0;j<height[0];j++)
+      for(i=0;i<width[0];i++){
+	int p=4*(i+w*(j+height[0]));
+	server->frameBuffer[p+0]=server->frameBuffer[p+1]=server->frameBuffer[p+2]=
+	  kspace[0][i+width[0]*j]%255;
+      }
+    /*    
+    for(j=0;j<height[1];j++)
+      for(i=0;i<width[1];i++){
+	int p=4*((width[0]+i)+w*j);
+	server->frameBuffer[p+0]=server->frameBuffer[p+1]=server->frameBuffer[p+2]=
+	  image[1][i+width[0]*j]%255;
+      }
+
+    for(j=0;j<height[1];j++)
+      for(i=0;i<width[1];i++){
+	int p=4*((width[0]+i)+w*(j+height[1]));
+	server->frameBuffer[p+0]=server->frameBuffer[p+1]=server->frameBuffer[p+2]=
+	  kspace[1][i+width[0]*j]%255;
+      }
+    */
+    
+    rfbMarkRectAsModified(server,0,0,width[0],h);
     long usec = server->deferUpdateTime*1000;
     rfbProcessEvents(server,usec);
   }

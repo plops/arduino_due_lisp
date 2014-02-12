@@ -22,6 +22,13 @@
 ;; /usr/include/glib-2.0/gobject/gtype.h
 (#_g_type_init)
 
+#+nil
+(#_arv_update_device_list)
+#+nil
+(#_arv_get_n_devices)
+#+nil
+(char*-to-lisp
+ (#_arv_get_device_id 0))
 
 (defun char*-to-lisp (str-pointer &key (max-length 100))
   (let* ((name (loop for j from 0 below max-length
@@ -365,6 +372,7 @@
 
 #+nil
 (push-buffer *cam1*)
+;; => "Photonfocus AG-030300019307"
 #+nil
 (push-buffer *cam2*)
 (defmethod acquire-single-image ((c camera) &key (use-dark t))
@@ -385,7 +393,7 @@
                        :if-exists :supersede
                        :if-does-not-exist :create)
       (declare (stream s))
-      (format s "P5~%~D ~D~%65535~%" w h))
+      (format s "P5~%~D ~D~%65535~%~%" w h))
     (with-open-file (s filename 
                        :element-type '(unsigned-byte 16)
                        :direction :output
@@ -396,6 +404,26 @@
                       :displaced-to img)))
         (write-sequence data-1d s)))
     nil))
+
+#+nil
+(defparameter *cam1*
+	   (make-instance 'camera))
+
+#+nil
+(progn  (set-region *cam1* :x 712 :y 712 :w 600 :h 600)
+	(loop for c in (list *cam1*) and i from 1 do 
+	     (set-exposure c 4000d0)
+	     (set-acquisition-mode c 'single-frame)
+	     (set-pixel-format c "Mono12Packed")
+	     (push-buffer c)
+	     (write-pgm (format nil "/dev/shm/~d.pgm" i)
+			(acquire-single-image c :use-dark nil))))
+
+
+#+nil
+(dotimes (i 1000)
+ (write-pgm (format nil "/dev/shm/~d.pgm" 1)
+	    (acquire-single-image *cam1* :use-dark t)))
 
 #+nil
 (progn
@@ -502,9 +530,11 @@
 
 (defvar *serial* nil)
 
+
+
 (defparameter *serial*
-  (ccl::make-serial-stream "/dev/ttyACM1"
-                           ;:format 'character
+  (ccl::make-serial-stream (concatenate 'string "/dev/" (pathname-name (first (directory "/dev/ttyACM*"))))
+					;:format 'character
                            :baud-rate 115200
                            :parity nil
                            :char-bits 8
@@ -545,13 +575,15 @@
 (talk-arduino "(dac 1300 1760)")
 
 #+nil
-(talk-arduino (format nil "(dac ~d ~d)" (+ -900 2048 700) (+ 130 2048)))
+(talk-arduino (format nil "(progn (dac ~d ~d) (delay 10) (print (adc 0)))" (+ 2048) (+ 2048)))
+#+nil
+(talk-arduino (format nil "(adc 0)" (+ 2048) (+ 2048)))
 
 
 #+nil
-(let ((c (complex (+ -900 2048d0) (+ 130 2048d0)))
+(let ((c (complex (+ 2048d0) 2048d0))
       (r 400d0)
-      (n 120))
+      (n (* 3 36)))
   (prog1
       (loop for i below n collect 
 	   (let ((z (+ c (* r (exp (complex 0d0 (* 2 pi i (/ 1d0 n))))))))
@@ -622,7 +654,7 @@
   (talk-arduino "(pin-mode 8 1)")
   (talk-arduino "(digital-write 8 0)")
   (setf (dark-image *cam1*) (average-images *cam1* :number 100 :use-dark nil))
-  (setf (dark-image *cam2*) (average-images *cam2* :number 100 :use-dark nil))
+;  (setf (dark-image *cam2*) (average-images *cam2* :number 100 :use-dark nil))
   (sleep .2)
   (talk-arduino "(digital-write 8 1)"))
 
