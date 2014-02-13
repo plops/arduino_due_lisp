@@ -570,7 +570,7 @@
 (talk-arduino "(digital-write 8 1)") ;; set pin 8 to high
 
 #+nil
-(talk-arduino "(dac 1420 1860)")
+(talk-arduino "(dac 1200 2047)")
 #+nil
 (talk-arduino "(dac 1200 2047)")
 
@@ -581,9 +581,9 @@
 
 
 #+nil
-(let ((c (complex (+ 2048d0) 2048d0))
-      (r 400d0)
-      (n (* 3 36)))
+(let ((c (complex (+ 1200d0) 2047d0))
+      (r 100d0)
+      (n (* 4 36)))
   (prog1
       (loop for i below n collect 
 	   (let ((z (+ c (* r (exp (complex 0d0 (* 2 pi i (/ 1d0 n))))))))
