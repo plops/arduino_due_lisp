@@ -572,7 +572,7 @@
 #+nil
 (talk-arduino "(dac 1420 1860)")
 #+nil
-(talk-arduino "(dac 1300 1760)")
+(talk-arduino "(dac 1200 2047)")
 
 #+nil
 (talk-arduino (format nil "(progn (dac ~d ~d) (delay 10) (print (adc 0)))" (+ 2048) (+ 2048)))
