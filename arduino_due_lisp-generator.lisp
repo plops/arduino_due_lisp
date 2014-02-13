@@ -37,7 +37,7 @@
 	 (format s "~a," e))
     (format s "~a" (car (last list)))))
 
-x(defun emit-c-fun (name args fun)
+(defun emit-c-fun (name args fun)
   (format t "value_t ~a (~a) ~%{~a~%}~%"
 	  name (comma-list args) fun))
 
@@ -54,7 +54,7 @@ x(defun emit-c-fun (name args fun)
 (defun emit-enum (name)
   (format t "~a~%" name))
 
-(defun emit-to-loop (name)
+(defun emit-to-setup (name)
   (format t "~a~%" name))
 
 
