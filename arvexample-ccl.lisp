@@ -27,8 +27,15 @@
 #+nil
 (#_arv_get_n_devices)
 #+nil
+(#_arv_get_n_interfaces)
+#+nil
+(char*-to-lisp
+ (#_arv_get_interface_id 0))
+#+nil
 (char*-to-lisp
  (#_arv_get_device_id 0))
+
+
 
 (defun char*-to-lisp (str-pointer &key (max-length 100))
   (let* ((name (loop for j from 0 below max-length
@@ -426,17 +433,21 @@
 	    (acquire-single-image *cam1* :use-dark t)))
 
 #+nil
+(defparameter *cam2*
+	   (make-instance 'camera :name "Basler-21211553"))
+
+#+nil
 (progn
   (progn (defparameter *cam2*
 	   (make-instance 'camera :name "Basler-21211553"))
 	 
 	 (defparameter *cam1*
 	   (make-instance 'camera)))
-  (set-region-centered *cam1* :cx 1024 :cy 1024 :w 512 :h 512)
-  
+  (set-region-centered *cam1* :cx 800 :cy 1024 :w 512 :h 512)
+  (gc-enumeration-set-int-value *cam1* "Correction_Mode" 0)
   (set-region *cam2* :x (- 659 512) :w 512  :h 494)
   (loop for c in (list *cam1* *cam2*) and i from 1 do 
-       (set-exposure c 10000d0)
+       (set-exposure c 1000d0)
        (set-acquisition-mode c 'single-frame)
        (set-pixel-format c "Mono12Packed")
        (push-buffer c)
@@ -504,19 +515,22 @@
 		  (acquire-single-image c))))
 
 #+nil
-(set-exposure *cam2* 900d0)
+(set-exposure *cam2* 300d0)
+#+nil
+(set-exposure *cam1* 900d0)
 #+nil 
 (+ 19 25 15)
 #+nil
 (+ 30 3.5 2.5 13.5 9) ;; path camera 2 (good interference)
 
 #+nil
-(dotimes (j 1)
-  (sleep .2)
+(dotimes (j 30)
+  ;(sleep .1)
   (loop for c in (list *cam1* *cam2*) and i from 1 do 
+       (format t ".")
        (write-pgm (format nil "/dev/shm/~d.pgm" i)
-		  (if t
-		      (average-images c :number 50 :use-dark t)
+		  (if nil
+		      (average-images c :number 20 :use-dark t)
 		      (acquire-single-image c :use-dark t)))))
 
 (+ 21 24 11)
@@ -567,10 +581,8 @@
 (talk-arduino "(pin-mode 8 1)") ;; set pin 8 to output
 
 #+nil
-(talk-arduino "(digital-write 8 1)") ;; set pin 8 to high
+(talk-arduino "(digital-write 8 0)") ;; set pin 8 to high
 
-#+nil
-(talk-arduino "(dac 1200 2047)")
 #+nil
 (talk-arduino "(dac 1200 2047)")
 
@@ -579,9 +591,12 @@
 (+ 18.5 3.6 (* 1.5 85) 32) ;; red camera through fiber
 (+ 18.5 3.6 (* 1.5 85) 11 22)
 
-(+ 28 2.5 17.5 60 12 26.5 11) ;; red camera reference
-(+ 28 2.5 17.5 60 9 24 9) ;; small black camera reference
- 
+;; with reflector prism at 8.3cm
+(+ 28 2.5 17.5 60 11.5 27.2 11) ;; red camera reference 
+(+ 28 2.5 17.5 60 13.5 27.7 9.3) ;; small black camera reference
+
+(+ 8.3 (* .5 (- 181.2 157.7))) 
+
 #+nil
 (talk-arduino (format nil "(progn (dac ~d ~d) (delay 10) (print (adc 0)))" (+ 2048) (+ 2048)))
 #+nil
@@ -590,7 +605,7 @@
 
 #+nil
 (let ((c (complex (+ 1200d0) 2047d0))
-      (r 1100d0)
+      (r 600d0)
       (n (* 4 36)))
   (prog1
       (loop for i below n collect 
@@ -661,8 +676,8 @@
 (progn
   (talk-arduino "(pin-mode 8 1)")
   (talk-arduino "(digital-write 8 0)")
-  (setf (dark-image *cam1*) (average-images *cam1* :number 100 :use-dark nil))
-;  (setf (dark-image *cam2*) (average-images *cam2* :number 100 :use-dark nil))
+  (setf (dark-image *cam1*) (average-images *cam1* :number 30 :use-dark nil))
+  (setf (dark-image *cam2*) (average-images *cam2* :number 20 :use-dark nil))
   (sleep .2)
   (talk-arduino "(digital-write 8 1)"))
 
