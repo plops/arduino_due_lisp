@@ -574,6 +574,14 @@
 #+nil
 (talk-arduino "(dac 1200 2047)")
 
+;; length of fiber 85cm
+;; 18.5 36
+(+ 18.5 3.6 (* 1.5 85) 32) ;; red camera through fiber
+(+ 18.5 3.6 (* 1.5 85) 11 22)
+
+(+ 28 2.5 17.5 60 12 26.5 11) ;; red camera reference
+(+ 28 2.5 17.5 60 9 24 9) ;; small black camera reference
+ 
 #+nil
 (talk-arduino (format nil "(progn (dac ~d ~d) (delay 10) (print (adc 0)))" (+ 2048) (+ 2048)))
 #+nil
@@ -582,7 +590,7 @@
 
 #+nil
 (let ((c (complex (+ 1200d0) 2047d0))
-      (r 100d0)
+      (r 1100d0)
       (n (* 4 36)))
   (prog1
       (loop for i below n collect 
