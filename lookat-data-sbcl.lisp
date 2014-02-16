@@ -61,7 +61,10 @@
   (loop for e in (rest (directory dir))
      do
        (let* ((w (ft (convert-any-to-cdf (read-pgm e))))
-	      (p (phase-diff :a z :c w)))
+	      (p (phase-diff :a z :c w))) ;; p is only an estimate of
+					  ;; the phase derivative if
+					  ;; the magnitude doesn't
+					  ;; change much
 	 (setf z w)
 	 (push p *bla*)
 	 )))
@@ -126,20 +129,37 @@
 
 #+nil
 (progn ;; show the phase difference of each image with respect to the first image
- (let* ((dir "/media/sda2/stabil-p/1*.pgm")
-	(z (ft (convert-any-to-cdf (read-pgm (first (directory dir)))))))
-   (loop for e in (subseq (directory dir) 1)
-      do
-	(let ((w (ft (convert-any-to-cdf (read-pgm e))))
-	      (v1 (.linear *var*)))
-	  (write-pgm (concatenate 'string "/dev/shm/k" (pathname-name e) ".pgm")
-		     (scale :scale 1e-4 :a w
-			       :mask #'(lambda (x) (< (aref v1 x) 4))
-			       ))
-	  (write-pgm (concatenate 'string "/dev/shm/p" (pathname-name e) ".pgm")
-		     (scale-df :scale 100 :offset .2d0 :a (phase-diff :a z :c w)
-			       :mask #'(lambda (x) (< (aref v1 x) 4)))
-		     )))))
+  (let* ((dir "/media/sda2/stabil-p/1*.pgm")
+	 (z (ft (convert-any-to-cdf (read-pgm (first (directory dir))))))
+	 )
+    (destructuring-bind (height width) (array-dimensions z)
+      (let ((p (make-array (list (1- (length (directory dir)))
+				 height width)
+			   :element-type '(complex double-float))))
+       (loop for e in (subseq (directory dir) 1) and plane from 0
+	  do
+	    (let ((w (ft (convert-any-to-cdf (read-pgm e))))
+		  (v1 (.linear *var*)))
+	      (write-pgm (concatenate 'string "/dev/shm/k" (pathname-name e) ".pgm")
+			 (scale :scale 1e-4 :a w 
+				:mask #'(lambda (x) (< (aref v1 x) 4))
+				)) ;; look at magnitude images, if they fluctuate strongly, the way i calculate the phase derivative will not give correct results
+	      (write-pgm (concatenate 'string "/dev/shm/p" (pathname-name e) ".pgm")
+			 (scale-df :scale 100 :offset .2d0 :a (phase-diff :a z :c w)
+				   :mask #'(lambda (x) (< (aref v1 x) 4)))
+			 )
+	      (plane-assign :dst p :dir 2 :plane plane
+			    :src (phase-diff :a z :c w))))
+       (defparameter *p* p)))))
+
+(defun plane-assign (&key dst src dir plane)
+  ;; currently only works for 2d src and 3d dst and dir=2
+  (let ((s1 (.linear src))
+	(dd (array-dimensions dst))
+	(d1 (.linear dst :displaced-index-offset (* plane (reduce #'* (rest dd))))))
+    (dotimes (i (length s1))
+      (setf (aref d1 i) (aref s1 i)))
+    dst))
 
 
 (defun read-pgm (filename)
@@ -204,10 +224,11 @@
       (incf (aref hist (aref a1 i))))
     hist))
 
-(defun .linear (a)
+(defun .linear (a &key (displaced-index-offset 0))
   (let* ((n (array-total-size a))
 	 (a1 (make-array n :element-type (array-element-type a)
-			 :displaced-to a)))
+			 :displaced-to a
+			 :displaced-index-offset displaced-index-offset)))
     a1))
 
 (defun .log (a)
