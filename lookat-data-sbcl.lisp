@@ -130,14 +130,16 @@
 	(z (ft (convert-any-to-cdf (read-pgm (first (directory dir)))))))
    (loop for e in (subseq (directory dir) 1)
       do
-	(let ((w (ft (convert-any-to-cdf (read-pgm e)))))
-	  #+nil (write-pgm (concatenate 'string "/dev/shm/k" (pathname-name e) ".pgm")
-			   (scale :scale 1e-3 :a w))
+	(let ((w (ft (convert-any-to-cdf (read-pgm e))))
+	      (v1 (.linear *var*)))
+	  (write-pgm (concatenate 'string "/dev/shm/k" (pathname-name e) ".pgm")
+		     (scale :scale 1e-4 :a w
+			       :mask #'(lambda (x) (< (aref v1 x) 4))
+			       ))
 	  (write-pgm (concatenate 'string "/dev/shm/p" (pathname-name e) ".pgm")
-		     (let ((v1 (.linear *var*)))
-		       (scale-df :scale 100 :offset .2d0 :a (phase-diff :a z :c w)
-				 :mask #'(lambda (x) (< (aref v1 x) 4))
-				 )))))))
+		     (scale-df :scale 100 :offset .2d0 :a (phase-diff :a z :c w)
+			       :mask #'(lambda (x) (< (aref v1 x) 4)))
+		     )))))
 
 
 (defun read-pgm (filename)
@@ -354,7 +356,7 @@
       (setf (aref b i) (complex (* 1d0 (aref a1 i)))))
     b2))
 
-(defun scale (&key (a) (scale 4e-3))
+(defun scale (&key (a) (scale 4e-3) (mask #'(lambda (x) (declare (ignorable x)) t)))
   (declare (type (array (complex double-float) *) a))
   (let* ((b1 (make-array (array-total-size a) :element-type '(unsigned-byte 8)))
 	(b2 (make-array (array-dimensions a) :element-type '(unsigned-byte 8)
@@ -362,7 +364,8 @@
 	(a1 (make-array (array-total-size a) :element-type (array-element-type a)
 			:displaced-to a)))
     (dotimes (i (length b1))
-      (setf (aref b1 i) (min 255 (max 0 (floor (* scale (abs (aref a1 i))))))))
+      (when (funcall mask i)
+       (setf (aref b1 i) (min 255 (max 0 (floor (* scale (abs (aref a1 i)))))))))
     b2))
 
 (defun scale-df (&key a (scale 4e-3) (offset 0d0) (mask #'(lambda (x) (declare (ignorable x)) t)))
