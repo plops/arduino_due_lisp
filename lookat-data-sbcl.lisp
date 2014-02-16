@@ -106,8 +106,23 @@
 (write-pgm "/dev/shm/var.pgm"
 	   (let ((l (.linear *var*)))
 	     (scale-df :scale (* 255 (/ (* pi pi))) :a *var*
-		       :mask  #'(lambda (x) (< (aref l x) (* pi pi))
+		       :mask  #'(lambda (x) (< (aref l x) (* pi pi)) ;; test threshold
 					))))
+
+#+nil
+(progn ;; find threshold in histogram of image with variance of phase time derivatives
+  (defparameter *var-hist*
+    (multiple-value-list 
+     (hist-df :a *var* :n 200 :mi 0 :ma 400)))
+  
+  (with-open-file (s "/dev/shm/o.dat" :direction :output
+		     :if-exists :supersede :if-does-not-exist :create)
+    (destructuring-bind (a mi ma) *var-hist* 		;loop for a in *var-hist* do
+      (loop for e across a and i from 0 do
+	   (format s "~a ~a~%" (+ (- mi) (* (- ma mi) (/ i (* 1d0 (length a))))) e))
+      (terpri s))))
+
+
 
 #+nil
 (progn ;; show the phase difference of each image with respect to the first image
@@ -123,19 +138,6 @@
 		       (scale-df :scale 100 :offset .2d0 :a (phase-diff :a z :c w)
 				 :mask #'(lambda (x) (< (aref v1 x) 4))
 				 )))))))
-
-#+nil
-(progn
-  (defparameter *var-hist*
-    (multiple-value-list 
-     (hist-df :a *var* :n 200 :mi 0 :ma 400)))
-  
-  (with-open-file (s "/dev/shm/o.dat" :direction :output
-		     :if-exists :supersede :if-does-not-exist :create)
-    (destructuring-bind (a mi ma) *var-hist* 		;loop for a in *var-hist* do
-      (loop for e across a and i from 0 do
-	   (format s "~a ~a~%" (+ (- mi) (* (- ma mi) (/ i (* 1d0 (length a))))) e))
-      (terpri s))))
 
 
 (defun read-pgm (filename)
