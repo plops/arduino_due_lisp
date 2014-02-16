@@ -157,30 +157,27 @@
        (defparameter *p* p)))))
 
 #+nil
-(let ((plane 0))
- (progn 
-   (destructuring-bind (z h w) (array-dimensions *p*)
-     (defparameter *var-hist*
-       (multiple-value-list 
-	(hist-df :a (.linear *p* :displaced-index-offset (* plane (* h w))
-			     :n (* h w)
-			     )
-		 :count-zero nil
-		 :n 2000 :mi -2 :ma 2))))
-  
-   (with-open-file (s "/dev/shm/o.dat" :direction :output
-		      :if-exists :supersede :if-does-not-exist :create)
-     (destructuring-bind (a mi ma) *var-hist* ;loop for a in *var-hist* do
-       (loop for e across a and i from 0 do
-	    (format s "~a ~a~%" (+ (- mi) (* (- ma mi) (/ i (* 1d0 (length a))))) e))
-       (terpri s)))
-   (with-open-file (s "/dev/shm/o.gp" :direction :output
-		      :if-exists :supersede :if-does-not-exist :create)
-     (format s "set outp \"o.pdf\"
+(progn ;; look at the histograms of the phase difference images. i
+       ;; think i will have to take the median as an estimate of the current phase
+  (destructuring-bind (z h w) (array-dimensions *p*)
+    (with-open-file (s "/dev/shm/o.dat" :direction :output
+		       :if-exists :supersede :if-does-not-exist :create)
+      (loop for plane below z by 10 do
+	   (defparameter *hist*
+	     (multiple-value-list 
+	      (hist-df :a (.linear *p* :displaced-index-offset (* plane (* h w)) :n (* h w))
+		       :count-zero nil :n 2000 :mi -2 :ma 2)))
+	   (destructuring-bind (a mi ma) *hist* 
+	     (loop for e across a and i from 0 do
+		  (format s "~a ~a~%" (+ (- mi) (* (- ma mi) (/ i (* 1d0 (length a))))) e))
+	     (terpri s)))))
+  (with-open-file (s "/dev/shm/o.gp" :direction :output
+		     :if-exists :supersede :if-does-not-exist :create)
+    (format s "set outp \"o.pdf\"
 set term pdf
 set logscale y
 plot \"o.dat\" u 1:2 w l
-"))))
+")))
 
 (defun plane-assign (&key dst src dir plane (mask #'(lambda (x) (declare (ignorable x)) t)))
   ;; currently only works for 2d src and 3d dst and dir=2
