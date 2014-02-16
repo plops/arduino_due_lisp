@@ -131,34 +131,65 @@
 (progn ;; show the phase difference of each image with respect to the first image
   (let* ((dir "/media/sda2/stabil-p/1*.pgm")
 	 (z (ft (convert-any-to-cdf (read-pgm (first (directory dir))))))
-	 )
+	 (thresh (* pi pi)))
     (destructuring-bind (height width) (array-dimensions z)
       (let ((p (make-array (list (1- (length (directory dir)))
 				 height width)
-			   :element-type '(complex double-float))))
+			   :element-type 'double-float)))
        (loop for e in (subseq (directory dir) 1) and plane from 0
 	  do
 	    (let ((w (ft (convert-any-to-cdf (read-pgm e))))
 		  (v1 (.linear *var*)))
 	      (write-pgm (concatenate 'string "/dev/shm/k" (pathname-name e) ".pgm")
 			 (scale :scale 1e-4 :a w 
-				:mask #'(lambda (x) (< (aref v1 x) 4))
+				:mask #'(lambda (x) (< (aref v1 x) thresh))
 				)) ;; look at magnitude images, if they fluctuate strongly, the way i calculate the phase derivative will not give correct results
-	      (write-pgm (concatenate 'string "/dev/shm/p" (pathname-name e) ".pgm")
-			 (scale-df :scale 100 :offset .2d0 :a (phase-diff :a z :c w)
-				   :mask #'(lambda (x) (< (aref v1 x) 4)))
-			 )
-	      (plane-assign :dst p :dir 2 :plane plane
-			    :src (phase-diff :a z :c w))))
+	      (let ((pd (phase-diff :a z :c w)))
+	       (write-pgm (concatenate 'string "/dev/shm/p" (pathname-name e) ".pgm")
+			  (scale-df :scale 100 :offset .2d0 :a pd
+				    :mask #'(lambda (x) (< (aref v1 x) thresh)))
+			  )
+	       (dotimes (j height)
+		 (dotimes (i width)
+		   (when (< (aref *var* j i) thresh)
+		    (setf (aref p plane j i) (aref pd j i))))))
+	      ))
        (defparameter *p* p)))))
 
-(defun plane-assign (&key dst src dir plane)
+#+nil
+(let ((plane 0))
+ (progn 
+   (destructuring-bind (z h w) (array-dimensions *p*)
+     (defparameter *var-hist*
+       (multiple-value-list 
+	(hist-df :a (.linear *p* :displaced-index-offset (* plane (* h w))
+			     :n (* h w)
+			     )
+		 :count-zero nil
+		 :n 2000 :mi -2 :ma 2))))
+  
+   (with-open-file (s "/dev/shm/o.dat" :direction :output
+		      :if-exists :supersede :if-does-not-exist :create)
+     (destructuring-bind (a mi ma) *var-hist* ;loop for a in *var-hist* do
+       (loop for e across a and i from 0 do
+	    (format s "~a ~a~%" (+ (- mi) (* (- ma mi) (/ i (* 1d0 (length a))))) e))
+       (terpri s)))
+   (with-open-file (s "/dev/shm/o.gp" :direction :output
+		      :if-exists :supersede :if-does-not-exist :create)
+     (format s "set outp \"o.pdf\"
+set term pdf
+set logscale y
+plot \"o.dat\" u 1:2 w l
+"))))
+
+(defun plane-assign (&key dst src dir plane (mask #'(lambda (x) (declare (ignorable x)) t)))
   ;; currently only works for 2d src and 3d dst and dir=2
-  (let ((s1 (.linear src))
+  (let* ((s1 (.linear src))
 	(dd (array-dimensions dst))
 	(d1 (.linear dst :displaced-index-offset (* plane (reduce #'* (rest dd))))))
     (dotimes (i (length s1))
-      (setf (aref d1 i) (aref s1 i)))
+      (when (funcall mask i)
+       (setf (aref d1 i) (aref s1 i))))
     dst))
 
 
@@ -224,12 +255,10 @@
       (incf (aref hist (aref a1 i))))
     hist))
 
-(defun .linear (a &key (displaced-index-offset 0))
-  (let* ((n (array-total-size a))
-	 (a1 (make-array n :element-type (array-element-type a)
-			 :displaced-to a
-			 :displaced-index-offset displaced-index-offset)))
-    a1))
+(defun .linear (a &key (displaced-index-offset 0) (n (array-total-size a)))
+  (make-array n :element-type (array-element-type a)
+	      :displaced-to a
+	      :displaced-index-offset displaced-index-offset))
 
 (defun .log (a)
   (let* ((a1 (.linear a))
@@ -249,16 +278,17 @@
       (setf (aref b1 i) (+ offset (abs (aref a1 i)))))
     b))
 
-(defun hist-df (&key a (n 100) mi ma)
+(defun hist-df(&key a (n 100) mi ma (count-zero t))
   (declare (type (array double-float *) a))
   (let* ((a1 (.linear a))
 	 (ma (or ma (reduce #'max a1)))
 	 (mi (or mi (reduce #'min a1)))
 	 (hist (make-array n :element-type 'fixnum :initial-element 0)))
     (unless (= ma mi)
-     (dotimes (i (length a1))
-       (incf (aref hist (max 0 (min (1- n) (floor (* (- n 1) (/ (- (aref a1 i) mi)
-								(- ma mi))))))))))
+      (dotimes (i (length a1))
+	(when (or count-zero (/= (aref a1 i)))
+	 (incf (aref hist (max 0 (min (1- n) (floor (* (- n 1) (/ (- (aref a1 i) mi)
+								  (- ma mi)))))))))))
     (values hist mi ma)))
 
 
