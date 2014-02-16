@@ -26,3 +26,10 @@ a1 = dip_fouriertransform(ka.*gaussf(rr(ka(:,:,1),'freq')<.5,4),'inverse',[1 1 0
 % a1 = reshape(a2,[108 108 23 23]); %why ist there one image too much?
 
 save '/home/martin/dat/20140215_1' a1
+
+load '/home/martin/dat/20140215_2' a2
+load '/home/martin/dat/20140215_1' a1
+
+writeim(abs(a1),'/dev/shm/1.tif');
+writeim(abs(reshape(a2,[82 82 23*23])),'/dev/shm/2.tif');
+
