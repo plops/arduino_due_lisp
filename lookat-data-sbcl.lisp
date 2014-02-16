@@ -110,19 +110,19 @@
 					))))
 
 #+nil
-(let* ((dir "/media/sda2/stabil-p/1*.pgm")
-       (z (ft (convert-any-to-cdf (read-pgm (first (directory dir)))))))
-  (loop for e in (subseq (directory dir) 1)
-     do
-       (let ((w (ft (convert-any-to-cdf (read-pgm e)))))
-	 #+nil (write-pgm (concatenate 'string "/dev/shm/k" (pathname-name e) ".pgm")
-		    (scale :scale 1e-3 :a w))
-	 (write-pgm (concatenate 'string "/dev/shm/p" (pathname-name e) ".pgm")
-		    (let (); ((v1 (.linear *var*)))
-		      (scale-df :scale 270 :offset 0d0 :a (phase-diff :a z :c w)
-				;:mask #'(lambda (x) (< (aref v1 x) 4))
-				)))
-	 (setf z w))))
+(progn ;; show the phase difference of each image with respect to the first image
+ (let* ((dir "/media/sda2/stabil-p/1*.pgm")
+	(z (ft (convert-any-to-cdf (read-pgm (first (directory dir)))))))
+   (loop for e in (subseq (directory dir) 1)
+      do
+	(let ((w (ft (convert-any-to-cdf (read-pgm e)))))
+	  #+nil (write-pgm (concatenate 'string "/dev/shm/k" (pathname-name e) ".pgm")
+			   (scale :scale 1e-3 :a w))
+	  (write-pgm (concatenate 'string "/dev/shm/p" (pathname-name e) ".pgm")
+		     (let ((v1 (.linear *var*)))
+		       (scale-df :scale 100 :offset .2d0 :a (phase-diff :a z :c w)
+				 :mask #'(lambda (x) (< (aref v1 x) 4))
+				 )))))))
 
 #+nil
 (progn
