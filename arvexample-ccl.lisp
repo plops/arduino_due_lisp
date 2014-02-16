@@ -524,14 +524,21 @@
 (+ 30 3.5 2.5 13.5 9) ;; path camera 2 (good interference)
 
 #+nil
-(dotimes (j 30)
-  ;(sleep .1)
-  (loop for c in (list *cam1* *cam2*) and i from 1 do 
-       (format t ".")
-       (write-pgm (format nil "/dev/shm/~d.pgm" i)
-		  (if nil
-		      (average-images c :number 20 :use-dark t)
-		      (acquire-single-image c :use-dark t)))))
+(talk-arduino "(dac 2047 2047)")
+
+
+
+#+nil
+(progn
+  (talk-arduino "(dac 1200 2047)")
+ (dotimes (j 64)
+   (sleep .5)
+   (loop for c in (list #+nil *cam1* *cam2*) and i from 1 do 
+	(format t ".")
+	(write-pgm (format nil "/dev/shm/3_~3,'0d_~d.pgm" j (get-universal-time))
+		   (if nil
+		       (average-images c :number 100 :use-dark t)
+		       (acquire-single-image c :use-dark t))))))
 
 (+ 21 24 11)
 
@@ -619,9 +626,13 @@
     (talk-arduino  (format nil "(dac ~d ~d)" (floor (realpart c)) (floor (imagpart c))))))
 
 #+nil
-(let ((res nil))
- (loop for j from 100 below 3000 by 100 do
-      (loop for i from 100 below 3000 by 100 do
+(let ((res nil)
+      (ic 1200)
+      (ir 1100)
+      (jc 2047)
+      (jr 1100))
+ (loop for j from (- jc jr) upto (+ jc jr) by 100 do
+      (loop for i from (- ic ir) upto (+ ic ir) by 100 do
 	   (talk-arduino (format nil "(dac ~d ~d)" i j))
 	   (let* ((a (acquire-single-image *cam1*))
 		  (a1 (make-array (reduce #'* (array-dimensions a))
@@ -676,8 +687,8 @@
 (progn
   (talk-arduino "(pin-mode 8 1)")
   (talk-arduino "(digital-write 8 0)")
-  (setf (dark-image *cam1*) (average-images *cam1* :number 30 :use-dark nil))
-  (setf (dark-image *cam2*) (average-images *cam2* :number 20 :use-dark nil))
+  (setf (dark-image *cam1*) (average-images *cam1* :number 200 :use-dark nil))
+  (setf (dark-image *cam2*) (average-images *cam2* :number 200 :use-dark nil))
   (sleep .2)
   (talk-arduino "(digital-write 8 1)"))
 
@@ -687,19 +698,21 @@
      (talk-arduino (format nil "(dac ~d 2048)" (floor (+ 2000 (* 1000 (sin (* 2 pi (/ i 100)))))))))
 
 #+nil
-(loop for j from 1000 upto 3000 by 10 do
-     (loop for i from 1000 upto 3000 by 10 do
-	  (format t "~a~%" (list 'i i 'j j))
-	  (progn
-	    (format *serial* "(dac ~d ~d)~%" i j) 
-	    (force-output *serial*)
-	    (sleep .1)
-	    (list 
-	     (read-line *serial*)))
-	  (loop for c in (list *cam1* *cam2*) and k from 1 do 
-	       (let ((im (acquire-single-image c)))
-		 (write-pgm (format nil "/dev/shm/~d.pgm" k) im)
-		 (write-pgm (format nil "/home/martin/dat/i~4,'0d_j~4,'0d_~d.pgm" i j k) im)))))
+(let ((ic 1200)
+      (ir 1100)
+      (jc 2047)
+      (jr 1100))
+  (loop for j from (- jc jr) upto (+ jc jr) by 100 do
+       (loop for i from (- ic ir) upto (+ ic ir) by 100 do
+	    (format t "~a~%" (list 'i i 'j j))
+	    (talk-arduino (format nil "(dac ~d ~d)~%" i j))
+	    (sleep 2)
+	    (loop for c in (list *cam1* *cam2*) and k from 1 do 
+		 (let ((im (if t
+			       (average-images c :number 10 :use-dark t)
+			       (acquire-single-image c :use-dark t))))
+		   (write-pgm (format nil "/dev/shm/~d.pgm" k) im)
+		   (write-pgm (format nil "/home/martin/dat/i~4,'0d_j~4,'0d_~d.pgm" i j k) im))))))
 
 
 
