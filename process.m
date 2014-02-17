@@ -33,3 +33,12 @@ load '/home/martin/dat/20140215_1' a1
 writeim(abs(a1),'/dev/shm/1.tif');
 writeim(abs(reshape(a2,[82 82 23*23])),'/dev/shm/2.tif');
 
+
+%% check how holograms fluctuates, when nothing happens
+% mkdir /dev/shm/tif;for i in /media/sda2/stabil-p/20140216/1/1_*;do convert $i /dev/shm/tif/`basename $i .pgm`.tif;done
+tic
+a=readtimeseries('/dev/shm/tif/1_000.tif');
+ka=extract(dip_fouriertransform(a,'forward',[1 1 0]),[128 128],[220 60]);
+ac=dip_fouriertransform(ka,'inverse',[1 1 0]);
+toc
+phase(ac)
