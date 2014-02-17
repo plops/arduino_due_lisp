@@ -41,7 +41,10 @@ ka=extract(dip_fouriertransform(a,'forward',[1 1 0]),[128 128],[220 60]);
 % demodulating the first order gives us the complex valued field
 ac=dip_fouriertransform(ka,'inverse',[1 1 0]);
 
-mask = (rr([size(dac,1) size(dac,2)],'freq')<.3);
+
+mask = gaussf(mean(abs(ac),[],3))>600;
+mask(33,63,0)=0; % something weird going on with this pixel
+
 phase(gaussf(real(ac))+i*gaussf(imag(ac))).*mask
 
 % calculate phase change relative to first image
@@ -49,7 +52,7 @@ dac = newim(ac,'complex');
 for k=1:size(ac,3)-1;
   dac(:,:,k)=-imag((ac(:,:,0)-ac(:,:,k-1))/ac(:,:,0));
 end
-gaussf(real(dac)).*mask
+gaussf(real(dac).*mask)
 
 % average the phase difference to the first image in the central area
 % of each image
@@ -64,4 +67,7 @@ ac_corrected = newim(ac,'complex');
 for k=0:size(ac,3)-1;
   ac_corrected(:,:,k)=ac(:,:,k).*exp(-2*pi*i*avgphase(k));
 end
-phase(gaussf(real(ac_corrected))+i*gaussf(imag(ac_corrected)))
+phase(gaussf(real(ac_corrected))+i*gaussf(imag(ac_corrected))).*mask
+
+% average the phase corrected holograms
+ac_avg = mean(real(ac_corrected),[],3) + i*mean(imag(ac_corrected),[],3);
