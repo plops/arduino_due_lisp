@@ -94,6 +94,22 @@ ac_f=((gaussf(real(ac),2))+i*(gaussf(imag(ac),2)));
 dac_f=(dz(gaussf(real(ac),2))+i*dz(gaussf(imag(ac),2)));
 dac_f=gaussf(imag(dac_f./ac_f(:,:,0)))
 
+
+dac_n=(dz((real(ac)))+i*dz(imag(ac)));
+dac_n=-imag(dac_n./ac(:,:,0));
+dac_n=dip_cumulativesum(dac_n,[],[0 0 1])
+log(abs(dac_n))
+
+ddac_n=-imag((ac(:,:,:)-ac(:,:,0))/ac(:,:,0))
+gaussf(ddac_n).*mask
+log(abs(ddac_n)).*mask
+
+dip_image(unwrap(double(phase(squeeze(ac(:,:,0)))),[],2))
+
+dip_cumulativesum(-imag((dx(real(ac))+i*dx(imag(ac)))./ac),[],[1 0 0])
+
+phase(ac(:,:,:))-phase(ac(:,:,0))
+
 % calculate phase change relative to first image
 dac = newim(ac,'complex');
 for k=1:size(ac,3)-1;
@@ -105,14 +121,14 @@ gaussf(real(dac).*mask)
 % of each image
 avgphase=newim(size(ac,3));
 for k=0:size(avgphase)-1
-  avgphase(k)=mean(real(dac_f(:,:,k)).*mask);
+  avgphase(k)=mean(real(dac_n(:,:,k)).*mask);
 end
 avgphase
 
 % subtract the estimated phase fluctuation from measurement
 ac_corrected = newim(ac,'complex');
 for k=0:size(ac,3)-1;
-  ac_corrected(:,:,k)=ac(:,:,k).*exp(-2*pi*i*avgphase(k));
+  ac_corrected(:,:,k)=ac(:,:,k).*exp(2*pi*i*avgphase(k));
 end
 phase(gaussf(real(ac_corrected))+i*gaussf(imag(ac_corrected))).*mask
 
