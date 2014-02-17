@@ -38,14 +38,30 @@ writeim(abs(reshape(a2,[82 82 23*23])),'/dev/shm/2.tif');
 % mkdir /dev/shm/tif;for i in /media/sda2/stabil-p/20140216/1/1_*;do convert $i /dev/shm/tif/`basename $i .pgm`.tif;done
 a=readtimeseries('/dev/shm/tif/1_000.tif');
 ka=extract(dip_fouriertransform(a,'forward',[1 1 0]),[128 128],[220 60]);
+% demodulating the first order gives us the complex valued field
 ac=dip_fouriertransform(ka,'inverse',[1 1 0]);
 
-mask = (rr([size(dac,1) size(dac,2)],'freq')<.45);
-gaussf(phase(ac)).*mask
+mask = (rr([size(dac,1) size(dac,2)],'freq')<.3);
+phase(gaussf(real(ac))+i*gaussf(imag(ac))).*mask
 
-% calculate time derivative of phase
+% calculate phase change relative to first image
 dac = newim(ac,'complex');
-for k=0:size(ac,3)-2
-  dac(:,:,k)=-imag((ac(:,:,k)-ac(:,:,k+1))/ac(:,:,k));
+for k=1:size(ac,3)-1;
+  dac(:,:,k)=-imag((ac(:,:,0)-ac(:,:,k-1))/ac(:,:,0));
 end
-gaussf(real(dac).*)
+gaussf(real(dac)).*mask
+
+% average the phase difference to the first image in the central area
+% of each image
+avgphase=newim(size(ac,3));
+for k=0:size(avgphase)-1
+  avgphase(k)=mean(real(dac(:,:,k)).*mask);
+end
+avgphase
+
+% subtract the estimated phase fluctuation from measurement
+ac_corrected = newim(ac,'complex');
+for k=0:size(ac,3)-1;
+  ac_corrected(:,:,k)=ac(:,:,k).*exp(-2*pi*i*avgphase(k));
+end
+phase(gaussf(real(ac_corrected))+i*gaussf(imag(ac_corrected)))
