@@ -1,3 +1,5 @@
+% -*- mode: Octave;-*-
+
 %% convert pgm 16-bit data to tif with imagej
 % the following was acquired with the sony icx ccd sensor
 a = readtimeseries('/dev/shm/20140215/20140215_2.tif');
@@ -51,7 +53,46 @@ phase(gaussf(real(ac))+i*gaussf(imag(ac))).*mask
 dac = newim(ac,'complex');
 for k=1:size(ac,3)-1;
   dac(:,:,k)=-imag((ac(:,:,0)-ac(:,:,k-1))/ac(:,:,0));
+end % perhaps this isn't the best approach because of intensity fluctuations
+gaussf(real(dac).*mask)
+
+% average the phase difference to the first image in the central area
+% of each image
+avgphase=newim(size(ac,3));
+for k=0:size(avgphase)-1
+  avgphase(k)=mean(real(dac(:,:,k)).*mask);
 end
+avgphase
+
+% subtract the estimated phase fluctuation from measurement
+ac_corrected = newim(ac,'complex');
+for k=0:size(ac,3)-1;
+  ac_corrected(:,:,k)=ac(:,:,k).*exp(-2*pi*i*avgphase(k));
+end
+phase(gaussf(real(ac_corrected))+i*gaussf(imag(ac_corrected))).*mask
+
+% average the phase corrected holograms
+ac_avg = mean(real(ac_corrected),[],3) + i*mean(imag(ac_corrected),[],3);
+
+
+
+% mkdir /dev/shm/tif;for i in /media/sda2/stabil-p/20140216/2/2_*;do convert $i /dev/shm/tif/`basename $i .pgm`.tif;done
+a=readtimeseries('/dev/shm/tif/2_000.tif');
+ka=extract(dip_fouriertransform(a,'forward',[1 1 0]),[128 128],[220 60]);
+% demodulating the first order gives us the complex valued field
+ac=dip_fouriertransform(ka,'inverse',[1 1 0]);
+
+
+mask = gaussf(mean(abs(ac),[],3))>600;
+mask(33,63,0)=0; % something weird going on with this pixel
+
+phase(gaussf(real(ac))+i*gaussf(imag(ac))).*mask
+
+% calculate phase change relative to first image
+dac = newim(ac,'complex');
+for k=1:size(ac,3)-1;
+  dac(:,:,k)=-imag((ac(:,:,0)-ac(:,:,k-1))/ac(:,:,0));
+end % perhaps this isn't the best approach because of intensity fluctuations
 gaussf(real(dac).*mask)
 
 % average the phase difference to the first image in the central area
