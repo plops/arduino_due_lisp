@@ -77,16 +77,22 @@ ac_avg = mean(real(ac_corrected),[],3) + i*mean(imag(ac_corrected),[],3);
 
 
 % mkdir /dev/shm/tif;for i in /media/sda2/stabil-p/20140216/2/2_*;do convert $i /dev/shm/tif/`basename $i .pgm`.tif;done
-a=readtimeseries('/dev/shm/tif/2_000.tif');
+%mkdir /dev/shm/tif;for i in /media/sda2/stabil-p/20140216/3/3_*;do convert $i /dev/shm/tif/`basename $i .pgm`.tif;done
+% ls 3*|while read -r i; do mv $i `echo $i | cut -d "_" -f 2`.tif;done
+a=readtimeseries('/dev/shm/tif/3/000.tif');
 ka=extract(dip_fouriertransform(a,'forward',[1 1 0]),[128 128],[220 60]);
 % demodulating the first order gives us the complex valued field
 ac=dip_fouriertransform(ka,'inverse',[1 1 0]);
 
 
-mask = gaussf(mean(abs(ac),[],3))>600;
+mask = gaussf(mean(abs(ac),[],3))>1200;
 mask(33,63,0)=0; % something weird going on with this pixel
 
-phase(gaussf(real(ac))+i*gaussf(imag(ac))).*mask
+phase(gaussf(real(ac),2)+i*gaussf(imag(ac),2)).*mask
+
+ac_f=((gaussf(real(ac),2))+i*(gaussf(imag(ac),2)));
+dac_f=(dz(gaussf(real(ac),2))+i*dz(gaussf(imag(ac),2)));
+dac_f=gaussf(imag(dac_f./ac_f(:,:,0)))
 
 % calculate phase change relative to first image
 dac = newim(ac,'complex');
@@ -99,7 +105,7 @@ gaussf(real(dac).*mask)
 % of each image
 avgphase=newim(size(ac,3));
 for k=0:size(avgphase)-1
-  avgphase(k)=mean(real(dac(:,:,k)).*mask);
+  avgphase(k)=mean(real(dac_f(:,:,k)).*mask);
 end
 avgphase
 
