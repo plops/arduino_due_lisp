@@ -128,7 +128,26 @@ radoncircle(minima(dogs(:,:,1)),[120/2:130/2])
 
 aa=mean(abs(dip_fouriertransform(DampEdge(im,.08,2),'forward',[1 1 0])),[],3)
 aa=squeeze(aa);
-aa_z=aa.*gaussf(rr(aa,'freq')>.2 & yy(aa,'freq')>-.4 & yy(aa,'freq')<.4,10); % get rid of dc peak and peak at nyquist
+aa_z=aa.*gaussf(rr(aa,'freq')>.2 & shift(rr(aa,'freq'),[0 floor(size(aa,2)/2)])>.1,10); % get rid of dc peak and peak at nyquist
 aa2=cat(1,aa_z,aa_z)
 
 [rt p o]=radoncircle(dx(aa2).^2+dy(aa2).^2,[43:2:64],1)
+
+cx=p(5,1);
+cy=p(5,2);
+rad=p(5,3);
+diam=ceil(rad*2*1.1);
+extract(aa2,[diam diam],[round(cx) round(cy)])
+
+aas=dip_fouriertransform(extract(dip_fouriertransform(DampEdge(im,.08,2),'forward',[1 1 0]),[diam diam],[round(cx) round(cy)]),'inverse',[1 1 0])
+
+aa3=squeeze(mean(abs(aas),[],3));
+[rt p o]=radoncircle(dx(aa3).^2+dy(aa3).^2,[24:2:32],1)
+
+rcx=p(1,1);
+rcy=p(1,2);
+rrad=p(1,3);
+rdiam=ceil(rrad*2*1.3);
+
+min_a2=extract(aas,[rdiam rdiam],[round(rcx) round(rcy)])
+dip_fouriertransform(min_a2,'forward',[1 1 0])
