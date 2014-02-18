@@ -85,5 +85,10 @@ for k=0:z-1
   a1b(:,:,k)=ift(extract(ft(a1(:,:,k)),[256 256]));
 end
 
-volkov_unwrap(squeeze(a1b(:,:,70)));
 addpath('/home/martin/Arduino/arduino_due_lisp/')
+
+unwph = newim([256 256 z],'single');
+for k=0:z-1
+  unwph(:,:,k)=volkov_unwrap(squeeze(a1b(:,:,k)));
+end
+
