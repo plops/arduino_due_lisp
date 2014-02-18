@@ -92,3 +92,32 @@ for k=0:z-1
   unwph(:,:,k)=volkov_unwrap(squeeze(a1b(:,:,k)));
 end
 
+mask = gaussf(mean(abs(a1b),[],3))>.1;
+
+writeim(unwph.*mask,'/dev/shm/unwph.fits')
+
+
+%% the cmos (cam1) has 8x8 um pixels
+%% the ccd (cam2) has 5.6x5.6 um pixels
+% find a good image integral image size for both
+% factor(56) => 2 2 2 7
+% mean(abs(a1),[],3)
+% field diameter on cam1: 63 px = 7*9
+% field diameter on cam2: 73 px
+% 8*63/5.6 => 90
+
+% extract(mean(abs(a1),[],3),[63 63],[57 53])
+% extract(mean(abs(a2),[],3),[90 90],[47 52])
+
+% find centroid
+int1=mean(abs(a1),[],3);
+cent1=[sum(xx(int1).*int1)/sum(int1) sum(yy(int1).*int1)/sum(int1)]
+
+ka1s=dip_fouriertransform(extract(a1,[63 63],[57 53]),'forward',[1 1 0]);
+ka2s=extract(dip_fouriertransform(extract(a2,[90 90],[47 52]),'forward',[1 1 0]),[63 63],[45 45]);
+
+cat(3,mean(abs(ka1s),[],3),mean(abs(ka2s),[],3));
+
+a1s= extract(a1,[63 63],[57 53]);
+a2s=dip_fouriertransform(ka2s,'inverse',[1 1 0]);
+cat(3,mean(abs(a1s),[],3),mean(abs(a2s),[],3));
