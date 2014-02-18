@@ -58,19 +58,53 @@ end
 
 
   % due to the large pixel size of the cmos i ended up with an aliased
-% hologram, in order to easy extracting the first order i use fftn
-% without fftshift
-%ka=newim([w h],'single');
-%for k=0:z-1
-%  ka(:,:)=ka(:,:)+abs(dip_image(fftn(dip_array(im(:,:,k)))));
-%end
-%extract(ka,[112 112],[259 57])
+  % hologram
 
-
-a1 = newim([112 112 z],'complex');
+ka=newim([w h],'single');
 for k=0:z-1
-  a1(:,:,k) = ift(dip_image(fftshift(dip_array(extract(dip_image(fftn(dip_array(squeeze(im(:,:,k))))),[112 112],[259 57])))));
+  ka(:,:)=ka(:,:)+abs(ft(im(:,:,k)));
+end
+log(abs(cat(1,ka,ka))))
+DampEdge(extract(log(abs(cat(1,ka,ka))),[118 118],[514 312]),.08,2,1,2)
+
+
+a1 = newim([118 118 z],'complex');
+for k=0:z-1
+  ka = ft(DampEdge(squeeze(im(:,:,k)),.08,2));
+  ka = extract(cat(1,ka,ka),[118 118],[514 312]);
+  a1(:,:,k) = ift(DampEdge(ka,.08,2,0,1));
+end
+%ft(a1(:,:,70))
+% phase(a1)
+
+writeim(abs(a1),'/dev/shm/a1.tif')
+
+% make a bigger image
+a1b = newim([256 256 z],'complex');
+for k=0:z-1
+  a1b(:,:,k)=ift(extract(ft(a1(:,:,k)),[256 256]));
 end
 
-writeim(abs(a2),'/dev/shm/a2.tif')
+% volkov 2003 phase unwrapping in the presence of noise
+clear i;
+z=squeeze(a1b(:,:,70));
+zx=real((dx(real(z))+i*dx(imag(z)))./(i*z));
+zy=real((dy(real(z))+i*dy(imag(z)))./(i*z));
 
+%% this is equation 3 from the paper
+ka=(ft(zx).*xx(zx,'freq') + ft(zy).*yy(zy,'freq'))./rr(zx,'freq').^2;
+ka(floor(size(ka,1)/2),floor(size(ka,2)/2))=0;
+% first estimation of unwrapped phase (according to paper around 2% error)
+ph1=real(ift(ka)/(2*pi*i))
+
+
+kx=(zx-dx(ph1))/(2*pi);
+ky=(zy-dy(ph1))/(2*pi);
+ka=(ft(kx).*xx(kx,'freq') + ft(ky).*yy(ky,'freq'))./rr(kx,'freq').^2;
+ka(floor(size(ka,1)/2),floor(size(ka,2)/2))=0;
+% reconstructed integer field
+k_recon=round(real(ift(ka)/(2*pi*i)));
+
+% using the integer field, produce a better correction of the unwrapped phase
+ph2=ph1-2*pi*k_recon;
+%cat(3,ph1,ph2,(phase(exp(i*ph2))-phase(z))/(2*pi),ph2-(phase(exp(i*ph2))-phase(z)))
