@@ -15,8 +15,7 @@
 % color number), but loading my pgm images seems to work anyway
 
 folder = '/dev/shm/20140217/'
-fns=dir([folder '*_2_*.pgm']); % get all filenames of images of camera
-2
+fns=dir([folder '*_2_*.pgm']); % get all filenames of images of camera 2
 temp=readim([folder fns(1).name]); % just open one image to get the
 dimensions
 w = size(temp,1);
@@ -40,7 +39,7 @@ for k=0:z-1
   a2(:,:,k) = ift(extract(ft(squeeze(im(:,:,k))),[96 96],[156 69]));
 end
 
-writeim(abs(a2),'/dev/shm/a2.tif')
+% writeim(abs(a2),'/dev/shm/a2.tif')
 
 
 fns=dir([folder '*_1_*.pgm']); % get all filenames of images of camera 1
@@ -60,12 +59,12 @@ end
   % due to the large pixel size of the cmos i ended up with an aliased
   % hologram
 
-ka=newim([w h],'single');
-for k=0:z-1
-  ka(:,:)=ka(:,:)+abs(ft(im(:,:,k)));
-end
-log(abs(cat(1,ka,ka))))
-DampEdge(extract(log(abs(cat(1,ka,ka))),[118 118],[514 312]),.08,2,1,2)
+%ka=newim([w h],'single');
+%for k=0:z-1
+%  ka(:,:)=ka(:,:)+abs(ft(im(:,:,k)));
+%end
+%log(abs(cat(1,ka,ka))))
+%DampEdge(extract(log(abs(cat(1,ka,ka))),[118 118],[514 312]),.08,2,1,2)
 
 
 a1 = newim([118 118 z],'complex');
@@ -74,16 +73,18 @@ for k=0:z-1
   ka = extract(cat(1,ka,ka),[118 118],[514 312]);
   a1(:,:,k) = ift(DampEdge(ka,.08,2,0,1));
 end
+
+
 %ft(a1(:,:,70))
 % phase(a1)
 
-writeim(abs(a1),'/dev/shm/a1.tif')
+% writeim(abs(a1),'/dev/shm/a1.tif')
 
 % make a bigger image
-a1b = newim([256 256 z],'complex');
-for k=0:z-1
-  a1b(:,:,k)=ift(extract(ft(a1(:,:,k)),[256 256]));
-end
+%a1b = newim([256 256 z],'complex');
+%for k=0:z-1
+%  a1b(:,:,k)=ift(extract(ft(a1(:,:,k)),[256 256]));
+%end
 
 addpath('/home/martin/Arduino/arduino_due_lisp/')
 
@@ -109,10 +110,13 @@ writeim(unwph.*mask,'/dev/shm/unwph.fits')
 % extract(mean(abs(a1),[],3),[63 63],[57 53])
 % extract(mean(abs(a2),[],3),[90 90],[47 52])
 
-% find centroid
-int1=mean(abs(a1),[],3);
-cent1=[sum(xx(int1).*int1)/sum(int1) sum(yy(int1).*int1)/sum(int1)]
-int1c=real(ift(ft(int1)*exp(2*pi*i*(xx(int1,'freq')*cent1(1)+yy(int1,'freq')*cent1(2)))))
+				% find centroid
+a1c=center_centroid(a1);
+ka1c=center_centroid(dip_fouriertransform(a1c,'forward',[1 1 0]));
+a2c=center_centroid(a2);
+ka2c=center_centroid(dip_fouriertransform(a2c,'forward',[1 1 0]));
+
+cat(3,mean(abs(a1c),[],3),extract(mean(abs(a2c),[],3),size(a1c(:,:,0))),mean(abs(ka1c),[],3),extract(mean(abs(ka2c),[],3),size(a1c(:,:,0))))
 
 int2=mean(abs(a2),[],3);
 cent2=[sum(xx(int2).*int2)/sum(int2) sum(yy(int2).*int2)/sum(int2)]
