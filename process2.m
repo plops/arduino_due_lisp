@@ -112,6 +112,10 @@ writeim(unwph.*mask,'/dev/shm/unwph.fits')
 % find centroid
 int1=mean(abs(a1),[],3);
 cent1=[sum(xx(int1).*int1)/sum(int1) sum(yy(int1).*int1)/sum(int1)]
+int1c=real(ift(ft(int1)*exp(2*pi*i*(xx(int1,'freq')*cent1(1)+yy(int1,'freq')*cent1(2)))))
+
+int2=mean(abs(a2),[],3);
+cent2=[sum(xx(int2).*int2)/sum(int2) sum(yy(int2).*int2)/sum(int2)]
 
 ka1s=dip_fouriertransform(extract(a1,[63 63],[57 53]),'forward',[1 1 0]);
 ka2s=extract(dip_fouriertransform(extract(a2,[90 90],[47 52]),'forward',[1 1 0]),[63 63],[45 45]);
