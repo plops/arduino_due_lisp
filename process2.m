@@ -28,4 +28,14 @@ for k=1:size(fns)
   im(:,:,k-1)=(readim([folder fns(k).name])-100)./exposure;
 end
 
-im=reshape(im,[w h 16 16]);
+%im=reshape(im,[w h 16 16]);
+%im=reshape(im,[w h 256]);
+
+log(abs(ft(im(:,:,32))))
+
+ka=dip_fouriertransform(im,'forward',[1 1 0])
+
+mean(ans,[],3)
+proj=ans;
+
+extract(proj,[96 96],[156 69]);
