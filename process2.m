@@ -124,5 +124,11 @@ dogs=cat(3,gaussf(blobs(:,:,2),rad1)-gaussf(blobs(:,:,2),rad2),gaussf(blobs(:,:,
 radoncircle(minima(dogs(:,:,0)),[132/2:156/2])
 radoncircle(minima(dogs(:,:,1)),[120/2:130/2])
 [rt p o]=radoncircle(dx(real(squeeze(blobs(:,:,2)))).^2+dy(real(squeeze(blobs(:,:,2)))).^2,[43:2:64],1)
+[rt p o]=radoncircle(dx(real(squeeze(blobs(:,:,3)))).^2+dy(real(squeeze(blobs(:,:,3)))).^2,[30:2:64],1)
 
-				% gaussianlineclip is a nice function
+aa=mean(abs(dip_fouriertransform(DampEdge(im,.08,2),'forward',[1 1 0])),[],3)
+aa=squeeze(aa);
+aa_z=aa.*gaussf(rr(aa,'freq')>.2 & yy(aa,'freq')>-.4 & yy(aa,'freq')<.4,10); % get rid of dc peak and peak at nyquist
+aa2=cat(1,aa_z,aa_z)
+
+[rt p o]=radoncircle(dx(aa2).^2+dy(aa2).^2,[43:2:64],1)
