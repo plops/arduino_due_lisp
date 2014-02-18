@@ -138,16 +138,20 @@ cy=p(5,2);
 rad=p(5,3);
 diam=ceil(rad*2*1.1);
 extract(aa2,[diam diam],[round(cx) round(cy)])
-
-aas=dip_fouriertransform(extract(dip_fouriertransform(DampEdge(im,.08,2),'forward',[1 1 0]),[diam diam],[round(cx) round(cy)]),'inverse',[1 1 0])
+ka2=dip_fouriertransform(DampEdge(im,.08,2),'forward',[1 1 0]);
+aas=dip_fouriertransform(extract(cat(1,ka2,ka2),[diam diam],[round(cx) round(cy)]),'inverse',[1 1 0])
+clear(ka2);
 
 aa3=squeeze(mean(abs(aas),[],3));
-[rt p o]=radoncircle(dx(aa3).^2+dy(aa3).^2,[24:2:32],1)
+%% increase size so that radon hough circle finding works better
+%% problems arise because there is some dust on the cmos camera
+aa3big=medif(real(ift(extract(ft(aa3),[2*size(aa3,1) 2*size(aa3,2)]))),13);
+[rt p o]=radoncircle(dx(aa3big).^2+dy(aa3big).^2,[48:2:68],1)
 
-rcx=p(1,1);
-rcy=p(1,2);
+rcx=p(1,1)/2;
+rcy=p(1,2)/2;
 rrad=p(1,3);
-rdiam=ceil(rrad*2*1.3);
+rdiam=ceil(rrad*1.3);
 
 min_a2=extract(aas,[rdiam rdiam],[round(rcx) round(rcy)])
 dip_fouriertransform(min_a2,'forward',[1 1 0])
