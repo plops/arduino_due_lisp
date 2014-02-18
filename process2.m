@@ -116,16 +116,13 @@ ka1c=center_centroid(dip_fouriertransform(a1c,'forward',[1 1 0]));
 a2c=center_centroid(a2);
 ka2c=center_centroid(dip_fouriertransform(a2c,'forward',[1 1 0]));
 
-cat(3,mean(abs(a1c),[],3),extract(mean(abs(a2c),[],3),size(a1c(:,:,0))),mean(abs(ka1c),[],3),extract(mean(abs(ka2c),[],3),size(a1c(:,:,0))))
+big=[256 256];
+blobs=cat(3,extract(mean(abs(a1c),[],3)./sum(abs(a1c)),big),extract(mean(abs(a2c),[],3)./sum(abs(a2c)),big),extract(mean(abs(ka1c),[],3)./sum(abs(ka1c)),big),extract(mean(abs(ka2c),[],3)./sum(abs(ka2c)),big));
 
-int2=mean(abs(a2),[],3);
-cent2=[sum(xx(int2).*int2)/sum(int2) sum(yy(int2).*int2)/sum(int2)]
+rad1=24;rad2=26
+dogs=cat(3,gaussf(blobs(:,:,2),rad1)-gaussf(blobs(:,:,2),rad2),gaussf(blobs(:,:,3),rad1)-gaussf(blobs(:,:,3),rad2))
+radoncircle(minima(dogs(:,:,0)),[132/2:156/2])
+radoncircle(minima(dogs(:,:,1)),[120/2:130/2])
+[rt p o]=radoncircle(dx(real(squeeze(blobs(:,:,2)))).^2+dy(real(squeeze(blobs(:,:,2)))).^2,[43:2:64],1)
 
-ka1s=dip_fouriertransform(extract(a1,[63 63],[57 53]),'forward',[1 1 0]);
-ka2s=extract(dip_fouriertransform(extract(a2,[90 90],[47 52]),'forward',[1 1 0]),[63 63],[45 45]);
-
-cat(3,mean(abs(ka1s),[],3),mean(abs(ka2s),[],3));
-
-a1s= extract(a1,[63 63],[57 53]);
-a2s=dip_fouriertransform(ka2s,'inverse',[1 1 0]);
-cat(3,mean(abs(a1s),[],3),mean(abs(a2s),[],3));
+				% gaussianlineclip is a nice function
