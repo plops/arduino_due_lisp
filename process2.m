@@ -144,14 +144,55 @@ clear(ka2);
 
 aa3=squeeze(mean(abs(aas),[],3));
 %% increase size so that radon hough circle finding works better
-%% problems arise because there is some dust on the cmos camera
+%% problems arise because there is some dust on the cmos camera, i use
+%% a median filter against this
 aa3big=medif(real(ift(extract(ft(aa3),[2*size(aa3,1) 2*size(aa3,2)]))),13);
 [rt p o]=radoncircle(dx(aa3big).^2+dy(aa3big).^2,[48:2:68],1)
 
 rcx=p(1,1)/2;
 rcy=p(1,2)/2;
 rrad=p(1,3);
-rdiam=ceil(rrad*1.3);
+rdiam=ceil(rrad*1.1);
+
+min_a1=extract(aas,[rdiam rdiam],[round(rcx) round(rcy)])
+
+% store minimal representation of the electric field on the cmos camera
+save '/media/sda2/stabil-p/20140217_min_a1' min_a1
+load '/media/sda2/stabil-p/20140217_min_a1' min_a1
+
+
+
+aa=mean(abs(dip_fouriertransform(DampEdge(im,.08,2),'forward',[1 1 0])),[],3)
+aa=squeeze(aa);
+aa_z=aa.*gaussf(rr(aa,'freq')>.2 & shift(rr(aa,'freq'),[0 floor(size(aa,2)/2)])>.1,10); % get rid of dc peak and peak at nyquist
+aa2=aa_z
+
+[rt p o]=radoncircle(dx(aa2).^2+dy(aa2).^2,[32:1:40],1)
+
+cx=p(1,1);
+cy=p(1,2);
+rad=p(1,3);
+diam=ceil(rad*2*1.1);
+extract(aa2,[diam diam],[round(cx) round(cy)])
+ka2=dip_fouriertransform(DampEdge(im,.08,2),'forward',[1 1 0]);
+aas=dip_fouriertransform(extract(ka2,[diam diam],[round(cx) round(cy)]),'inverse',[1 1 0])
+clear ka2
+
+aa3=squeeze(mean(abs(aas),[],3));
+%% increase size so that radon hough circle finding works better
+%% problems arise because there is some dust on the cmos camera, i use
+%% a median filter against this
+aa3big=medif(real(ift(extract(ft(aa3),[2*size(aa3,1) 2*size(aa3,2)]))),13);
+[rt p o]=radoncircle(dx(aa3big).^2+dy(aa3big).^2,[52:1:62],1)
+
+rcx=p(2,1)/2;
+rcy=p(2,2)/2;
+rrad=p(2,3);
+rdiam=size(min_a1,1); %ceil(rrad*1.1);
 
 min_a2=extract(aas,[rdiam rdiam],[round(rcx) round(rcy)])
 dip_fouriertransform(min_a2,'forward',[1 1 0])
+
+% store minimal representation of the electric field on the ccd camera
+save '/media/sda2/stabil-p/20140217_min_a2' min_a2
+load '/media/sda2/stabil-p/20140217_min_a2' min_a2
