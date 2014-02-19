@@ -29,7 +29,7 @@ use this to check assembly code:
 #include <setjmp.h>
 +HEADERS+
 
-+FUNCTIONS+
++GLOBALS+
 
 #define VERBOSEGC 0
 
@@ -127,7 +127,7 @@ enum {
     // functions
     F_EQ, F_ATOM, F_CONS, F_CAR, F_CDR, F_READ, F_EVAL, F_PRINT, F_SET, F_NOT,
     F_LOAD, F_SYMBOLP, F_NUMBERP, F_ADD, F_SUB, F_MUL, F_DIV, F_LT, F_PROG1,
-    F_APPLY, F_RPLACA, F_RPLACD, F_BOUNDP, +FUNCTIONS_ENUM+ , N_BUILTINS
+    F_APPLY, F_RPLACA, F_RPLACD, F_BOUNDP, +ENUMS+ , N_BUILTINS
 };
 #define isspecial(v) (intval(v) <= (int)F_PROGN)
 
@@ -135,7 +135,7 @@ static char *builtin_names[] =
     { "quote", "cond", "if", "and", "or", "while", "lambda", "macro", "label",
       "progn", "eq", "atom", "cons", "car", "cdr", "read", "eval", "print",
       "set", "not", "load", "symbolp", "numberp", "+", "-", "*", "/", "<",
-      "prog1", "apply", "rplaca", "rplacd", "boundp", +FUNCTIONS_NAMES+ };
+      "prog1", "apply", "rplaca", "rplacd", "boundp", +LISP_NAME+ };
 
 static char *stack_bottom;
 #define PROCESS_STACK_SIZE (1024)
@@ -154,6 +154,10 @@ void print(FILE *f, value_t v);
 value_t eval_sexpr(value_t e, value_t *penv);
 value_t load_file(char *fname);
 
+
++INIT+
+
++FUN+
 
 // error utilities ------------------------------------------------------------
 
@@ -926,6 +930,7 @@ value_t eval_sexpr(value_t e, value_t *penv)
                 lerror("prog1: error: too few arguments\n");
             v = Stack[saveSP+2];
             break;
+	+STACK+
         case F_APPLY:
             argcount("apply", nargs, 2);
             v = Stack[saveSP] = Stack[SP-1];  // second arg is new arglist
@@ -1072,6 +1077,7 @@ void setup() {
   Serial.begin(115200);
   stack_bottom = ((char*)&v) - PROCESS_STACK_SIZE;
   lisp_init();
+  +SETUP+
   
   Serial.println("welcome to femtolisp ----------\n");
   Serial.print("> ");

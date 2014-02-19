@@ -1,30 +1,5 @@
 (require :cl-ppcre)
 
-;; +HEADERS+
-;; #include <SPI/SPI.h>
-
-;; +FUNCTIONS+
-
-;; const int chipSelectPin = 16;
-;; void setup_max532()
-;; {
-;;   // start the SPI library:
-;;   SPI.begin();
-;; }
-
-;; +FUNCTIONS_ENUM+
-;; F_DAC, F_DIGITALWRITE, F_PINMODE, F_ADC, F_DELAY, F_DELAYMICROSECONDS, F_MICROS, F_ROOM
-
-;; +FUNCTIONS_NAMES+
-;; "dac", "digital-write", "pin-mode",
-;; "adc", "delay", "delay-microseconds", "micros", "room"
-
-;; 	+FUNCTIONS_STACK_PROCESSING+
-;; 	case F_DAC:
-;; 	  argcount("dac", nargs, 2);
-;; 	  writeDAC(tonumber(Stack[SP-2],"dac"),tonumber(Stack[SP-1],"dac"));
-;; 	    v=T;
-;; 	  break;
 
 (defun comma-list (list)
   "print elements of a list with commas in between"
@@ -38,6 +13,7 @@
   ((header :accessor header :initarg :header)
    (globals :accessor globals :initarg :globals)
    (enums :accessor enums :initarg :enums)
+   (lisp-name :accessor lisp-name :initarg :lisp-name)
    (setup :accessor setup :initarg :setup :documentation "these expressions will be called by setup() when the arduino program starts")
    (init :accessor init :initarg :init :documentation "definition of initialization functions that will get called from setup")
    (fun :accessor fun :initarg :fun :documentation "definition of functions that can be called from lisp")
@@ -48,6 +24,7 @@
 		 :header (concatenate 'string (slot-value a 'header) (slot-value b 'header))
 		 :globals (concatenate 'string (slot-value a 'globals) (slot-value b 'globals))
 		 :enums (comma-list (list (slot-value a 'enums) (slot-value b 'enums)))
+		 :lisp-name (comma-list (list (slot-value a 'lisp-name) (slot-value b 'lisp-name)))
 		 :setup (concatenate 'string (slot-value a 'setup) (slot-value b 'setup))
 		 :init (concatenate 'string (slot-value a 'init) (slot-value b 'init))
 		 :fun (concatenate 'string (slot-value a 'fun) (slot-value b 'fun))
@@ -65,6 +42,9 @@
 
 (defun emit-enum (name)
   (format nil "~a" name))
+
+(defun emit-lisp-name (name)
+  (format nil "~s" name))
 
 (defun emit-to-setup (name)
   (format nil "~a~%" name))
@@ -95,6 +75,7 @@
 	:header (when ,header (emit-header ,header))
 	:globals (when ,global (emit-global ,global))
 	:enums  (when ,enum-name (emit-enum ,enum-name))
+	:lisp-name  (emit-lisp-name ,lisp-name)
 	:setup (when ,to-setup (emit-to-setup ,to-setup))
 	:init (when ,init
 		(emit-c-fun ,(concatenate 'string name "_init")
@@ -172,13 +153,46 @@
  	  }
  	  return number((curheap-fromspace)/8);"))))
 
-(defparameter *template*
- (with-open-file (s "arduino_due_lisp.template")
-   (let ((a (make-string (file-length s))))
-     (read-sequence a s)
-     a)))
-(format t "~a~%"
- (cl-ppcre:regex-replace "\\+FUNCTIONS_ENUM\\+" *template* "blabla"))
+;; +HEADERS+
+;; #include <SPI/SPI.h>
 
+;; +FUNCTIONS+
 
+;; const int chipSelectPin = 16;
+;; void setup_max532()
+;; {
+;;   // start the SPI library:
+;;   SPI.begin();
+;; }
 
+;; +FUNCTIONS_ENUM+
+;; F_DAC, F_DIGITALWRITE, F_PINMODE, F_ADC, F_DELAY, F_DELAYMICROSECONDS, F_MICROS, F_ROOM
+
+;; +FUNCTIONS_NAMES+
+;; "dac", "digital-write", "pin-mode",
+;; "adc", "delay", "delay-microseconds", "micros", "room"
+
+;; 	+FUNCTIONS_STACK_PROCESSING+
+;; 	case F_DAC:
+;; 	  argcount("dac", nargs, 2);
+;; 	  writeDAC(tonumber(Stack[SP-2],"dac"),tonumber(Stack[SP-1],"dac"));
+;; 	    v=T;
+;; 	  break;
+
+(progn
+  (defparameter *template-file*
+    (with-open-file (s "arduino_due_lisp.template")
+      (let ((a (make-string (file-length s))))
+	(read-sequence a s)
+	a)))
+  (loop for (e slot) in `(("\\+HEADERS\\+" header)
+			  ("\\+GLOBALS\\+" globals)
+			  ("\\+ENUMS\\+" enums)
+			  ("\\+LISP_NAME\\+" lisp-name)
+			  ("\\+SETUP\\+" setup)
+			  ("\\+INIT\\+" init)
+			  ("\\+FUN\\+" fun)
+			  ("\\+STACK\\+" stack)) do
+       (setf *template-file*
+	     (cl-ppcre:regex-replace e *template-file* (slot-value *base* slot))))
+  (format t "~a~%" *template-file*))
