@@ -26,7 +26,6 @@
 ;; 	    v=T;
 ;; 	  break;
 
-
 (defun comma-list (list)
   "print elements of a list with commas in between"
   (with-output-to-string (s)
@@ -34,35 +33,40 @@
 	 (format s "~a," e))
     (format s "~a" (car (last list)))))
 
+
+(defclass template ()
+  ((header :accessor header :initarg :header)
+   (globals :accessor globals :initarg :globals)
+   (enums :accessor enums :initarg :enums)
+   (setup :accessor setup :initarg :setup :documentation "these expressions will be called by setup() when the arduino program starts")
+   (init :accessor init :initarg :init :documentation "definition of initialization functions that will get called from setup")
+   (fun :accessor fun :initarg :fun :documentation "definition of functions that can be called from lisp")
+   (stack :accessor stack :initarg :stack :documentation "code that will obtain parameters from the lisp stack and pass them to the new functions")))
+
+(defmethod combine ((a template) (b template))
+  (make-instance 'template
+		 :header (concatenate 'string
+				      (slot-value a 'header)
+				      (slot-value b 'header))))
+
 (defun emit-c-fun (name args fun)
-  (format t "value_t ~a (~a) ~%{~a~%}~%"
+  (format nil "value_t ~a (~a) ~%{~a~%}~%"
 	  name (comma-list args) fun))
 
 (defun emit-global (g)
-  (format t "~a~%" g))
+  (format nil "~a~%" g))
+
 (defun emit-header (g)
-  (format t "~a~%" g))
-
-
-;; case F_DAC:
-;; 	  argcount("dac", nargs, 2);
-;; 	  writeDAC(tonumber(Stack[SP-2],"dac"),tonumber(Stack[SP-1],"dac"));
-;; 	    v=T;
-;; 	  break;
+  (format nil "~a~%" g))
 
 (defun emit-enum (name)
-  (format t "~a~%" name))
+  (format nil "~a~%" name))
 
 (defun emit-to-setup (name)
-  (format t "~a~%" name))
-
-
-
-#+nil
-(comma-list '(1 2 3))
+  (format nil "~a~%" name))
 
 (defun emit-case (lisp-name name enum-name args)
-  (format t "case ~a: {~%  argcount(~s,nargs,~a); 
+  (format nil "case ~a: {~%  argcount(~s,nargs,~a); 
   v= ~a_fun(~a);
 }  break;~%"
 	  enum-name
@@ -71,45 +75,45 @@
 		     (format nil "tonumber(Stack[SP~a],~s)"
 			     i lisp-name)))))
 
-
-
-
 (defun parse-name-or-list (name-or-list)
   (cond ((consp name-or-list) (values (first name-or-list)
 				      (second name-or-list)))
 	(t (values name-or-list
 		   name-or-list))))
 
+
+
 (defmacro gen-c-chunks (name-or-list arglist &key init global fun to-setup header)
   (multiple-value-bind (lisp-name name) (parse-name-or-list name-or-list)
     (let ((enum-name (string-upcase (concatenate 'string "F_" name))))
-      `(progn
-	 (when ,header (emit-header ,header))
-	 (when ,global (emit-global ,global))
-	 (when ,enum-name (emit-enum ,enum-name))
-	 (when ,to-setup (emit-to-setup ,to-setup))
-	 (when ,init
-	   (emit-c-fun ,(concatenate 'string name "_init")
-		       '() ,init))
-	 (when ,fun
-	   (emit-c-fun ,(concatenate 'string name "_fun")
-		       ',arglist ,fun))
-	 (emit-case ,lisp-name ,name ,enum-name ',arglist)))))
+      `(make-instance
+	'template 
+	:header (when ,header (emit-header ,header))
+	:globals (when ,global (emit-global ,global))
+	:enums  (when ,enum-name (emit-enum ,enum-name))
+	:setup (when ,to-setup (emit-to-setup ,to-setup))
+	:init (when ,init
+		(emit-c-fun ,(concatenate 'string name "_init")
+			    '() ,init))
+	:fun (when ,fun
+	       (emit-c-fun ,(concatenate 'string name "_fun")
+			   ',arglist ,fun))
+	:stack (emit-case ,lisp-name ,name ,enum-name ',arglist)))))
 
-
-(gen-c-chunks "dac" ("unsigned short b" "unsigned short a")
-	      :header "#include <SPI/SPI.h>"
-	      :global "const int dac_chip_select_pin = 16;"
-	      :init "
+(defparameter *dac*
+ (gen-c-chunks "dac" ("unsigned short b" "unsigned short a")
+	       :header "#include <SPI/SPI.h>"
+	       :global "const int dac_chip_select_pin = 16;"
+	       :init "
   SPI.begin();
   SPI.setBitOrder(MSBFIRST);
   SPI.setDataMode(SPI_MODE2);
   pinMode(chipSelectPin, OUTPUT);
   analogReadResolution(12);"
-	      :to-setup "
+	       :to-setup "
   dac_init();
   dac_fun(2048,2048);"
-	      :fun "
+	       :fun "
   digitalWrite(dac_chip_select_pin, LOW);
   byte x,y,z;
   x = (0xff0 & a) >> 4;
@@ -119,7 +123,7 @@
   SPI.transfer(y); 
   SPI.transfer(z); 
   digitalWrite(dac_chip_select_pin, HIGH);
-  return T;")
+  return T;"))
 
 (gen-c-chunks ("pin-mode" "pinMode") ("unint8_t pin" "uint8_t mode")
 	      :fun "
