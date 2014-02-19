@@ -112,7 +112,7 @@
 
 (defparameter *base*
   (reduce #'combine
-	  (list (gen-c-chunks ("pin-mode" "pinMode") ("unint8_t pin" "uint8_t mode")
+	  (list (gen-c-chunks ("pin-mode" "pinMode") ("uint8_t pin" "uint8_t mode")
 			      :fun "
   pinMode(pin,mode);
   return T;"
@@ -131,12 +131,12 @@
 
 		(gen-c-chunks ("delay-microseconds" "delayMicroseconds") ("unsigned int us")
 			      :fun "
-  delayMicroseconds(us));
+  delayMicroseconds(us);
   return T;")
 
 		(gen-c-chunks "delay" ("unsigned long ms")
 			      :fun "
-  delay(ms));
+  delay(ms);
   return T;")
 
 		(gen-c-chunks "micros" ()
@@ -195,4 +195,8 @@
 			  ("\\+STACK\\+" stack)) do
        (setf *template-file*
 	     (cl-ppcre:regex-replace e *template-file* (slot-value *base* slot))))
-  (format t "~a~%" *template-file*))
+  (with-open-file (s "arduino_due_lisp.ino"
+		     :if-exists :supersede
+		     :direction :output
+		     :if-does-not-exist :create)
+    (format s "~a~%" *template-file*)))
