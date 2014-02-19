@@ -196,3 +196,12 @@ dip_fouriertransform(min_a2,'forward',[1 1 0])
 % store minimal representation of the electric field on the ccd camera
 save '/media/sda2/stabil-p/20140217_min_a2' min_a2
 load '/media/sda2/stabil-p/20140217_min_a2' min_a2
+
+
+reshape(min_a2,[w h 16 16])
+phase(ift(extract(ft(min_a1(:,:,70)),[256 256])))
+phase(ift(extract(ft(min_a2(:,:,70)),[256 256])))
+
+q=reshape(min_a1,[62*62 256]);
+mc=corr(dip_array(q))
+mc=corr(dip_array(q)')

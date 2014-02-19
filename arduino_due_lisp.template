@@ -920,10 +920,6 @@ value_t eval_sexpr(value_t e, value_t *penv)
             argcount("read", nargs, 0);
             v = read_sexpr(stdin);
             break;
-//        case F_LOAD:
-   //         argcount("load", nargs, 1);
-    //        v = load_file(tosymbol(Stack[SP-1], "load")->name);
-    //        break;
         case F_PROG1:
             // return first arg
             if (nargs < 1)
@@ -1069,23 +1065,6 @@ value_t toplevel_eval(value_t expr)
     SP = saveSP;
     return v;
 }
-/*
-value_t load_file(char *fname)
-{
-    value_t e, v=NIL;
-    char *lastfile = infile;
-    FILE *f = fopen(fname, "r");
-    infile = fname;
-    if (f == NULL) lerror("file not found\n");
-    while (1) {
-        e = read_sexpr(f);
-        if (feof(f)) break;
-        v = toplevel_eval(e);
-    }
-    infile = lastfile;
-    fclose(f);
-    return v;
-}*/
 
 value_t v;
 
@@ -1094,8 +1073,6 @@ void setup() {
   stack_bottom = ((char*)&v) - PROCESS_STACK_SIZE;
   lisp_init();
   
-  //load_file("system.lsp");
-  //if (argc > 1) { load_file(argv[1]); return 0; }
   Serial.println("welcome to femtolisp ----------\n");
   Serial.print("> ");
   Serial.setTimeout(1);

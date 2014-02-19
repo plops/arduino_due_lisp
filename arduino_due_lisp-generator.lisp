@@ -71,6 +71,17 @@
 	  name (comma-list (loop for i from (- (length args)) upto -1 collect
 		     (format nil "tonumber(Stack[SP~a],~s)"
 			     i lisp-name)))))
+(require :cl-ppcre)
+(defparameter *template*
+ (with-open-file (s "arduino_due_lisp.template")
+   (let ((a (make-string (file-length s))))
+     (read-sequence a s)
+     a)))
+(format t "~a~%"
+ (cl-ppcre:regex-replace "\\+FUNCTIONS_ENUM\\+" *template* "blabla"))
+
+
+
 
 (defun parse-name-or-list (name-or-list)
   (cond ((consp name-or-list) (values (first name-or-list)
