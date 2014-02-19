@@ -155,9 +155,6 @@ value_t eval_sexpr(value_t e, value_t *penv);
 value_t load_file(char *fname);
 
 
-+INIT+
-
-+FUN+
 
 // error utilities ------------------------------------------------------------
 
@@ -269,6 +266,10 @@ void lisp_init(void)
         setc(symbol(builtin_names[i]), builtin(i));
     setc(symbol("princ"), builtin(F_PRINT));
 }
+
++INIT+
+
++FUN+
 
 
 
@@ -899,7 +900,6 @@ value_t eval_sexpr(value_t e, value_t *penv)
             }
             v = number(s);
             break;
-	+FUNCTIONS_STACK_PROCESSING+
         case F_LT:
             argcount("<", nargs, 2);
             if (tonumber(Stack[SP-2],"<") < tonumber(Stack[SP-1],"<"))
@@ -1082,9 +1082,6 @@ void setup() {
   Serial.println("welcome to femtolisp ----------\n");
   Serial.print("> ");
   Serial.setTimeout(1);
-  setup_max532();
-  analogReadResolution(12);
-  writeDAC(2048,2048);
 }
 
 void loop() {

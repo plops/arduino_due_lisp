@@ -156,47 +156,6 @@ value_t load_file(char *fname);
 
 
 
-
-value_t pinMode_fun (uint8_t pin,uint8_t mode) 
-{
-  pinMode(pin,mode);
-  return T;
-}
-value_t digitalWrite_fun (uint32_t ulPin,uint32_t ulVal) 
-{
-  digitalWrite(ulPin,ulVal);
-  return T;
-}
-value_t analogRead_fun (uint32_t ulPin) 
-{
-  return number(analogRead(ulPin));
-}
-value_t delayMicroseconds_fun (unsigned int us) 
-{
-  delayMicroseconds(us);
-  return T;
-}
-value_t delay_fun (unsigned long ms) 
-{
-  delay(ms);
-  return T;
-}
-value_t micros_fun (NIL) 
-{
-  return number(micros());
-}
-value_t room_fun (NIL) 
-{
- 	  {
- 	    char s[80];
- 	    snprintf(s,sizeof(s), "heap: %d/%d, stack: %d/%d",
- 		     (curheap-fromspace)/8, heapsize/8, SP, N_STACK);
- 	    Serial.println(s);
- 	  }
- 	  return number((curheap-fromspace)/8);
-}
-
-
 // error utilities ------------------------------------------------------------
 
 //jmp_buf toplevel;
@@ -307,6 +266,48 @@ void lisp_init(void)
         setc(symbol(builtin_names[i]), builtin(i));
     setc(symbol("princ"), builtin(F_PRINT));
 }
+
+
+
+value_t pinMode_fun (uint8_t pin,uint8_t mode) 
+{
+  pinMode(pin,mode);
+  return T;
+}
+value_t digitalWrite_fun (uint32_t ulPin,uint32_t ulVal) 
+{
+  digitalWrite(ulPin,ulVal);
+  return T;
+}
+value_t analogRead_fun (uint32_t ulPin) 
+{
+  return number(analogRead(ulPin));
+}
+value_t delayMicroseconds_fun (unsigned int us) 
+{
+  delayMicroseconds(us);
+  return T;
+}
+value_t delay_fun (unsigned long ms) 
+{
+  delay(ms);
+  return T;
+}
+value_t micros_fun () 
+{
+  return number(micros());
+}
+value_t room_fun () 
+{
+ 	  {
+ 	    char s[80];
+ 	    snprintf(s,sizeof(s), "heap: %d/%d, stack: %d/%d",
+ 		     (curheap-fromspace)/8, heapsize/8, SP, N_STACK);
+ 	    Serial.println(s);
+ 	  }
+ 	  return number((curheap-fromspace)/8);
+}
+
 
 
 
@@ -937,7 +938,6 @@ value_t eval_sexpr(value_t e, value_t *penv)
             }
             v = number(s);
             break;
-	+FUNCTIONS_STACK_PROCESSING+
         case F_LT:
             argcount("<", nargs, 2);
             if (tonumber(Stack[SP-2],"<") < tonumber(Stack[SP-1],"<"))
@@ -990,11 +990,11 @@ case F_DELAY: {
 }  break;
 case F_MICROS: {
   argcount("micros",nargs,0); 
-  v= micros_fun(NIL);
+  v= micros_fun();
 }  break;
 case F_ROOM: {
   argcount("room",nargs,0); 
-  v= room_fun(NIL);
+  v= room_fun();
 }  break;
 
         case F_APPLY:
@@ -1146,14 +1146,13 @@ void setup() {
   
   pinMode_fun(8,1);
   digitalWrite_fun(8,1);
+analogReadResolution(12);
+
 
   
   Serial.println("welcome to femtolisp ----------\n");
   Serial.print("> ");
   Serial.setTimeout(1);
-  setup_max532();
-  analogReadResolution(12);
-  writeDAC(2048,2048);
 }
 
 void loop() {

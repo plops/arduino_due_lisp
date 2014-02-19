@@ -31,8 +31,11 @@
 		 :stack (concatenate 'string (slot-value a 'stack) (slot-value b 'stack))))
 
 (defun emit-c-fun (name args fun)
-  (format nil "value_t ~a (~a) ~%{~a~%}~%"
-	  name (comma-list args) fun))
+    (if args
+      (format nil "value_t ~a (~a) ~%{~a~%}~%"
+	      name (comma-list args) fun)
+      (format nil "value_t ~a () ~%{~a~%}~%"
+	      name                fun)))
 
 (defun emit-global (g)
   (format nil "~a~%" g))
@@ -50,14 +53,21 @@
   (format nil "~a~%" name))
 
 (defun emit-case (lisp-name name enum-name args)
-  (format nil "case ~a: {~%  argcount(~s,nargs,~a); 
+  (if args
+      (format nil "case ~a: {~%  argcount(~s,nargs,~a); 
   v= ~a_fun(~a);
 }  break;~%"
-	  enum-name
-	  lisp-name (length args)
-	  name (comma-list (loop for i from (- (length args)) upto -1 collect
-		     (format nil "tonumber(Stack[SP~a],~s)"
-			     i lisp-name)))))
+	      enum-name
+	      lisp-name (length args)
+	      name (comma-list (loop for i from (- (length args)) upto -1 collect
+				    (format nil "tonumber(Stack[SP~a],~s)"
+					    i lisp-name))))
+      (format nil "case ~a: {~%  argcount(~s,nargs,~a); 
+  v= ~a_fun();
+}  break;~%"
+	      enum-name
+	      lisp-name (length args)
+	      name )))
 
 (defun parse-name-or-list (name-or-list)
   (cond ((consp name-or-list) (values (first name-or-list)
@@ -126,6 +136,8 @@
   return T;")
 
 		(gen-c-chunks ("adc" "analogRead") ("uint32_t ulPin")
+			      :to-setup "analogReadResolution(12);
+"
 			      :fun "
   return number(analogRead(ulPin));")
 
