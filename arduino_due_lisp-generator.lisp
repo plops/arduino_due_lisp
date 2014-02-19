@@ -45,9 +45,13 @@
 
 (defmethod combine ((a template) (b template))
   (make-instance 'template
-		 :header (concatenate 'string
-				      (slot-value a 'header)
-				      (slot-value b 'header))))
+		 :header (concatenate 'string (slot-value a 'header) (slot-value b 'header))
+		 :globals (concatenate 'string (slot-value a 'globals) (slot-value b 'globals))
+		 :enums (comma-list (list (slot-value a 'enums) (slot-value b 'enums)))
+		 :setup (concatenate 'string (slot-value a 'setup) (slot-value b 'setup))
+		 :init (concatenate 'string (slot-value a 'init) (slot-value b 'init))
+		 :fun (concatenate 'string (slot-value a 'fun) (slot-value b 'fun))
+		 :stack (concatenate 'string (slot-value a 'stack) (slot-value b 'stack))))
 
 (defun emit-c-fun (name args fun)
   (format nil "value_t ~a (~a) ~%{~a~%}~%"
@@ -60,7 +64,7 @@
   (format nil "~a~%" g))
 
 (defun emit-enum (name)
-  (format nil "~a~%" name))
+  (format nil "~a" name))
 
 (defun emit-to-setup (name)
   (format nil "~a~%" name))
@@ -101,7 +105,7 @@
 	:stack (emit-case ,lisp-name ,name ,enum-name ',arglist)))))
 
 (defparameter *dac*
- (gen-c-chunks "dac" ("unsigned short b" "unsigned short a")
+  (gen-c-chunks "dac" ("unsigned short b" "unsigned short a")
 	       :header "#include <SPI/SPI.h>"
 	       :global "const int dac_chip_select_pin = 16;"
 	       :init "
@@ -125,46 +129,48 @@
   digitalWrite(dac_chip_select_pin, HIGH);
   return T;"))
 
-(gen-c-chunks ("pin-mode" "pinMode") ("unint8_t pin" "uint8_t mode")
-	      :fun "
+(defparameter *base*
+  (reduce #'combine
+	  (list (gen-c-chunks ("pin-mode" "pinMode") ("unint8_t pin" "uint8_t mode")
+			      :fun "
   pinMode(pin,mode);
   return T;"
-	      :to-setup "
+			      :to-setup "
   pinMode_fun(8,1);
   digitalWrite_fun(8,1);")
 
-(gen-c-chunks ("digital-write" "digitalWrite") ("uint32_t ulPin" "uint32_t ulVal")
-	      :fun "
+		(gen-c-chunks ("digital-write" "digitalWrite") ("uint32_t ulPin" "uint32_t ulVal")
+			      :fun "
   digitalWrite(ulPin,ulVal);
   return T;")
 
-(gen-c-chunks ("adc" "analogRead") ("uint32_t ulPin")
-	      :fun "
+		(gen-c-chunks ("adc" "analogRead") ("uint32_t ulPin")
+			      :fun "
   return number(analogRead(ulPin));")
 
-(gen-c-chunks ("delay-microseconds" "delayMicroseconds") ("unsigned int us")
-	      :fun "
+		(gen-c-chunks ("delay-microseconds" "delayMicroseconds") ("unsigned int us")
+			      :fun "
   delayMicroseconds(us));
   return T;")
 
-(gen-c-chunks "delay" ("unsigned long ms")
-	      :fun "
+		(gen-c-chunks "delay" ("unsigned long ms")
+			      :fun "
   delay(ms));
   return T;")
 
-(gen-c-chunks "micros" ()
-	      :fun "
+		(gen-c-chunks "micros" ()
+			      :fun "
   return number(micros());")
 
-(gen-c-chunks "room" ()
-	      :fun "
+		(gen-c-chunks "room" ()
+			      :fun "
  	  {
  	    char s[80];
  	    snprintf(s,sizeof(s), \"heap: %d/%d, stack: %d/%d\",
  		     (curheap-fromspace)/8, heapsize/8, SP, N_STACK);
  	    Serial.println(s);
  	  }
- 	  return number((curheap-fromspace)/8);")
+ 	  return number((curheap-fromspace)/8);"))))
 
 (defparameter *template*
  (with-open-file (s "arduino_due_lisp.template")
