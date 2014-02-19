@@ -1,3 +1,5 @@
+(require :cl-ppcre)
+
 ;; +HEADERS+
 ;; #include <SPI/SPI.h>
 
@@ -8,27 +10,22 @@
 ;; {
 ;;   // start the SPI library:
 ;;   SPI.begin();
-;;   SPI.setBitOrder(MSBFIRST);
-;;   SPI.setDataMode(SPI_MODE2);
-;;  //SPI.setClockDivider(); //default clock of 4MHz should work
-  
-;;   // initalize the  chip select pins:
-;;   pinMode(chipSelectPin, OUTPUT);
-;;   analogReadResolution(12);
 ;; }
 
-;; void writeDAC(unsigned short b, unsigned short a)
-;; {
-;;   digitalWrite(chipSelectPin, LOW);
-;;   byte x,y,z;
-;;   x = (0xff0 & a) >> 4;
-;;   y = ((0xf & a) << 4) + ((0xf00 & b) >> 8);
-;;   z = 0xff & b;
-;;   SPI.transfer(x); 
-;;   SPI.transfer(y); 
-;;   SPI.transfer(z); 
-;;   digitalWrite(chipSelectPin, HIGH);
-;; }
+;; +FUNCTIONS_ENUM+
+;; F_DAC, F_DIGITALWRITE, F_PINMODE, F_ADC, F_DELAY, F_DELAYMICROSECONDS, F_MICROS, F_ROOM
+
+;; +FUNCTIONS_NAMES+
+;; "dac", "digital-write", "pin-mode",
+;; "adc", "delay", "delay-microseconds", "micros", "room"
+
+;; 	+FUNCTIONS_STACK_PROCESSING+
+;; 	case F_DAC:
+;; 	  argcount("dac", nargs, 2);
+;; 	  writeDAC(tonumber(Stack[SP-2],"dac"),tonumber(Stack[SP-1],"dac"));
+;; 	    v=T;
+;; 	  break;
+
 
 (defun comma-list (list)
   "print elements of a list with commas in between"
@@ -42,6 +39,8 @@
 	  name (comma-list args) fun))
 
 (defun emit-global (g)
+  (format t "~a~%" g))
+(defun emit-header (g)
   (format t "~a~%" g))
 
 
@@ -71,14 +70,6 @@
 	  name (comma-list (loop for i from (- (length args)) upto -1 collect
 		     (format nil "tonumber(Stack[SP~a],~s)"
 			     i lisp-name)))))
-(require :cl-ppcre)
-(defparameter *template*
- (with-open-file (s "arduino_due_lisp.template")
-   (let ((a (make-string (file-length s))))
-     (read-sequence a s)
-     a)))
-(format t "~a~%"
- (cl-ppcre:regex-replace "\\+FUNCTIONS_ENUM\\+" *template* "blabla"))
 
 
 
@@ -89,10 +80,11 @@
 	(t (values name-or-list
 		   name-or-list))))
 
-(defmacro gen-c-chunks (name-or-list arglist &key init global fun to-setup)
+(defmacro gen-c-chunks (name-or-list arglist &key init global fun to-setup header)
   (multiple-value-bind (lisp-name name) (parse-name-or-list name-or-list)
     (let ((enum-name (string-upcase (concatenate 'string "F_" name))))
       `(progn
+	 (when ,header (emit-header ,header))
 	 (when ,global (emit-global ,global))
 	 (when ,enum-name (emit-enum ,enum-name))
 	 (when ,to-setup (emit-to-setup ,to-setup))
@@ -106,6 +98,7 @@
 
 
 (gen-c-chunks "dac" ("unsigned short b" "unsigned short a")
+	      :header "#include <SPI/SPI.h>"
 	      :global "const int dac_chip_select_pin = 16;"
 	      :init "
   SPI.begin();
@@ -169,55 +162,13 @@
  	  }
  	  return number((curheap-fromspace)/8);")
 
-;; +FUNCTIONS_ENUM+
-;; F_DAC, F_DIGITALWRITE, F_PINMODE, F_ADC, F_DELAY, F_DELAYMICROSECONDS, F_MICROS, F_ROOM
+(defparameter *template*
+ (with-open-file (s "arduino_due_lisp.template")
+   (let ((a (make-string (file-length s))))
+     (read-sequence a s)
+     a)))
+(format t "~a~%"
+ (cl-ppcre:regex-replace "\\+FUNCTIONS_ENUM\\+" *template* "blabla"))
 
-;; +FUNCTIONS_NAMES+
-;; "dac", "digital-write", "pin-mode",
-;; "adc", "delay", "delay-microseconds", "micros", "room"
 
-;; 	+FUNCTIONS_STACK_PROCESSING+
-;; 	case F_DAC:
-;; 	  argcount("dac", nargs, 2);
-;; 	  writeDAC(tonumber(Stack[SP-2],"dac"),tonumber(Stack[SP-1],"dac"));
-;; 	    v=T;
-;; 	  break;
-;; 	case F_DIGITALWRITE:
-;; 	  argcount("digital-write", nargs, 2);
-;; 	  digitalWrite(tonumber(Stack[SP-2],"digital-write"),tonumber(Stack[SP-1],"digital-write"));
-;; 	    v=T;
-;; 	  break;
-;; 	case F_PINMODE:
-;; 	  argcount("pin-mode", nargs, 2);
-;; 	  pinMode(tonumber(Stack[SP-2],"pin-mode"),tonumber(Stack[SP-1],"pin-mode"));
-;; 	  v=T;
-;; 	  break;
-;; 	case F_ADC:
-;; 	  argcount("adc", nargs, 1);
-;; 	  v = number(analogRead(tonumber(Stack[SP-1],"adc")));
-;; 	  break;
-;; 	case F_DELAY:
-;; 	  argcount("delay", nargs, 1);
-;; 	  delay(tonumber(Stack[SP-1],"delay"));
-;; 	  v = T;
-;; 	  break;
-;; 	case F_DELAYMICROSECONDS:
-;; 	  argcount("delay-microseconds", nargs, 1);
-;; 	  delayMicroseconds(tonumber(Stack[SP-1],"delay-microseconds"));
-;; 	  v = T;
-;; 	  break;
-;; 	case F_MICROS:
-;; 	  argcount("micros", nargs, 0);
-;; 	  v = number(micros());
-;; 	  break;
-;; 	case F_ROOM:
-;; 	  argcount("room", nargs, 0);
-;; 	  {
-;; 	    char s[80];
-;; 	    snprintf(s,sizeof(s), "heap: %d/%d, stack: %d/%d",
-;; 		     (curheap-fromspace)/8, heapsize/8, SP, N_STACK);
-;; 	    Serial.println(s);
-;; 	  }
-;; 	  v = number((curheap-fromspace)/8);
-;; 	  break;
 
