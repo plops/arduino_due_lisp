@@ -2,7 +2,7 @@ CXX=/home/martin/arduino-nightly/hardware/tools/g++_arm_none_eabi/bin/arm-none-e
 CC=/home/martin/arduino-nightly/hardware/tools/g++_arm_none_eabi/bin/arm-none-eabi-gcc
 # OPTFLAGS=-g -Os
 OPTFLAGS=-O3 -Wall -Wextra
-INCLUDES=-I. -I/home/martin/arduino-nightly/hardware/arduino/sam/system/libsam -I/home/martin/arduino-nightly/hardware/arduino/sam/system/CMSIS/CMSIS/Include/ -I/home/martin/arduino-nightly/hardware/arduino/sam/system/CMSIS/Device/ATMEL/ -I/home/martin/arduino-nightly/hardware/arduino/sam/cores/arduino -I/home/martin/arduino-nightly/hardware/arduino/sam/variants/arduino_due_x -I/home/martin/arduino-nightly/hardware/arduino/sam/libraries
+INCLUDES=-I. -I/home/martin/arduino-nightly/hardware/arduino/sam/system/libsam -I/home/martin/arduino-nightly/hardware/arduino/sam/system/CMSIS/CMSIS/Include/ -I/home/martin/arduino-nightly/hardware/arduino/sam/system/CMSIS/Device/ATMEL/ -I/home/martin/arduino-nightly/hardware/arduino/sam/cores/arduino -I/home/martin/arduino-nightly/hardware/arduino/sam/variants/arduino_due_x -I/home/martin/arduino-nightly/hardware/arduino/sam/libraries 
 
 CXXFLAGS=-w -fno-rtti -fno-exceptions -ffunction-sections -fdata-sections -nostdlib --param max-inline-insns-single=500  -Dprintf=iprintf -mcpu=cortex-m3 -DF_CPU=84000000L -DARDUINO=155 -DARDUINO_SAM_DUE -DARDUINO_ARCH_SAM -D__SAM3X8E__ -mthumb -DUSB_VID=0x2341 -DUSB_PID=0x003e -DUSBCON -DUSB_MANUFACTURER="Unknown" -DUSB_PRODUCT=\""Arduino Due\"" 
 CFLAGS=-w -ffunction-sections -fdata-sections -nostdlib --param max-inline-insns-single=500  -Dprintf=iprintf -mcpu=cortex-m3 -DF_CPU=84000000L -DARDUINO=155 -DARDUINO_SAM_DUE -DARDUINO_ARCH_SAM -D__SAM3X8E__ -mthumb -DUSB_VID=0x2341 -DUSB_PID=0x003e -DUSBCON -DUSB_MANUFACTURER="Unknown" -DUSB_PRODUCT="\"Arduino Due\"" 
@@ -35,7 +35,9 @@ cores/arduino/USARTClass.cpp \
 cores/arduino/cxxabi-compat.cpp \
 cores/arduino/RingBuffer.cpp \
 variants/arduino_due_x/variant.cpp \
-libraries/SPI/SPI.cpp
+libraries/SPI/SPI.cpp \
+libraries/Wire/Wire.cpp \
+libraries/ArduCAM/ArduCAM.cpp 
 
 
 OBJS = $(patsubst %,build/%.o,$(DEPS))
@@ -53,6 +55,8 @@ build/arduino_due_lisp.cpp: arduino_due_lisp.ino
 build/arduino_due_lisp.cpp.o: build/arduino_due_lisp.cpp
 	$(CXX) $(OPTFLAGS) $(INCLUDES) $(CXXFLAGS) -c -o $@ $<
 
+# make sure all libraries are in this folder:
+# mv ~/arduino-nightly/libraries/ArduCAM/ ~/arduino-nightly/hardware/arduino/sam/libraries/
 build/%.cpp.o: /home/martin/arduino-nightly/hardware/arduino/sam/%.cpp
 	mkdir -p `dirname $@`
 	$(CXX) $(OPTFLAGS) $(INCLUDES) $(CXXFLAGS) -c -o $@ $<

@@ -1,4 +1,4 @@
-(require :cl-ppcre)
+#.(require :cl-ppcre)
 
 
 (defun comma-list (list)
@@ -95,6 +95,7 @@
 			   ',arglist ,fun))
 	:stack (emit-case ,lisp-name ,name ,enum-name ',arglist)))))
 
+#+nil
 (defparameter *dac*
   (gen-c-chunks "dac" ("unsigned short b" "unsigned short a")
 	       :header "#include <SPI/SPI.h>"
@@ -104,10 +105,12 @@
   SPI.setBitOrder(MSBFIRST);
   SPI.setDataMode(SPI_MODE2);
   pinMode(chipSelectPin, OUTPUT);
-  analogReadResolution(12);"
+"
 	       :to-setup "
   dac_init();
-  dac_fun(2048,2048);"
+  dac_fun(2048,2048);
+  analogReadResolution(12);
+"
 	       :fun "
   digitalWrite(dac_chip_select_pin, LOW);
   byte x,y,z;
@@ -120,6 +123,7 @@
   digitalWrite(dac_chip_select_pin, HIGH);
   return T;"))
 
+#+nil
 (defparameter *base*
   (reduce #'combine
 	  (list (gen-c-chunks ("pin-mode" "pinMode") ("uint8_t pin" "uint8_t mode")
@@ -164,6 +168,45 @@
  	    Serial.println(s);
  	  }
  	  return number((curheap-fromspace)/8);"))))
+#+nil
+(defparameter *arducam*
+  (reduce #'combine
+	  (list (gen-c-chunks ("cam-write-reg" "myCAM_write_reg") ("uint8_t addr" "uint8_t data")
+			      :header "#include <Wire/Wire.h>
+#include <ArduCAM/ArduCAM.h>
+#include <SPI/SPI.h>"
+	       :global "const int slave_select_pin = 10;
+ArduCAM myCAM(OV2640,slave_select_pin);"
+	       :to-setup "
+  Wire1.begin();
+  pinMode(slave_select_pin,OUTPUT);
+  SPI.begin();
+  myCAM.write_reg(ARDUCHIP_MODE, 0x00);
+  myCAM.set_format(BMP);
+  myCAM.InitCAM();
+"
+	       :fun "
+  myCAM.write_reg(addr,data);
+  return T;")
+		(gen-c-chunks ("cam-read-reg" "myCAM_read_reg") ("uint8_t addr")
+			      :fun "
+  return number(myCAM.read_reg(addr));
+")
+		(gen-c-chunks ("cam-flush-fifo" "myCAM_flush_fifo") ()
+			      :fun "
+  myCAM.flush_fifo();
+  return T;
+")
+		(gen-c-chunks ("cam-start-capture" "myCAM_start_capture") ()
+			      :fun "
+  myCAM.start_capture();
+  return T;
+")
+		(gen-c-chunks ("cam-clear-fifo-flag" "myCAM_clear_fifo_flag") ()
+			      :fun "
+  myCAM.clear_fifo_flag();
+  return T;
+"))))
 
 ;; +HEADERS+
 ;; #include <SPI/SPI.h>
@@ -191,6 +234,7 @@
 ;; 	    v=T;
 ;; 	  break;
 
+#+nil
 (progn
   (defparameter *template-file*
     (with-open-file (s "arduino_due_lisp.template")
@@ -205,8 +249,10 @@
 			  ("\\+INIT\\+" init)
 			  ("\\+FUN\\+" fun)
 			  ("\\+STACK\\+" stack)) do
-       (setf *template-file*
-	     (cl-ppcre:regex-replace e *template-file* (slot-value *base* slot))))
+       (let ((defs (combine *base* *arducam*)))
+	(setf *template-file*
+	      (cl-ppcre:regex-replace e *template-file*
+				      (slot-value defs slot)))))
   (with-open-file (s "arduino_due_lisp.ino"
 		     :if-exists :supersede
 		     :direction :output

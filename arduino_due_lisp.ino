@@ -27,8 +27,13 @@ use this to check assembly code:
 
 #include "Arduino.h"
 #include <setjmp.h>
+#include <Wire/Wire.h>
+#include <ArduCAM/ArduCAM.h>
+#include <SPI/SPI.h>
 
 
+const int slave_select_pin = 10;
+ArduCAM myCAM(OV2640,slave_select_pin);
 
 
 #define VERBOSEGC 0
@@ -127,7 +132,7 @@ enum {
     // functions
     F_EQ, F_ATOM, F_CONS, F_CAR, F_CDR, F_READ, F_EVAL, F_PRINT, F_SET, F_NOT,
     F_LOAD, F_SYMBOLP, F_NUMBERP, F_ADD, F_SUB, F_MUL, F_DIV, F_LT, F_PROG1,
-    F_APPLY, F_RPLACA, F_RPLACD, F_BOUNDP, F_PINMODE,F_DIGITALWRITE,F_ANALOGREAD,F_DELAYMICROSECONDS,F_DELAY,F_MICROS,F_ROOM , N_BUILTINS
+    F_APPLY, F_RPLACA, F_RPLACD, F_BOUNDP, F_PINMODE,F_DIGITALWRITE,F_ANALOGREAD,F_DELAYMICROSECONDS,F_DELAY,F_MICROS,F_ROOM,F_MYCAM_WRITE_REG,F_MYCAM_READ_REG,F_MYCAM_FLUSH_FIFO,F_MYCAM_START_CAPTURE,F_MYCAM_CLEAR_FIFO_FLAG , N_BUILTINS
 };
 #define isspecial(v) (intval(v) <= (int)F_PROGN)
 
@@ -135,7 +140,7 @@ static char *builtin_names[] =
     { "quote", "cond", "if", "and", "or", "while", "lambda", "macro", "label",
       "progn", "eq", "atom", "cons", "car", "cdr", "read", "eval", "print",
       "set", "not", "load", "symbolp", "numberp", "+", "-", "*", "/", "<",
-      "prog1", "apply", "rplaca", "rplacd", "boundp", "pin-mode","digital-write","adc","delay-microseconds","delay","micros","room" };
+      "prog1", "apply", "rplaca", "rplacd", "boundp", "pin-mode","digital-write","adc","delay-microseconds","delay","micros","room","cam-write-reg","cam-read-reg","cam-flush-fifo","cam-start-capture","cam-clear-fifo-flag" };
 
 static char *stack_bottom;
 #define PROCESS_STACK_SIZE (1024)
@@ -306,6 +311,34 @@ value_t room_fun ()
  	    Serial.println(s);
  	  }
  	  return number((curheap-fromspace)/8);
+}
+value_t myCAM_write_reg_fun (uint8_t addr,uint8_t data) 
+{
+  myCAM.write_reg(addr,data);
+  return T;
+}
+value_t myCAM_read_reg_fun (uint8_t addr) 
+{
+  return number(myCAM.read_reg(addr));
+
+}
+value_t myCAM_flush_fifo_fun () 
+{
+  myCAM.flush_fifo();
+  return T;
+
+}
+value_t myCAM_start_capture_fun () 
+{
+  myCAM.start_capture();
+  return T;
+
+}
+value_t myCAM_clear_fifo_flag_fun () 
+{
+  myCAM.clear_fifo_flag();
+  return T;
+
 }
 
 
@@ -996,6 +1029,26 @@ case F_ROOM: {
   argcount("room",nargs,0); 
   v= room_fun();
 }  break;
+case F_MYCAM_WRITE_REG: {
+  argcount("cam-write-reg",nargs,2); 
+  v= myCAM_write_reg_fun(tonumber(Stack[SP-2],"cam-write-reg"),tonumber(Stack[SP-1],"cam-write-reg"));
+}  break;
+case F_MYCAM_READ_REG: {
+  argcount("cam-read-reg",nargs,1); 
+  v= myCAM_read_reg_fun(tonumber(Stack[SP-1],"cam-read-reg"));
+}  break;
+case F_MYCAM_FLUSH_FIFO: {
+  argcount("cam-flush-fifo",nargs,0); 
+  v= myCAM_flush_fifo_fun();
+}  break;
+case F_MYCAM_START_CAPTURE: {
+  argcount("cam-start-capture",nargs,0); 
+  v= myCAM_start_capture_fun();
+}  break;
+case F_MYCAM_CLEAR_FIFO_FLAG: {
+  argcount("cam-clear-fifo-flag",nargs,0); 
+  v= myCAM_clear_fifo_flag_fun();
+}  break;
 
         case F_APPLY:
             argcount("apply", nargs, 2);
@@ -1147,6 +1200,14 @@ void setup() {
   pinMode_fun(8,1);
   digitalWrite_fun(8,1);
 analogReadResolution(12);
+
+
+  Wire1.begin();
+  pinMode(slave_select_pin,OUTPUT);
+  SPI.begin();
+  myCAM.write_reg(ARDUCHIP_MODE, 0x00);
+  myCAM.set_format(BMP);
+  myCAM.InitCAM();
 
 
   
