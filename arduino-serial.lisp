@@ -124,18 +124,18 @@
  (unless (= 0 (serial-recv-length fd))
    (read-response fd str)))
 
-(defun talk-arduino (tty-fd tty-stream command)
+(defun talk-arduino (tty-fd tty-stream command &key (time .009d0))
   (declare (fd-type tty-fd)
 	   (stream tty-stream)
 	   (string command)
 	   (values string &optional))
   (ensure-response-buffer-clear tty-fd tty-stream)
   (write-arduino tty-stream command)
-  (sleep .1)
+  ;(sleep .1)
   (let ((n (do ((i 0 (1+ i))
 		(n 0 (serial-recv-length tty-fd)))
 	       ((or (< 0 n) (<= 30 i)) n)
-	     (sleep .08d0))))
+	     (sleep time))))
     (if (eq 0 n)
 	""
 	(read-response tty-fd tty-stream))))
@@ -184,14 +184,14 @@
     (talk-arduino fd s "(dotimes (i 2000)(delay-microseconds 5000)(dac 1900 (+ 1000 i)))")))
 
 
-(defun talk-arduino-now (cmd)
+(defun talk-arduino-now (cmd &key (time .009d0))
  (destructuring-bind (str fd) *ard8*
    (let ((s
 	  (sb-sys:make-fd-stream fd :input t :output t :element-type 'base-char
 				 :external-format :latin-1 
 				 :buffering :full)))
      (ensure-response-buffer-clear fd s)
-     (sleep .3)
+     ;(sleep .3)
      (talk-arduino fd s cmd))))
 
 (defun write-reg (addr mode)
@@ -200,7 +200,8 @@
   (format nil "(cam-read-reg ~a)" addr))
 
 #+nil
-(talk-arduino-now (write-reg +arduchip-mode+ +mode-cam2lcd+))
+(talk-arduino-now (write-reg +arduchip-mode+ +mode-cam2lcd+)
+		  :time (* 1 .009d0))
 
 (defconstant +arduchip-mode+ #x2 "address for switching communication direction") 
 (defconstant +mode-mcu2lcd+ #x0)
@@ -240,10 +241,35 @@
 	(a1 (make-array (array-total-size a) :element-type '(unsigned-byte 8)
 			:displaced-to a)))
    (loop for j below 240 do
-	(format t "~a~%" j)
+	
 	(loop for i below 320 do
+	     (defparameter *bla* a)
 	     (setf (aref a j i 0) (read-from-string (talk-arduino-now "(cam-read-fifo)"))
-		   (aref a j i 1) (read-from-string (talk-arduino-now "(cam-read-fifo)")))))))
+		   (aref a j i 1) (read-from-string (talk-arduino-now "(cam-read-fifo)")))
+	     (format t "~a~%" (list j i (aref a j i 0) (aref a j i 1)))))))
+#+nil
+(defun write-pgm (filename img)
+  (declare (type simple-string filename)
+           ((array (unsigned-byte 16) 2) img)
+           #+sbcl (values null &optional))
+  (destructuring-bind (h w) (array-dimensions img)
+    (declare (type fixnum w h))
+    (with-open-file (s filename
+                       :direction :output
+                       :if-exists :supersede
+                       :if-does-not-exist :create)
+      (declare (stream s))
+      (format s "P5~%~D ~D~%65535~%~%" w h))
+    (with-open-file (s filename 
+                       :element-type '(unsigned-byte 16)
+                       :direction :output
+                       :if-exists :append)
+      (let ((data-1d (make-array 
+                      (* h w)
+                      :element-type '(unsigned-byte 16)
+                      :displaced-to img)))
+        (write-sequence data-1d s)))
+    nil))
 
 #+nil
 (talk-arduino-now "(cam-read-fifo)")
@@ -360,7 +386,7 @@
   (defparameter *bla* nil)
   (loop for j below 100 do
        (let ((i (if (= 0 (mod j 2)) 0 0)))
-	 ;(sleep .1)
+	 (sleep .1)
      (setf *bla*
 	   (destructuring-bind (str fd) *ard8*
 	     (let ((s

@@ -132,7 +132,7 @@ enum {
     // functions
     F_EQ, F_ATOM, F_CONS, F_CAR, F_CDR, F_READ, F_EVAL, F_PRINT, F_SET, F_NOT,
     F_LOAD, F_SYMBOLP, F_NUMBERP, F_ADD, F_SUB, F_MUL, F_DIV, F_LT, F_PROG1,
-    F_APPLY, F_RPLACA, F_RPLACD, F_BOUNDP, F_PINMODE,F_DIGITALWRITE,F_ANALOGREAD,F_DELAYMICROSECONDS,F_DELAY,F_MICROS,F_ROOM,F_MYCAM_WRITE_REG,F_MYCAM_READ_REG,F_MYCAM_FLUSH_FIFO,F_MYCAM_START_CAPTURE,F_MYCAM_CLEAR_FIFO_FLAG , N_BUILTINS
+    F_APPLY, F_RPLACA, F_RPLACD, F_BOUNDP, F_PINMODE,F_DIGITALWRITE,F_ANALOGREAD,F_DELAYMICROSECONDS,F_DELAY,F_MICROS,F_ROOM,F_MYCAM_WRITE_REG,F_MYCAM_READ_REG,F_MYCAM_READ_FIFO,F_MYCAM_FLUSH_FIFO,F_MYCAM_START_CAPTURE,F_MYCAM_CLEAR_FIFO_FLAG , N_BUILTINS
 };
 #define isspecial(v) (intval(v) <= (int)F_PROGN)
 
@@ -140,7 +140,7 @@ static char *builtin_names[] =
     { "quote", "cond", "if", "and", "or", "while", "lambda", "macro", "label",
       "progn", "eq", "atom", "cons", "car", "cdr", "read", "eval", "print",
       "set", "not", "load", "symbolp", "numberp", "+", "-", "*", "/", "<",
-      "prog1", "apply", "rplaca", "rplacd", "boundp", "pin-mode","digital-write","adc","delay-microseconds","delay","micros","room","cam-write-reg","cam-read-reg","cam-flush-fifo","cam-start-capture","cam-clear-fifo-flag" };
+      "prog1", "apply", "rplaca", "rplacd", "boundp", "pin-mode","digital-write","adc","delay-microseconds","delay","micros","room","cam-write-reg","cam-read-reg","cam-read-fifo","cam-flush-fifo","cam-start-capture","cam-clear-fifo-flag" };
 
 static char *stack_bottom;
 #define PROCESS_STACK_SIZE (1024)
@@ -320,6 +320,11 @@ value_t myCAM_write_reg_fun (uint8_t addr,uint8_t data)
 value_t myCAM_read_reg_fun (uint8_t addr) 
 {
   return number(myCAM.read_reg(addr));
+
+}
+value_t myCAM_read_fifo_fun () 
+{
+  return number(myCAM.read_fifo());
 
 }
 value_t myCAM_flush_fifo_fun () 
@@ -1036,6 +1041,10 @@ case F_MYCAM_WRITE_REG: {
 case F_MYCAM_READ_REG: {
   argcount("cam-read-reg",nargs,1); 
   v= myCAM_read_reg_fun(tonumber(Stack[SP-1],"cam-read-reg"));
+}  break;
+case F_MYCAM_READ_FIFO: {
+  argcount("cam-read-fifo",nargs,0); 
+  v= myCAM_read_fifo_fun();
 }  break;
 case F_MYCAM_FLUSH_FIFO: {
   argcount("cam-flush-fifo",nargs,0); 

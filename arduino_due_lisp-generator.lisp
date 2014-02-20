@@ -192,6 +192,10 @@ ArduCAM myCAM(OV2640,slave_select_pin);"
 			      :fun "
   return number(myCAM.read_reg(addr));
 ")
+		(gen-c-chunks ("cam-read-fifo" "myCAM_read_fifo") ()
+			      :fun "
+  return number(myCAM.read_fifo());
+")
 		(gen-c-chunks ("cam-flush-fifo" "myCAM_flush_fifo") ()
 			      :fun "
   myCAM.flush_fifo();
