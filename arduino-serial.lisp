@@ -212,11 +212,43 @@
 (defconstant +mask-shutter+ #x02)
 (defconstant +mask-cap-done+ #x08)
 
+(defconstant +arduchip-tim+ #x03 "address for timing control")
+(defconstant +mask-href-level+ #x1 "0 = High active , 		1 = Low active")
+(defconstant +mask-vsync-level+ #x2 "0 = High active , 		1 = Low active")
+(defconstant +mask-lcd-bken+ #x4 "0 = Enable, 			1 = Disable")
+(defconstant +mask-delay+ #x8 "0 = no delay, 			1 = delay one clock")
+(defconstant +mask-mode+ #x10 "0 = LCD mode, 			1 = FIFO mode")
+(defconstant +mask-fifo-pwrdn+ #x20 "0 = Normal operation, 	1 = FIFO power down")
+
+
+
 #+nil
 (talk-arduino-now (read-reg +arduchip-trig+))
+#+nil
+(talk-arduino-now (write-reg +arduchip-tim+ +mask-mode+))
+#+nil
+(talk-arduino-now "(cam-flush-fifo)")
+#+nil
+(talk-arduino-now "(cam-start-capture)")
 
+#+nil
+(logand +mask-cap-done+ (read-from-string (talk-arduino-now (read-reg +arduchip-trig+))))
 
+#+nil
+(time
+ (let* ((a (make-array (list 240 320 2) :element-type '(unsigned-byte 8)))
+	(a1 (make-array (array-total-size a) :element-type '(unsigned-byte 8)
+			:displaced-to a)))
+   (loop for j below 240 do
+	(format t "~a~%" j)
+	(loop for i below 320 do
+	     (setf (aref a j i 0) (read-from-string (talk-arduino-now "(cam-read-fifo)"))
+		   (aref a j i 1) (read-from-string (talk-arduino-now "(cam-read-fifo)")))))))
 
+#+nil
+(talk-arduino-now "(cam-read-fifo)")
+#+nil
+(talk-arduino-now "(+ 1 2)")
 
 #+nil
 (destructuring-bind (str fd) *ard8*
