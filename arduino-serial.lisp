@@ -184,6 +184,40 @@
     (talk-arduino fd s "(dotimes (i 2000)(delay-microseconds 5000)(dac 1900 (+ 1000 i)))")))
 
 
+(defun talk-arduino-now (cmd)
+ (destructuring-bind (str fd) *ard8*
+   (let ((s
+	  (sb-sys:make-fd-stream fd :input t :output t :element-type 'base-char
+				 :external-format :latin-1 
+				 :buffering :full)))
+     (ensure-response-buffer-clear fd s)
+     (sleep .3)
+     (talk-arduino fd s cmd))))
+
+(defun write-reg (addr mode)
+  (format nil "(cam-write-reg ~a ~a)" addr mode))
+(defun read-reg (addr)
+  (format nil "(cam-read-reg ~a)" addr))
+
+#+nil
+(talk-arduino-now (write-reg +arduchip-mode+ +mode-cam2lcd+))
+
+(defconstant +arduchip-mode+ #x2 "address for switching communication direction") 
+(defconstant +mode-mcu2lcd+ #x0)
+(defconstant +mode-cam2lcd+ #x1)
+(defconstant +mode-lcd2mcu+ #x2)
+
+(defconstant +arduchip-trig+ #x41 "address for trigger source")
+(defconstant +mask-vsync+ #x01)
+(defconstant +mask-shutter+ #x02)
+(defconstant +mask-cap-done+ #x08)
+
+#+nil
+(talk-arduino-now (read-reg +arduchip-trig+))
+
+
+
+
 #+nil
 (destructuring-bind (str fd) *ard8*
   (let ((s
