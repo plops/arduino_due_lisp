@@ -211,7 +211,7 @@ ArduCAM myCAM(OV2640,slave_select_pin);"
   myCAM.clear_fifo_flag();
   return T;
 ")
-		(gen-c-chunks ("usb-write-bytes-from-fifo" "usb_write_bytes_from_fifo") ("uint16_t n")
+		(gen-c-chunks ("fifo-to-usb" "fifo_to_usb") ("uint16_t n")
 			      :fun "
 char*buf=(char*)malloc(n);
 int i;

@@ -117,6 +117,9 @@
 
 (defparameter *ard8* (multiple-value-list
 		      (open-serial (first (directory "/dev/ttyACM*")) :element-type '(unsigned-byte 8))))
+#+nil
+(defparameter *ard8-2* (multiple-value-list
+		      (open-serial (car (last (directory "/dev/ttyACM*"))) :element-type '(unsigned-byte 8))))
 
 
 
@@ -194,6 +197,17 @@
      ;(sleep .3)
      (talk-arduino fd s cmd))))
 
+#+nil
+(defun read-arduino-usb (&key (time .009))
+ (destructuring-bind (str fd) *ard8-2*
+   (let* ((n (do ((i 0 (1+ i))
+		  (n 0 (serial-recv-length fd)))
+		 ((or (< 0 n) (<= 30 i)) n)
+	       (sleep time)))
+	  (a (make-array n :element-type '(unsigned-byte 8))))
+     (read-sequence a str)
+     a)))
+
 (defun write-reg (addr mode)
   (format nil "(cam-write-reg ~a ~a)" addr mode))
 (defun read-reg (addr)
@@ -222,18 +236,18 @@
 (defconstant +mask-fifo-pwrdn+ #x20 "0 = Normal operation, 	1 = FIFO power down")
 
 
-
 #+nil
 (talk-arduino-now (read-reg +arduchip-trig+))
 #+nil
 (talk-arduino-now (write-reg +arduchip-tim+ +mask-mode+))
 #+nil
 (talk-arduino-now "(cam-flush-fifo)")
+
 #+nil
 (talk-arduino-now "(cam-start-capture)")
 
 #+nil
-(logand +mask-cap-done+ (read-from-string (talk-arduino-now (read-reg +arduchip-trig+))))
+(/= 0 (logand +mask-cap-done+ (read-from-string (talk-arduino-now (read-reg +arduchip-trig+)))))
 
 #+nil
 (time
@@ -241,12 +255,30 @@
 	(a1 (make-array (array-total-size a) :element-type '(unsigned-byte 8)
 			:displaced-to a)))
    (loop for j below 240 do
-	
 	(loop for i below 320 do
 	     (defparameter *bla* a)
 	     (setf (aref a j i 0) (read-from-string (talk-arduino-now "(cam-read-fifo)"))
 		   (aref a j i 1) (read-from-string (talk-arduino-now "(cam-read-fifo)")))
 	     (format t "~a~%" (list j i (aref a j i 0) (aref a j i 1)))))))
+#+nil
+(list
+  (talk-arduino-now (write-reg +arduchip-mode+ +mode-cam2lcd+)
+		    :time (* 1 .009d0))
+  (talk-arduino-now (read-reg +arduchip-trig+))
+  (talk-arduino-now (write-reg +arduchip-tim+ +mask-mode+))
+  
+  (talk-arduino-now "(cam-flush-fifo)")
+  (talk-arduino-now "(cam-start-capture)")
+  (sleep .1)
+  (dotimes (i 240)
+    (talk-arduino-now (format nil "(fifo-to-usb ~d)" (* 2 320)))))
+
+;; plug the native port into usb, check which /dev/ttyACM? pops up in dmesg
+;; run 'cat /dev/ttyACM1 > raw.dat' or hexdump /dev/ttyACM1 to receive the image data
+
+#+nil
+(read-arduino-usb)
+
 #+nil
 (defun write-pgm (filename img)
   (declare (type simple-string filename)
