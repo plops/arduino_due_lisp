@@ -116,7 +116,7 @@
 
 
 (defparameter *ard8* (multiple-value-list
-		      (open-serial (first (directory "/dev/ttyACM2")) :element-type '(unsigned-byte 8))))
+		      (open-serial (first (directory "/dev/ttyACM0")) :element-type '(unsigned-byte 8))))
 #+nil
 (defparameter *ard8-2* (multiple-value-list
 		      (open-serial (car (last (directory "/dev/ttyACM*"))) :element-type '(unsigned-byte 8))))
@@ -262,6 +262,8 @@
 	     (format t "~a~%" (list j i (aref a j i 0) (aref a j i 1)))))))
 #+nil
 (talk-arduino-now "(+ 1 2)")
+#+nil
+(talk-arduino-now "(spi-clock 78 10)") ;; default spi pin is 78u on arduino due
 #+nil
 (list
   (talk-arduino-now (write-reg +arduchip-mode+ +mode-cam2lcd+)
