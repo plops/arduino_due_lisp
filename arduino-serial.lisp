@@ -116,7 +116,7 @@
 
 
 (defparameter *ard8* (multiple-value-list
-		      (open-serial (first (directory "/dev/ttyACM*")) :element-type '(unsigned-byte 8))))
+		      (open-serial (first (directory "/dev/ttyACM2")) :element-type '(unsigned-byte 8))))
 #+nil
 (defparameter *ard8-2* (multiple-value-list
 		      (open-serial (car (last (directory "/dev/ttyACM*"))) :element-type '(unsigned-byte 8))))
@@ -261,6 +261,8 @@
 		   (aref a j i 1) (read-from-string (talk-arduino-now "(cam-read-fifo)")))
 	     (format t "~a~%" (list j i (aref a j i 0) (aref a j i 1)))))))
 #+nil
+(talk-arduino-now "(+ 1 2)")
+#+nil
 (list
   (talk-arduino-now (write-reg +arduchip-mode+ +mode-cam2lcd+)
 		    :time (* 1 .009d0))
@@ -271,10 +273,20 @@
   (talk-arduino-now "(cam-start-capture)")
   (sleep .1)
   (dotimes (i 240)
-    (talk-arduino-now (format nil "(fifo-to-usb ~d)" (* 2 320)))))
+    (format t "~a~%" i)
+    (dotimes (j 10)
+     (talk-arduino-now (format nil "(fifo-to-usb ~d)" 64)))))
 
 ;; plug the native port into usb, check which /dev/ttyACM? pops up in dmesg
 ;; run 'cat /dev/ttyACM1 > raw.dat' or hexdump /dev/ttyACM1 to receive the image data
+#+nil
+(with-open-file (s "raw.dat" :element-type '(unsigned-byte 8))
+  (let* ((a (make-array '(240 640) :element-type '(unsigned-byte 8)))
+	 (a1 (make-array (* 240 640) :element-type '(unsigned-byte 8)
+			 :displaced-to a)))
+    (read-sequence a1 s)
+
+    (write-pgm "raw.pgm" a)))
 
 #+nil
 (read-arduino-usb)
@@ -282,7 +294,7 @@
 #+nil
 (defun write-pgm (filename img)
   (declare (type simple-string filename)
-           ((array (unsigned-byte 16) 2) img)
+           ((array (unsigned-byte 8) 2) img)
            #+sbcl (values null &optional))
   (destructuring-bind (h w) (array-dimensions img)
     (declare (type fixnum w h))
@@ -291,14 +303,14 @@
                        :if-exists :supersede
                        :if-does-not-exist :create)
       (declare (stream s))
-      (format s "P5~%~D ~D~%65535~%~%" w h))
+      (format s "P5~%~D ~D~%255~%~%" w h))
     (with-open-file (s filename 
-                       :element-type '(unsigned-byte 16)
+                       :element-type (array-element-type img)
                        :direction :output
                        :if-exists :append)
       (let ((data-1d (make-array 
                       (* h w)
-                      :element-type '(unsigned-byte 16)
+                      :element-type (array-element-type img)
                       :displaced-to img)))
         (write-sequence data-1d s)))
     nil))

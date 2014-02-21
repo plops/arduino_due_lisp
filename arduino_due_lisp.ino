@@ -132,7 +132,7 @@ enum {
     // functions
     F_EQ, F_ATOM, F_CONS, F_CAR, F_CDR, F_READ, F_EVAL, F_PRINT, F_SET, F_NOT,
     F_LOAD, F_SYMBOLP, F_NUMBERP, F_ADD, F_SUB, F_MUL, F_DIV, F_LT, F_PROG1,
-    F_APPLY, F_RPLACA, F_RPLACD, F_BOUNDP, F_PINMODE,F_DIGITALWRITE,F_ANALOGREAD,F_DELAYMICROSECONDS,F_DELAY,F_MICROS,F_ROOM,F_MYCAM_WRITE_REG,F_MYCAM_READ_REG,F_MYCAM_READ_FIFO,F_MYCAM_FLUSH_FIFO,F_MYCAM_START_CAPTURE,F_MYCAM_CLEAR_FIFO_FLAG,F_FIFO_TO_USB , N_BUILTINS
+    F_APPLY, F_RPLACA, F_RPLACD, F_BOUNDP, F_PINMODE,F_DIGITALWRITE,F_ANALOGREAD,F_DELAYMICROSECONDS,F_DELAY,F_MICROS,F_ROOM,F_MYCAM_WRITE_REG,F_SPI_CLOCK,F_MYCAM_READ_REG,F_MYCAM_READ_FIFO,F_MYCAM_FLUSH_FIFO,F_MYCAM_START_CAPTURE,F_MYCAM_CLEAR_FIFO_FLAG,F_FIFO_TO_USB , N_BUILTINS
 };
 #define isspecial(v) (intval(v) <= (int)F_PROGN)
 
@@ -140,7 +140,7 @@ static char *builtin_names[] =
     { "quote", "cond", "if", "and", "or", "while", "lambda", "macro", "label",
       "progn", "eq", "atom", "cons", "car", "cdr", "read", "eval", "print",
       "set", "not", "load", "symbolp", "numberp", "+", "-", "*", "/", "<",
-      "prog1", "apply", "rplaca", "rplacd", "boundp", "pin-mode","digital-write","adc","delay-microseconds","delay","micros","room","cam-write-reg","cam-read-reg","cam-read-fifo","cam-flush-fifo","cam-start-capture","cam-clear-fifo-flag","fifo-to-usb" };
+      "prog1", "apply", "rplaca", "rplacd", "boundp", "pin-mode","digital-write","adc","delay-microseconds","delay","micros","room","cam-write-reg","spi-clock","cam-read-reg","cam-read-fifo","cam-flush-fifo","cam-start-capture","cam-clear-fifo-flag","fifo-to-usb" };
 
 static char *stack_bottom;
 #define PROCESS_STACK_SIZE (1024)
@@ -317,6 +317,11 @@ value_t myCAM_write_reg_fun (uint8_t addr,uint8_t data)
   myCAM.write_reg(addr,data);
   return T;
 }
+value_t spi_clock_fun (uint8_t pin,uint8_t divider) 
+{
+SPI.setClockDivider(pin,divider);
+return T;
+}
 value_t myCAM_read_reg_fun (uint8_t addr) 
 {
   return number(myCAM.read_reg(addr));
@@ -350,7 +355,7 @@ value_t fifo_to_usb_fun (uint16_t n)
 char*buf=(char*)malloc(n);
 int i;
 for(i=0;i<n;i++)
-  myCAM.read_fifo();
+  buf[i]=myCAM.read_fifo();
 int ret=USBD_Send(0x3, (void*)buf, n);
 free(buf);
 return number(ret);
@@ -1047,6 +1052,10 @@ case F_ROOM: {
 case F_MYCAM_WRITE_REG: {
   argcount("cam-write-reg",nargs,2); 
   v= myCAM_write_reg_fun(tonumber(Stack[SP-2],"cam-write-reg"),tonumber(Stack[SP-1],"cam-write-reg"));
+}  break;
+case F_SPI_CLOCK: {
+  argcount("spi-clock",nargs,2); 
+  v= spi_clock_fun(tonumber(Stack[SP-2],"spi-clock"),tonumber(Stack[SP-1],"spi-clock"));
 }  break;
 case F_MYCAM_READ_REG: {
   argcount("cam-read-reg",nargs,1); 

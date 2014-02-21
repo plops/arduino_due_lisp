@@ -185,9 +185,13 @@ ArduCAM myCAM(OV2640,slave_select_pin);"
   myCAM.set_format(BMP);
   myCAM.InitCAM();
 "
+	       
 	       :fun "
   myCAM.write_reg(addr,data);
   return T;")
+		(gen-c-chunks ("spi-clock" "spi_clock") ("uint8_t pin" "uint8_t divider") :fun  "
+SPI.setClockDivider(pin,divider);
+return T;")
 		(gen-c-chunks ("cam-read-reg" "myCAM_read_reg") ("uint8_t addr")
 			      :fun "
   return number(myCAM.read_reg(addr));
@@ -216,7 +220,7 @@ ArduCAM myCAM(OV2640,slave_select_pin);"
 char*buf=(char*)malloc(n);
 int i;
 for(i=0;i<n;i++)
-  myCAM.read_fifo();
+  buf[i]=myCAM.read_fifo();
 int ret=USBD_Send(0x3, (void*)buf, n);
 free(buf);
 return number(ret);"))))
