@@ -263,7 +263,7 @@
 #+nil
 (talk-arduino-now "(+ 1 2)")
 #+nil
-(talk-arduino-now "(spi-clock 78 10)") ;; default spi pin is 78u on arduino due
+(talk-arduino-now "(spi-clock 78 6)") ;; default spi pin is 78u on arduino due
 #+nil
 (list
   (talk-arduino-now (write-reg +arduchip-mode+ +mode-cam2lcd+)

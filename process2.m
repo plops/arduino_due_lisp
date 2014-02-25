@@ -204,4 +204,13 @@ phase(ift(extract(ft(min_a2(:,:,70)),[256 256])))
 
 q=reshape(min_a1,[62*62 256]);
 mc=corr(dip_array(q))
-mc=corr(dip_array(q)')
+mc=corr(transpose(dip_array(q)))
+[v d u] = svd(mc)
+
+reshape(dip_image(v(:,1)),[62 62])
+
+b1=min_a2(:,:,70);
+b2=min_a2(:,:,70);
+a2c=ift(ft(b1).*ft(b2));
+size(a2c)
+abs(a2c(31,31,0))/(sqrt(sum(abs(b1).^2))*sqrt(sum(abs(b2).^2)))
