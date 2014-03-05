@@ -52,6 +52,8 @@
 #+nil
 (get-interface-ids)
 
+
+
 (defun camera-new (&key (name nil))
   (if name
       (cffi:with-foreign-string (s name)
@@ -78,6 +80,17 @@
    (pixel-format :accessor pixel-format :type string :initform "none")
    (dark-image :accessor dark-image :initform nil)))
 
+(defmethod create-stream ((cam camera))
+  (#_arv_camera_create_stream (arv-camera cam) (cffi:null-pointer)
+			      (cffi:null-pointer)))
+
+(defmethod destroy-stream ((cam camera))
+  (with-slots (arv-stream) cam
+    (unless (cffi:null-pointer-p arv-stream)
+      (#_g_object_unref arv-stream)
+      (setf arv-stream (cffi:null-pointer)))))
+
+
 (defmethod set-region ((cam camera) &key (x 0) (y 0)
 				      (w (- (sensor-width cam) x))
 				      (h (- (sensor-height cam) y)))
@@ -85,11 +98,19 @@
   (assert (<= 0 y (1- (sensor-height cam))))
   (assert (<= 0 (+ x w) (sensor-width cam)))
   (assert (<= 0 (+ y h) (sensor-height cam)))
+  (multiple-value-bind (ox oy ow oh) (get-region cam)
+    (when (and (= ox x) (= oy y) (= ow w) (= oh h))
+      (return-from set-region (get-region cam))))
   (gc-integer-set-value cam "Width" w)
   (gc-integer-set-value cam "Height" h)
   (gc-integer-set-value cam "OffsetX" x)
   (gc-integer-set-value cam "OffsetY" y)
-  (get-region cam))
+  (get-region cam)
+  (with-slots (arv-stream) cam
+    (destroy-stream cam)
+    (setf arv-stream (create-stream cam))
+    (push-buffer cam)))
+
 
 (defmethod get-region ((cam camera))
   (let ((x (gc-integer-get-value cam "OffsetX"))
@@ -101,10 +122,7 @@
 	      aoi-height h
 	      aoi-x x
 	      aoi-y y))
-    `((x . ,x)
-      (y . ,y)
-      (width . ,w)
-      (height . ,h))))
+    (values x y w h)))
 
 (defmethod camera-get-genicam-xml ((camera camera))
   (with-slots (arv-device) camera
@@ -117,9 +135,6 @@
 	 (setf (elt s i) (code-char (ccl:%get-unsigned-byte str-pointer i))))
        (values s str-pointer n)))))
 
-(defmethod create-stream ((cam camera))
-  (#_arv_camera_create_stream (arv-camera cam) (cffi:null-pointer)
-			      (cffi:null-pointer)))
 
 (defmethod initialize-instance :after ((cam camera) &key)
   (with-slots (arv-camera arv-device name arv-xml arv-xml-size
@@ -416,6 +431,7 @@
 (defparameter *cam1*
 	   (make-instance 'camera))
 
+
 #+nil
 (progn  (set-region *cam1* :x 712 :y 712 :w 600 :h 600)
 	(loop for c in (list *cam1*) and i from 1 do 
@@ -455,6 +471,12 @@
 		  (acquire-single-image c :use-dark nil))))
 
 #+nil
+(set-region-centered *cam1* :cx 800 :cy 1000 :w 256 :h 256)
+#+nil
+(set-region-centered *cam2* :cx 400 :cy 270 :w 390  :h 390)
+
+
+#+nil
 (loop for c in (list *cam1* *cam2*) and i from 1 do 
        (set-exposure c 4000d0)
        (set-acquisition-mode c 'single-frame)
@@ -471,9 +493,9 @@
 #+nil
 
 #+nil
-(set-exposure *cam2* 0d0)
+(set-exposure *cam2* 500d0)
 #+nil
-(set-exposure *cam1* 0d0)
+(set-exposure *cam1* 500d0)
 
 #+nil
 (progn
@@ -498,7 +520,7 @@
    (reduce #'max a)
    (reduce #'min a)))
 #+nil
-(write-pgm "/dev/shm/2.pgm" (acquire-single-image *cam2*))
+(write-pgm "/dev/shm/1.pgm" (acquire-single-image *cam1*))
 
 #+nil
 (temperatures *cam1*)
@@ -582,6 +604,9 @@
    (read-line *serial*)))
 
 #+nil
+(read-line *serial*)
+
+#+nil
 (talk-arduino "(+ 1 2)")
 
 ;; pin 8 is connected to thorlab shutter controller (shows x-gate and enabled)
@@ -609,7 +634,7 @@
 #+nil
 (talk-arduino (format nil "(progn (dac ~d ~d) (delay 10) (print (adc 0)))" (+ 2048) (+ 2048)))
 #+nil
-(talk-arduino (format nil "(adc 0)" (+ 2048) (+ 2048)))
+(talk-arduino (format nil "(adc 0)"))
 
 
 #+nil
@@ -689,27 +714,36 @@
 (defparameter *bla*
  (average-images *cam1*))
 
-(talk-arduino "(dac 1847 2047)")
-(defparameter *bla*
- (acquire-single-image *cam2* :use-dark t))
-(.max *bla*)
+#+nil
+(talk-arduino (format nil "(dac ~d 2047)" (+ (* 40 15) 2047)) )
 
 (defmethod acquire-image-using-full-range ((c camera) &key (use-dark t))
+  "vary exposure time to keep gray values within 40000 .. 60000. note: if a dark image is subtracted i introduce an offset of 100. in particular for the cmos camera the dark images can have quite high values."
   (let* ((im (acquire-single-image c :use-dark use-dark))
-	 (ma (.max im)))
-    (loop while (not (< 40000 ma 60000)) do
-	 (set-exposure c (* (cond ((< ma 40000) 1.2)
-				  ((< 60000 ma) 0.8)) 
-			    (get-exposure c)))
-	 (setf im (acquire-single-image c :use-dark use-dark)
-	       ma (.max im)))
+	 (ma (.max im))
+	 (dark-max (.max (dark-image c)))
+	 (goal-min (- 40000 dark-max))
+	 (goal-max (- 60000 dark-max)))
+    (loop for i from 0 while (not (< 40000 ma 60000)) do
+	 (let ((new-exp (* (cond ((< ma 40000) 1.2)
+				 ((< 60000 ma) 0.8)) 
+			   (get-exposure c))))
+	   (set-exposure c new-exp)
+	   (format t "exposure time is ~a now~%" new-exp)
+	   (setf im (acquire-single-image c :use-dark use-dark)
+	       ma (.max im))))
     im))
 
-(defparameter *bla2* (acquire-image-using-full-range *cam2*))
+#+nil
+(set-exposure *cam1* 4800d0)
 
-(get-exposure *cam2*)
-(.max *bla2*)
-(write-pgm "/dev/shm/2.pgm" *bla2*)
+#+nil
+(dotimes (i 1000)
+  (sleep .5)
+ (progn
+   (write-pgm "/dev/shm/1.pgm" (acquire-single-image *cam1* :use-dark nil) #+nil (acquire-image-using-full-range *cam1*))
+   (write-pgm "/dev/shm/2.pgm" (acquire-single-image *cam2*) #+nil (acquire-image-using-full-range *cam2*))))
+
 
 #+nil
 (progn
@@ -725,22 +759,36 @@
      (format t "~a~%" i)
      (talk-arduino (format nil "(dac ~d 2048)" (floor (+ 2000 (* 1000 (sin (* 2 pi (/ i 100)))))))))
 
+
 #+nil
-(let ((ic 2047)
-      (ir 1500)
-      (jc 2047)
-      (jr 1500))
-  (loop for j from (- jc jr) upto (+ jc jr) by 200 do
-       (loop for i from (- ic ir) upto (+ ic ir) by 200 do
-	    (format t "~a~%" (list 'i i 'j j))
-	    (talk-arduino (format nil "(dac ~d ~d)~%" i j))
-	    ;(sleep 2)
-	    (loop for c in (list *cam1* *cam2*) and k from 1 do 
-		 (let ((im (if nil
-			       (average-images c :number 10 :use-dark t)
-			       (acquire-single-image c :use-dark t))))
-		   (write-pgm (format nil "/dev/shm/~d.pgm" k) im)
-		   (write-pgm (format nil "/home/martin/dat/i~4,'0d_j~4,'0d_~d.pgm" i j k) im))))))
+(talk-arduino (format nil "(dac 457 2048)" ))
+#+nil
+(talk-arduino (format nil "(+ 1 2)" ))
+
+
+
+#+nil
+(loop for dir-num from 0 below 15 do
+ (let ((ic 2047)
+       (ir 1500)
+       (jc 2047)
+       (jr 1500))
+   (ensure-directories-exist (format nil "/home/martin/dat/~d/" dir-num))
+   (loop for j from (- jc jr) upto (+ jc jr) by 70 do
+	(loop for i from (- ic ir) upto (+ ic ir) by 70 do
+	     (format t "~a~%" (list 'i i 'j j))
+	     (talk-arduino (format nil "(dac ~d ~d)~%" i j))
+					;(sleep 2)
+	     (loop for c in (list *cam1* *cam2*) and k from 1 do 
+		  (format t "acquire ~d~%" k)
+		  (let ((im (if nil
+				(average-images c :number 10 :use-dark t)
+					;(acquire-single-image c :use-dark t)
+				(acquire-image-using-full-range c)
+				)))
+		    (write-pgm (format nil "/dev/shm/~d.pgm" k) im)
+		    (write-pgm (format nil "/home/martin/dat/~d/i~4,'0d_j~4,'0d_~d_~2,6$.pgm" dir-num i j k (get-exposure c)) im)))))))
+
 
 
 
