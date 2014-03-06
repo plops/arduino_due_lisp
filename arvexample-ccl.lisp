@@ -336,6 +336,15 @@
 (defmethod pop-buffer-blocking ((cam camera))
   (#_arv_stream_pop_buffer (arv-stream cam)))
 
+(defmethod try-pop-buffer ((cam camera))
+  (#_arv_stream_try_pop_buffer (arv-stream cam)))
+
+#+nil
+(defparameter *bla* (try-pop-buffer *cam2*))
+
+#+nil
+(push-buffer *cam1*)
+
 (defmethod pop-block-copy-push-buffer ((cam camera) &key out (use-dark t))
   (let ((b (pop-buffer-blocking cam))
 	(dark1 (when (and use-dark (dark-image cam))
@@ -390,6 +399,27 @@
     `((completed . ,(cffi:mem-ref completed :uint64))
       (failures . ,(cffi:mem-ref failures :uint64))
       (underruns . ,(cffi:mem-ref underruns :uint64)))))
+
+#+nil
+(get-statistics *cam1*)
+
+#+nil
+(cdr (second (get-statistics *cam1*)))
+#+nil
+(get-statistics *cam2*)
+
+(defmethod get-n-buffers ((cam camera))
+  (cffi:with-foreign-objects ((n-in :int)
+			      (n-out :int))
+    (#_arv_stream_get_n_buffers (arv-stream cam) n-in n-out)
+    `((input-buffers . ,(cffi:mem-ref n-in :int))
+      (output-buffers . ,(cffi:mem-ref n-out :int))
+      )))
+
+#+nil
+(get-n-buffers *cam1*)
+#+nil
+(get-n-buffers *cam2*)
 
 
 #+nil
@@ -471,7 +501,7 @@
 		  (acquire-single-image c :use-dark nil))))
 
 #+nil
-(set-region-centered *cam1* :cx 800 :cy 1000 :w 256 :h 256)
+(set-region-centered *cam1* :cx 790 :cy 1000 :w 256 :h 256)
 #+nil
 (set-region-centered *cam2* :cx 400 :cy 270 :w 390  :h 390)
 
@@ -493,7 +523,7 @@
 #+nil
 
 #+nil
-(set-exposure *cam2* 500d0)
+(set-exposure *cam2* 100d0)
 #+nil
 (set-exposure *cam1* 500d0)
 
@@ -731,17 +761,18 @@
 	   (set-exposure c new-exp)
 	   (format t "exposure time is ~a now~%" new-exp)
 	   (setf im (acquire-single-image c :use-dark use-dark)
-	       ma (.max im))))
+		 ma (.max im))))
     im))
 
 #+nil
-(set-exposure *cam1* 4800d0)
+(set-exposure *cam1* 400d0)
 
 #+nil
-(dotimes (i 1000)
+(dotimes (i 100)
   (sleep .5)
  (progn
-   (write-pgm "/dev/shm/1.pgm" (acquire-single-image *cam1* :use-dark nil) #+nil (acquire-image-using-full-range *cam1*))
+   (format t "~a~%" (list (get-statistics *cam1*) (get-statistics *cam2*)))
+   (write-pgm "/dev/shm/1.pgm" (acquire-single-image *cam1* :use-dark t) #+nil (acquire-image-using-full-range *cam1*))
    (write-pgm "/dev/shm/2.pgm" (acquire-single-image *cam2*) #+nil (acquire-image-using-full-range *cam2*))))
 
 
@@ -761,31 +792,37 @@
 
 
 #+nil
-(talk-arduino (format nil "(dac 457 2048)" ))
+(talk-arduino (format nil "(dac 2057 2048)" ))
 #+nil
 (talk-arduino (format nil "(+ 1 2)" ))
 
 
 
 #+nil
-(loop for dir-num from 0 below 15 do
+(loop for dir-num from 2 below 15 do
  (let ((ic 2047)
        (ir 1500)
        (jc 2047)
-       (jr 1500))
+       (jr 1500)
+       (err (make-array 2 :element-type 'fixnum
+			:initial-contents (loop for c in (list *cam1* *cam2*) collect
+					       (cdr (second (get-statistics c)))))))
    (ensure-directories-exist (format nil "/home/martin/dat/~d/" dir-num))
-   (loop for j from (- jc jr) upto (+ jc jr) by 70 do
-	(loop for i from (- ic ir) upto (+ ic ir) by 70 do
+   (loop for j from (- jc jr) upto (+ jc jr) by 20 do
+	(loop for i from (- ic ir) upto (+ ic ir) by 20 do
 	     (format t "~a~%" (list 'i i 'j j))
 	     (talk-arduino (format nil "(dac ~d ~d)~%" i j))
 					;(sleep 2)
 	     (loop for c in (list *cam1* *cam2*) and k from 1 do 
-		  (format t "acquire ~d~%" k)
+		  (format t "acquire ~d ~a~%" k (list (get-statistics c) (get-n-buffers c)))
 		  (let ((im (if nil
 				(average-images c :number 10 :use-dark t)
 					;(acquire-single-image c :use-dark t)
 				(acquire-image-using-full-range c)
 				)))
+		    (unless (= (aref err (- k 1)) (cdr (second (get-statistics c))))
+		      (format t "ERROR ~a ~%" (get-statistics c))
+		      (setf (aref err (- k 1)) (cdr (second (get-statistics c)))))
 		    (write-pgm (format nil "/dev/shm/~d.pgm" k) im)
 		    (write-pgm (format nil "/home/martin/dat/~d/i~4,'0d_j~4,'0d_~d_~2,6$.pgm" dir-num i j k (get-exposure c)) im)))))))
 
