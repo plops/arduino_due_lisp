@@ -371,6 +371,7 @@
 								 (multiple-value-list
 								  (get-n-buffers cam))
 								 (temperatures cam))))
+	 (sleep 1)
 	 (ensure-no-threads-waiting-for-buffer cam)
 	 (ensure-at-least-one-buffer-in-stream cam)
 	 (when (= i 999)
@@ -459,7 +460,7 @@
 
 (defmethod ensure-no-threads-waiting-for-buffer ((cam camera))
   (multiple-value-bind (in out) (get-n-buffers cam)
-    (when (< out 0)
+    (when (<= out 0)
       (start-acquisition cam))))
 
 #+nil
@@ -814,6 +815,8 @@
 
 #+nil
 (get-n-buffers *cam2*)
+#+nil
+(start-acquisition *cam2*)
 #+nil
 (ensure-no-threads-waiting-for-buffer *cam2*)
 #+nil
