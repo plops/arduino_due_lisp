@@ -27,35 +27,13 @@ use this to check assembly code:
 
 #include "Arduino.h"
 #include <setjmp.h>
+#include <Wire/Wire.h>
+#include <ArduCAM/ArduCAM.h>
 #include <SPI/SPI.h>
 
-const int chipSelectPin = 16;
-void setup_max532()
-{
-  // start the SPI library:
-  SPI.begin();
-  SPI.setBitOrder(MSBFIRST
-		  );
-  SPI.setDataMode(SPI_MODE2);
- //SPI.setClockDivider(); //default clock of 4MHz should work
-  
-  // initalize the  chip select pins:
-  pinMode(chipSelectPin, OUTPUT);
-  analogReadResolution(12);
-}
 
-void writeDAC(unsigned short b, unsigned short a)
-{
-  digitalWrite(chipSelectPin, LOW);
-  byte x,y,z;
-  x = (0xff0 & a) >> 4;
-  y = ((0xf & a) << 4) + ((0xf00 & b) >> 8);
-  z = 0xff & b;
-  SPI.transfer(x); 
-  SPI.transfer(y); 
-  SPI.transfer(z); 
-  digitalWrite(chipSelectPin, HIGH);
-}
+const int slave_select_pin = 10;
+ArduCAM myCAM(OV2640,slave_select_pin);
 
 
 #define VERBOSEGC 0
@@ -154,7 +132,7 @@ enum {
     // functions
     F_EQ, F_ATOM, F_CONS, F_CAR, F_CDR, F_READ, F_EVAL, F_PRINT, F_SET, F_NOT,
     F_LOAD, F_SYMBOLP, F_NUMBERP, F_ADD, F_SUB, F_MUL, F_DIV, F_LT, F_PROG1,
-    F_APPLY, F_RPLACA, F_RPLACD, F_BOUNDP, F_DAC, F_DIGITALWRITE, F_PINMODE, F_ADC, F_DELAY, F_DELAYMICROSECONDS, F_MICROS, F_ROOM, N_BUILTINS
+    F_APPLY, F_RPLACA, F_RPLACD, F_BOUNDP, F_PINMODE,F_DIGITALWRITE,F_ANALOGREAD,F_DELAYMICROSECONDS,F_DELAY,F_MICROS,F_ROOM,F_MYCAM_WRITE_REG,F_SPI_CLOCK,F_MYCAM_READ_REG,F_MYCAM_READ_FIFO,F_MYCAM_FLUSH_FIFO,F_MYCAM_START_CAPTURE,F_MYCAM_CLEAR_FIFO_FLAG,F_FIFO_TO_USB , N_BUILTINS
 };
 #define isspecial(v) (intval(v) <= (int)F_PROGN)
 
@@ -162,8 +140,7 @@ static char *builtin_names[] =
     { "quote", "cond", "if", "and", "or", "while", "lambda", "macro", "label",
       "progn", "eq", "atom", "cons", "car", "cdr", "read", "eval", "print",
       "set", "not", "load", "symbolp", "numberp", "+", "-", "*", "/", "<",
-      "prog1", "apply", "rplaca", "rplacd", "boundp", "dac", "digital-write", "pin-mode",
-      "adc", "delay", "delay-microseconds", "micros", "room" };
+      "prog1", "apply", "rplaca", "rplacd", "boundp", "pin-mode","digital-write","adc","delay-microseconds","delay","micros","room","cam-write-reg","spi-clock","cam-read-reg","cam-read-fifo","cam-flush-fifo","cam-start-capture","cam-clear-fifo-flag","fifo-to-usb" };
 
 static char *stack_bottom;
 #define PROCESS_STACK_SIZE (1024)
@@ -183,12 +160,10 @@ value_t eval_sexpr(value_t e, value_t *penv);
 value_t load_file(char *fname);
 
 
+
 // error utilities ------------------------------------------------------------
 
 //jmp_buf toplevel;
-
-
-
 
 void type_error(char *fname, char *expected, value_t got)
 {
@@ -296,6 +271,96 @@ void lisp_init(void)
         setc(symbol(builtin_names[i]), builtin(i));
     setc(symbol("princ"), builtin(F_PRINT));
 }
+
+
+
+value_t pinMode_fun (uint8_t pin,uint8_t mode) 
+{
+  pinMode(pin,mode);
+  return T;
+}
+value_t digitalWrite_fun (uint32_t ulPin,uint32_t ulVal) 
+{
+  digitalWrite(ulPin,ulVal);
+  return T;
+}
+value_t analogRead_fun (uint32_t ulPin) 
+{
+  return number(analogRead(ulPin));
+}
+value_t delayMicroseconds_fun (unsigned int us) 
+{
+  delayMicroseconds(us);
+  return T;
+}
+value_t delay_fun (unsigned long ms) 
+{
+  delay(ms);
+  return T;
+}
+value_t micros_fun () 
+{
+  return number(micros());
+}
+value_t room_fun () 
+{
+ 	  {
+ 	    char s[80];
+ 	    snprintf(s,sizeof(s), "heap: %d/%d, stack: %d/%d",
+ 		     (curheap-fromspace)/8, heapsize/8, SP, N_STACK);
+ 	    Serial.println(s);
+ 	  }
+ 	  return number((curheap-fromspace)/8);
+}
+value_t myCAM_write_reg_fun (uint8_t addr,uint8_t data) 
+{
+  myCAM.write_reg(addr,data);
+  return T;
+}
+value_t spi_clock_fun (uint8_t pin,uint8_t divider) 
+{
+SPI.setClockDivider(pin,divider);
+return T;
+}
+value_t myCAM_read_reg_fun (uint8_t addr) 
+{
+  return number(myCAM.read_reg(addr));
+
+}
+value_t myCAM_read_fifo_fun () 
+{
+  return number(myCAM.read_fifo());
+
+}
+value_t myCAM_flush_fifo_fun () 
+{
+  myCAM.flush_fifo();
+  return T;
+
+}
+value_t myCAM_start_capture_fun () 
+{
+  myCAM.start_capture();
+  return T;
+
+}
+value_t myCAM_clear_fifo_flag_fun () 
+{
+  myCAM.clear_fifo_flag();
+  return T;
+
+}
+value_t fifo_to_usb_fun (uint16_t n) 
+{
+char*buf=(char*)malloc(n);
+int i;
+for(i=0;i<n;i++)
+  buf[i]=myCAM.read_fifo();
+int ret=USBD_Send(0x3, (void*)buf, n);
+free(buf);
+return number(ret);
+}
+
 
 
 
@@ -926,49 +991,6 @@ value_t eval_sexpr(value_t e, value_t *penv)
             }
             v = number(s);
             break;
-	case F_DAC:
-	  argcount("dac", nargs, 2);
-	  writeDAC(tonumber(Stack[SP-2],"dac"),tonumber(Stack[SP-1],"dac"));
-	    v=T;
-	  break;
-	case F_DIGITALWRITE:
-	  argcount("digital-write", nargs, 2);
-	  digitalWrite(tonumber(Stack[SP-2],"digital-write"),tonumber(Stack[SP-1],"digital-write"));
-	    v=T;
-	  break;
-	case F_PINMODE:
-	  argcount("pin-mode", nargs, 2);
-	  pinMode(tonumber(Stack[SP-2],"pin-mode"),tonumber(Stack[SP-1],"pin-mode"));
-	  v=T;
-	  break;
-	case F_ADC:
-	  argcount("adc", nargs, 1);
-	  v = number(analogRead(tonumber(Stack[SP-1],"adc")));
-	  break;
-	case F_DELAY:
-	  argcount("delay", nargs, 1);
-	  delay(tonumber(Stack[SP-1],"delay"));
-	  v = T;
-	  break;
-	case F_DELAYMICROSECONDS:
-	  argcount("delay-microseconds", nargs, 1);
-	  delayMicroseconds(tonumber(Stack[SP-1],"delay-microseconds"));
-	  v = T;
-	  break;
-	case F_MICROS:
-	  argcount("micros", nargs, 0);
-	  v = number(micros());
-	  break;
-	case F_ROOM:
-	  argcount("room", nargs, 0);
-	  {
-	    char s[80];
-	    snprintf(s,sizeof(s), "heap: %d/%d, stack: %d/%d",
-		     (curheap-fromspace)/8, heapsize/8, SP, N_STACK);
-	    Serial.println(s);
-	  }
-	  v = number((curheap-fromspace)/8);
-	  break;
         case F_LT:
             argcount("<", nargs, 2);
             if (tonumber(Stack[SP-2],"<") < tonumber(Stack[SP-1],"<"))
@@ -993,16 +1015,73 @@ value_t eval_sexpr(value_t e, value_t *penv)
             argcount("read", nargs, 0);
             v = read_sexpr(stdin);
             break;
-//        case F_LOAD:
-   //         argcount("load", nargs, 1);
-    //        v = load_file(tosymbol(Stack[SP-1], "load")->name);
-    //        break;
         case F_PROG1:
             // return first arg
             if (nargs < 1)
                 lerror("prog1: error: too few arguments\n");
             v = Stack[saveSP+2];
             break;
+	case F_PINMODE: {
+  argcount("pin-mode",nargs,2); 
+  v= pinMode_fun(tonumber(Stack[SP-2],"pin-mode"),tonumber(Stack[SP-1],"pin-mode"));
+}  break;
+case F_DIGITALWRITE: {
+  argcount("digital-write",nargs,2); 
+  v= digitalWrite_fun(tonumber(Stack[SP-2],"digital-write"),tonumber(Stack[SP-1],"digital-write"));
+}  break;
+case F_ANALOGREAD: {
+  argcount("adc",nargs,1); 
+  v= analogRead_fun(tonumber(Stack[SP-1],"adc"));
+}  break;
+case F_DELAYMICROSECONDS: {
+  argcount("delay-microseconds",nargs,1); 
+  v= delayMicroseconds_fun(tonumber(Stack[SP-1],"delay-microseconds"));
+}  break;
+case F_DELAY: {
+  argcount("delay",nargs,1); 
+  v= delay_fun(tonumber(Stack[SP-1],"delay"));
+}  break;
+case F_MICROS: {
+  argcount("micros",nargs,0); 
+  v= micros_fun();
+}  break;
+case F_ROOM: {
+  argcount("room",nargs,0); 
+  v= room_fun();
+}  break;
+case F_MYCAM_WRITE_REG: {
+  argcount("cam-write-reg",nargs,2); 
+  v= myCAM_write_reg_fun(tonumber(Stack[SP-2],"cam-write-reg"),tonumber(Stack[SP-1],"cam-write-reg"));
+}  break;
+case F_SPI_CLOCK: {
+  argcount("spi-clock",nargs,2); 
+  v= spi_clock_fun(tonumber(Stack[SP-2],"spi-clock"),tonumber(Stack[SP-1],"spi-clock"));
+}  break;
+case F_MYCAM_READ_REG: {
+  argcount("cam-read-reg",nargs,1); 
+  v= myCAM_read_reg_fun(tonumber(Stack[SP-1],"cam-read-reg"));
+}  break;
+case F_MYCAM_READ_FIFO: {
+  argcount("cam-read-fifo",nargs,0); 
+  v= myCAM_read_fifo_fun();
+}  break;
+case F_MYCAM_FLUSH_FIFO: {
+  argcount("cam-flush-fifo",nargs,0); 
+  v= myCAM_flush_fifo_fun();
+}  break;
+case F_MYCAM_START_CAPTURE: {
+  argcount("cam-start-capture",nargs,0); 
+  v= myCAM_start_capture_fun();
+}  break;
+case F_MYCAM_CLEAR_FIFO_FLAG: {
+  argcount("cam-clear-fifo-flag",nargs,0); 
+  v= myCAM_clear_fifo_flag_fun();
+}  break;
+case F_FIFO_TO_USB: {
+  argcount("fifo-to-usb",nargs,1); 
+  v= fifo_to_usb_fun(tonumber(Stack[SP-1],"fifo-to-usb"));
+}  break;
+
         case F_APPLY:
             argcount("apply", nargs, 2);
             v = Stack[saveSP] = Stack[SP-1];  // second arg is new arglist
@@ -1142,42 +1221,31 @@ value_t toplevel_eval(value_t expr)
     SP = saveSP;
     return v;
 }
-/*
-value_t load_file(char *fname)
-{
-    value_t e, v=NIL;
-    char *lastfile = infile;
-    FILE *f = fopen(fname, "r");
-    infile = fname;
-    if (f == NULL) lerror("file not found\n");
-    while (1) {
-        e = read_sexpr(f);
-        if (feof(f)) break;
-        v = toplevel_eval(e);
-    }
-    infile = lastfile;
-    fclose(f);
-    return v;
-}*/
 
 value_t v;
 
 void setup() {
-  pinMode(8,1); // open shutter
-  digitalWrite(8,1);
-
   Serial.begin(115200);
   stack_bottom = ((char*)&v) - PROCESS_STACK_SIZE;
   lisp_init();
   
-  //load_file("system.lsp");
-  //if (argc > 1) { load_file(argv[1]); return 0; }
+  pinMode_fun(8,1);
+  digitalWrite_fun(8,1);
+analogReadResolution(12);
+
+
+  Wire1.begin();
+  pinMode(slave_select_pin,OUTPUT);
+  SPI.begin();
+  myCAM.write_reg(ARDUCHIP_MODE, 0x00);
+  myCAM.set_format(BMP);
+  myCAM.InitCAM();
+
+
+  
   Serial.println("welcome to femtolisp ----------\n");
   Serial.print("> ");
   Serial.setTimeout(1);
-  setup_max532();
-  analogReadResolution(12);
-  writeDAC(2048,2048);
 }
 
 void loop() {
@@ -1187,3 +1255,4 @@ void loop() {
   Serial.println("");  
   Serial.print("> ");
 }
+
