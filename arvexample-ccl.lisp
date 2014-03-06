@@ -106,6 +106,7 @@
   (gc-integer-set-value cam "OffsetX" x)
   (gc-integer-set-value cam "OffsetY" y)
   (get-region cam)
+  (ensure-at-least-one-buffer-in-stream cam)
   (with-slots (arv-stream) cam
     (destroy-stream cam)
     (setf arv-stream (create-stream cam))
@@ -336,6 +337,9 @@
 (defmethod pop-buffer-blocking ((cam camera))
   (#_arv_stream_pop_buffer (arv-stream cam)))
 
+(defmethod timeout-pop-buffer-blocking ((cam camera) timeout-us)
+  (#_arv_stream_timeout_pop_buffer (arv-stream cam) timeout-us))
+
 (defmethod try-pop-buffer ((cam camera))
   (#_arv_stream_try_pop_buffer (arv-stream cam)))
 
@@ -346,7 +350,9 @@
 (push-buffer *cam1*)
 
 (defmethod pop-block-copy-push-buffer ((cam camera) &key out (use-dark t))
-  (let ((b (pop-buffer-blocking cam))
+  (ensure-no-threads-waiting-for-buffer cam)
+  (ensure-at-least-one-buffer-in-stream cam)
+  (let ((b (timeout-pop-buffer-blocking cam 10000))
 	(dark1 (when (and use-dark (dark-image cam))
 		 (let ((d (dark-image cam)))
 		   (assert (equal (list (aoi-height cam) (aoi-width cam))
@@ -354,8 +360,29 @@
 		      (make-array (reduce #'* (array-dimensions d))
 				  :element-type (array-element-type d)
 				  :displaced-to d)))))
-    (when (cffi:null-pointer-p b)
-      (error "pop-buffer returned NULL."))
+    (loop while (or (cffi:null-pointer-p b)
+		    (and (not (cffi:null-pointer-p b))
+			 (/= #$ARV_BUFFER_STATUS_SUCCESS (pref b #>ArvBuffer.status))))
+	 for i from 0 below 1000 do
+	 (when (= 0 (mod i 10))
+	   (format t "popped buffer not satisfactory ~a~%" (list (and (not (cffi:null-pointer-p b))
+								      (pref b #>ArvBuffer.status))
+								 (get-statistics cam)
+								 (multiple-value-list
+								  (get-n-buffers cam))
+								 (temperatures cam))))
+	 (ensure-no-threads-waiting-for-buffer cam)
+	 (ensure-at-least-one-buffer-in-stream cam)
+	 (when (= i 999)
+	   (if (cffi:null-pointer-p b)
+	       (error "pop-buffer returned NULL.")
+	       (unless (= #$ARV_BUFFER_STATUS_SUCCESS (pref b #>ArvBuffer.status))
+		 (error "pop-buffer didnt succeed."))))
+	 (setf b (timeout-pop-buffer-blocking cam 10000)))
+    ;; (when (cffi:null-pointer-p b)
+    ;;   (error "pop-buffer returned NULL."))
+    ;; (unless (= #$ARV_BUFFER_STATUS_SUCCESS (pref b #>ArvBuffer.status))
+    ;;   (error "buffer status not success"))
     (prog1
 	(let* ((a (or out
 		      (make-array (list (aoi-height cam)
@@ -412,15 +439,33 @@
   (cffi:with-foreign-objects ((n-in :int)
 			      (n-out :int))
     (#_arv_stream_get_n_buffers (arv-stream cam) n-in n-out)
-    `((input-buffers . ,(cffi:mem-ref n-in :int))
-      (output-buffers . ,(cffi:mem-ref n-out :int))
-      )))
+    (values (cffi:mem-ref n-in :int)
+	    (cffi:mem-ref n-out :int))))
 
 #+nil
 (get-n-buffers *cam1*)
 #+nil
 (get-n-buffers *cam2*)
 
+
+#+nil
+(defparameter *bla* (pop-block-copy-push-buffer *cam2*))
+
+
+(defmethod ensure-at-least-one-buffer-in-stream ((cam camera))
+  (multiple-value-bind (in out) (get-n-buffers cam)
+    (when (= in 0)
+      (push-buffer cam))))
+
+(defmethod ensure-no-threads-waiting-for-buffer ((cam camera))
+  (multiple-value-bind (in out) (get-n-buffers cam)
+    (when (< out 0)
+      (start-acquisition cam))))
+
+#+nil
+(start-acquisition *cam2*)
+#+nil
+(stop-acquisition *cam2*)
 
 #+nil
 (push-buffer *cam1*)
@@ -474,7 +519,7 @@
 
 
 #+nil
-(dotimes (i 1000)
+(dotimes (i 100)
  (write-pgm (format nil "/dev/shm/~d.pgm" 1)
 	    (acquire-single-image *cam1* :use-dark t)))
 
@@ -496,7 +541,7 @@
        (set-exposure c 1000d0)
        (set-acquisition-mode c 'single-frame)
        (set-pixel-format c "Mono12Packed")
-       (push-buffer c)
+       (ensure-at-least-one-buffer-in-stream c)
        (write-pgm (format nil "/dev/shm/~d.pgm" i)
 		  (acquire-single-image c :use-dark nil))))
 
@@ -523,7 +568,7 @@
 #+nil
 
 #+nil
-(set-exposure *cam2* 100d0)
+(list (set-exposure *cam2* 1d0) (get-exposure *cam2*))
 #+nil
 (set-exposure *cam1* 500d0)
 
@@ -550,7 +595,7 @@
    (reduce #'max a)
    (reduce #'min a)))
 #+nil
-(write-pgm "/dev/shm/1.pgm" (acquire-single-image *cam1*))
+(write-pgm "/dev/shm/2.pgm" (acquire-single-image *cam2*))
 
 #+nil
 (temperatures *cam1*)
@@ -765,13 +810,20 @@
     im))
 
 #+nil
-(set-exposure *cam1* 400d0)
+(set-exposure *cam2* 400d0)
 
 #+nil
-(dotimes (i 100)
-  (sleep .5)
+(get-n-buffers *cam2*)
+#+nil
+(ensure-no-threads-waiting-for-buffer *cam2*)
+#+nil
+(push-buffer *cam2*)
+
+#+nil
+(dotimes (i 1000)
+  ;(sleep .2)
  (progn
-   (format t "~a~%" (list (get-statistics *cam1*) (get-statistics *cam2*)))
+   (format t "~a~%" (list (get-statistics *cam1*) (get-statistics *cam2*) (multiple-value-list (get-n-buffers *cam2*))))
    (write-pgm "/dev/shm/1.pgm" (acquire-single-image *cam1* :use-dark t) #+nil (acquire-image-using-full-range *cam1*))
    (write-pgm "/dev/shm/2.pgm" (acquire-single-image *cam2*) #+nil (acquire-image-using-full-range *cam2*))))
 
@@ -792,7 +844,7 @@
 
 
 #+nil
-(talk-arduino (format nil "(dac 2057 2048)" ))
+(talk-arduino (format nil "(dac 657 2048)" ))
 #+nil
 (talk-arduino (format nil "(+ 1 2)" ))
 
@@ -813,8 +865,9 @@
 	     (format t "~a~%" (list 'i i 'j j))
 	     (talk-arduino (format nil "(dac ~d ~d)~%" i j))
 					;(sleep 2)
-	     (loop for c in (list *cam1* *cam2*) and k from 1 do 
-		  (format t "acquire ~d ~a~%" k (list (get-statistics c) (get-n-buffers c)))
+	     (loop for c in (list *cam2*) and k from 2 do 
+		  (format t "acquire ~d ~a~%" k (list (get-statistics c) (multiple-value-list (get-n-buffers c))))
+		  
 		  (let ((im (if nil
 				(average-images c :number 10 :use-dark t)
 					;(acquire-single-image c :use-dark t)
