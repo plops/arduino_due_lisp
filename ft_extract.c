@@ -15,9 +15,12 @@ unsigned short *image;
 int initialized_p=0;
 int image_w=0,image_h=0;
 
+//#define D(x) do{x}while(0)
+#define D(x) do{if(0){x;}}while(0)
+
 int read_pgm(char*fn)
 {
-  printf("reading %s\n",fn);
+  D(printf("reading %s\n",fn));
   FILE*f=fopen(fn,"r");
   if(!f){
     f=fopen(fn,"r");
@@ -36,13 +39,13 @@ int read_pgm(char*fn)
     image_w=image_w;
     image_h=image_h;
   }
-  printf("reading data ..");
+  D(printf("reading data .."));
   if(image_w<image_w || image_h<image_h)
     return -1;
   int n = fread(image,2,image_w*image_h,f);
   if(n<image_h*image_w)
     printf("fread read %d elements which is not the expected %d.\n",n,image_h*image_w);
-  printf(". finished\n");
+  D(printf(". finished\n"));
   fclose(f);
   return 0;
 }
@@ -121,10 +124,10 @@ main(int argc,char**argv)
   complex float*vol=(complex float*) fftw_malloc(vol_size);
 
   int v;
-  printf("argc=%d\n",argc);
-  for(v=0;v<6;v++)
-    printf("%s\n",argv[v]);
-
+  D(printf("argc=%d\n",argc));
+  for(v=0;v<6;v++){
+    D(printf("%s\n",argv[v]));
+  }
   for(v=6;v<argc;v++){
     int i,j;
     read_pgm(argv[v]);
@@ -155,3 +158,5 @@ main(int argc,char**argv)
 
 // uses 20% of processors, reads data with 8Mbyte/s
 // uses 60% of processor when data is in ram
+
+// for i in `ls ~/dat/0/i*_2_*.pgm|xargs -n1 basename|cut -d _ -f 1|uniq`;do time ./ft_extract 99 140 80 84 /media/b/$i.ics ~/dat/0/$i"_j"*"_2_"*.pgm;done 
