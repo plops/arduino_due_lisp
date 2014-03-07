@@ -457,11 +457,13 @@
 
 (defmethod ensure-at-least-one-buffer-in-stream ((cam camera))
   (multiple-value-bind (in out) (get-n-buffers cam)
+    (declare (ignorable out))
     (when (= in 0)
       (push-buffer cam))))
 
 (defmethod ensure-no-threads-waiting-for-buffer ((cam camera))
   (multiple-value-bind (in out) (get-n-buffers cam)
+    (declare (ignorable in))
     (when (<= out 0)
       (start-acquisition cam))))
 
@@ -530,6 +532,8 @@
 (defparameter *cam2*
 	   (make-instance 'camera :name "Basler-21211553"))
 
+;; network card has to be configured like this:
+;; ifconfig enp0s7 169.254.140.1
 #+nil
 (progn
   (progn (defparameter *cam2*
@@ -656,7 +660,7 @@
 (defvar *serial* nil)
 
 
-
+;; in gentoo user should be in group uucp for access to ACM device
 (defparameter *serial*
   (ccl::make-serial-stream (concatenate 'string "/dev/" (pathname-name (first (directory "/dev/ttyACM*"))))
 					;:format 'character
@@ -794,8 +798,6 @@
 (defparameter *bla*
  (average-images *cam1*))
 
-(ccl::*-2)
-
 #+nil
 (talk-arduino (format nil "(dac ~d 2047)" (+ (* 40 15) 2047)) )
 
@@ -806,16 +808,22 @@
 	 (dark-max (.max (dark-image c)))
 	 (goal-min (- 40000 dark-max))
 	 (goal-max (- 60000 dark-max)))
-    (loop for i from 0 while (not (< 40000 ma 60000)) do
-	 (let ((new-exp (* (cond ((< ma 40000) 1.2)
-				 ((< 60000 ma) 0.8)
+    (loop for i from 0 while (not (< goal-min ma goal-max)) do
+	 (let ((new-exp (* (cond ((< ma goal-min) 1.2)
+				 ((< goal-max ma) 0.8)
 				 (t 1.0)) 
 			   (get-exposure c))))
+	   (unless (< 20 new-exp 10000)
+	     ;; keep the exposure time in useful limits
+	     ;; i'm not sure if i will have to define individual limits for each camera type
+	     (return-from acquire-image-using-full-range im))
 	   (set-exposure c new-exp)
 	   (format t "exposure time is ~a now~%" new-exp)
 	   (setf im (acquire-single-image c :use-dark use-dark)
 		 ma (.max im))))
     im))
+;; in a run that worked cam1 206.22 .. 9930.9 and cam2 22.0 .. 2271
+
 
 #+nil
 (set-exposure *cam2* 400d0)
@@ -862,12 +870,12 @@
 
 
 #+nil
-(loop for dir-num from 0 below 15 do
+(loop for dir-num from 0 below 2 do
  (let ((ic 2047)
        (ir 1500)
        (jc 2047)
        (jr 1600))
-   (ensure-directories-exist (format nil "/home/martin/dat/~d/" dir-num))
+   (ensure-directories-exist (format nil "~/dat/~d/" dir-num))
    (loop for j from (- jc jr) upto (+ jc jr) by 20 do
 	(loop for i from (- ic ir) upto (+ ic ir) by 20 do
 	     (format t "~a~%" (list 'i i 'j j))
@@ -882,9 +890,10 @@
 				(acquire-image-using-full-range c)
 				)))
 		    (write-pgm (format nil "/dev/shm/~d.pgm" k) im)
-		    (write-pgm (format nil "/home/martin/dat/~d/i~4,'0d_j~4,'0d_~d_~2,6$.pgm" dir-num i j k (get-exposure c)) im)))))))
+		    (write-pgm (format nil "~/dat/~d/i~4,'0d_j~4,'0d_~d_~2,6$.pgm" dir-num i j k (get-exposure c)) im)))))))
 
-
+;; network usage is 2.2Mbytes/s
+ 
 
 
 
