@@ -148,4 +148,4 @@ main(int argc,char**argv)
 // ./ft_extract 99 140 80 84 /dev/shm/2.pgm
 
 // uses 20% of processors, reads data with 8Mbyte/s
-// in the beginning processor usage was arount 60%, perhaps the harddrive is limiting
+// uses 60% of processor when data is in ram
