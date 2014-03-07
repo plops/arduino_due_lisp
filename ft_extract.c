@@ -2,6 +2,14 @@
 #include <math.h>
 #include <fftw3.h>
 #include <stdio.h>
+#include <errno.h>
+#include <string.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+// http://libics.sourceforge.net/
+// sudo apt-get install libics-dev
+#include <libics.h>
 
 unsigned short *image;
 int initialized_p=0;
@@ -15,13 +23,15 @@ int read_pgm(char*fn)
     usleep(2000); // sometimes the file does not exist
     f=fopen(fn,"r");
     if(!f)
-      printf("error with fopen: '%s' %s\n",fn,strerror(errno));
+      printf("error with fopen: '%s' %s\n",
+	       fn,
+	       strerror(errno));
   }
   rewind(f);
   if(2!=fscanf(f,"P5\n%d %d\n65535\n", &image_w, &image_h))
     printf("error with fscanf\n");
   if(!initialized_p){
-    printf("allocating image %d %dx%d\n",i,image_w,image_h);
+    printf("allocating image %dx%d\n",image_w,image_h);
     image=(unsigned short*)malloc(image_w*image_h*2);
     initialized_p=1;
     image_w=image_w;
@@ -30,7 +40,9 @@ int read_pgm(char*fn)
   printf("reading data ..");
   if(image_w<image_w || image_h<image_h)
     return -1;
-  fread(image,image_w*image_h,2,f);
+  int n = fread(image,image_w*image_h,2,f);
+  if(n<image_h*image_w*2)
+    printf("fread didn't read enough bytes\n");
   printf(". finished\n");
   fclose(f);
   return 0;
@@ -52,12 +64,12 @@ main(int argc,char**argv)
 
   fftw_init_threads();
   fftw_plan_with_nthreads(4);
-  fftw_complex fft_in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * image_w * image_h);
-  fftw_complex fft_out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) *  image_w * image_h);
+  fftw_complex*fft_in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * image_w * image_h);
+  fftw_complex*fft_out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) *  image_w * image_h);
   fftw_plan fft_plan =fftw_plan_dft_2d(image_h,image_w,fft_in,fft_out,FFTW_FORWARD, FFTW_ESTIMATE);
   
-  fftw_complex fft_in_b = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * cw * ch);
-  fftw_complex fft_out_b = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * cw * ch);
+  fftw_complex*fft_in_b = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * cw * ch);
+  fftw_complex*fft_out_b = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * cw * ch);
   fftw_plan fft_plan_b =fftw_plan_dft_2d(ch,cw,fft_out_b,fft_in_b,FFTW_BACKWARD, FFTW_ESTIMATE);
 
   double s=1/65535.0;
@@ -75,4 +87,5 @@ main(int argc,char**argv)
     
     fftw_execute(fft_plan_b); 
   }
+  return 0;
 }

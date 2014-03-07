@@ -363,7 +363,9 @@
 				  :displaced-to d)))))
     (loop while (or (cffi:null-pointer-p b)
 		    (and (not (cffi:null-pointer-p b))
-			 (/= #$ARV_BUFFER_STATUS_SUCCESS (pref b #>ArvBuffer.status))))
+			 (/= #$ARV_BUFFER_STATUS_SUCCESS (pref b #>ArvBuffer.status)))
+		    (and (not (cffi:null-pointer-p b))
+			 (not (pref b #>ArvBuffer.data))))
 	 for i from 0 below 1000 do
 	 (when (= 0 (mod i 10))
 	   (format t "popped buffer not satisfactory ~a~%" (list (and (not (cffi:null-pointer-p b))
@@ -570,6 +572,8 @@
 
 #+nil
 (list (set-exposure *cam2* 1d0) (get-exposure *cam2*))
+#+nil
+(get-exposure *cam1*)
 #+nil
 (set-exposure *cam1* 2000d0)
 
