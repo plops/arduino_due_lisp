@@ -76,13 +76,18 @@ char *gnu_basename(char *path)
   return base ? base+1 : path;
 }
 
-// input: i2087_j1967_2_000082.00.pgm
-// output: 000082.00
-char *gnu_basename(char *file)
+// input: "i2087_j1967_2_000082.00.pgm"
+// output: 000082.00 (as double)
+double parse_exposure(char *file)
 {
   char *last = strrchr(file, '.');
-  
-  return base ? base+1 : path;
+  char *first = strrchr(file,'_')+1;
+  char s[30];
+  char*p,*q;
+  for(p=first,q=s;p<last;q++,p++){
+    *q=*p;
+  }
+  return atof(s);
 }
 
 int cx,cy,cw,ch;
@@ -111,18 +116,19 @@ main(int argc,char**argv)
 
   int depth=argc-6;
   int vol_size=sizeof(complex float)*cw*ch*depth;
-  printf("allocating %d bytes for %dx%dx%d complex float volume\n",vol_size,cw,ch,depth);
+  printf("allocating %d bytes (%g Gbytes) for %dx%dx%d complex float volume\n",
+	 vol_size,(1.0*vol_size)/(1024*1024*1024),cw,ch,depth);
   complex float*vol=(complex float*) fftw_malloc(vol_size);
-
-  double s=1/65535.0;
 
   int v;
   printf("argc=%d\n",argc);
-  for(v=0;v<argc;v++)
+  for(v=0;v<6;v++)
     printf("%s\n",argv[v]);
+
   for(v=6;v<argc;v++){
     int i,j;
     read_pgm(argv[v]);
+    double s=1.0/parse_exposure(argv[v]);
     for(i=0;i<image_w*image_h;i++)
       fft_in[i]=image[i]*s;
 
