@@ -84,7 +84,7 @@ main(int argc,char**argv)
   read_pgm(argv[6]);
 
   fftw_init_threads();
-  fftw_plan_with_nthreads(4);
+  fftw_plan_with_nthreads(6);
   fftw_complex*fft_in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * image_w * image_h);
   fftw_complex*fft_out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) *  image_w * image_h);
   fftw_plan fft_plan =fftw_plan_dft_2d(image_h,image_w,fft_in,fft_out,FFTW_FORWARD, FFTW_ESTIMATE);
