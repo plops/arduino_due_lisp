@@ -314,6 +314,7 @@
   (#_arv_gc_float_set_value (gc-get-node cam "ExposureTimeAbs") 
    time-us
    (cffi:null-pointer)))
+;; photometrics 10us.. 0.41s 25ns steps
 
 (defmethod get-exposure ((cam camera))
   (#_arv_gc_float_get_value (gc-get-node cam "ExposureTimeAbs") 
@@ -371,7 +372,6 @@
 								 (multiple-value-list
 								  (get-n-buffers cam))
 								 (temperatures cam))))
-	 (sleep 1)
 	 (ensure-no-threads-waiting-for-buffer cam)
 	 (ensure-at-least-one-buffer-in-stream cam)
 	 (when (= i 999)
@@ -571,7 +571,7 @@
 #+nil
 (list (set-exposure *cam2* 1d0) (get-exposure *cam2*))
 #+nil
-(set-exposure *cam1* 500d0)
+(set-exposure *cam1* 2000d0)
 
 #+nil
 (progn
@@ -826,7 +826,8 @@
 (dotimes (i 1000)
   ;(sleep .2)
  (progn
-   (format t "~a~%" (list (get-statistics *cam1*) (get-statistics *cam2*) (multiple-value-list (get-n-buffers *cam2*))))
+   (format t "~a~%" (list (get-statistics *cam1*) (multiple-value-list (get-n-buffers *cam1*))
+			  (get-statistics *cam2*) (multiple-value-list (get-n-buffers *cam2*))))
    (write-pgm "/dev/shm/1.pgm" (acquire-single-image *cam1* :use-dark t) #+nil (acquire-image-using-full-range *cam1*))
    (write-pgm "/dev/shm/2.pgm" (acquire-single-image *cam2*) #+nil (acquire-image-using-full-range *cam2*))))
 
@@ -854,21 +855,18 @@
 
 
 #+nil
-(loop for dir-num from 2 below 15 do
+(loop for dir-num from 0 below 15 do
  (let ((ic 2047)
        (ir 1500)
        (jc 2047)
-       (jr 1500)
-       (err (make-array 2 :element-type 'fixnum
-			:initial-contents (loop for c in (list *cam1* *cam2*) collect
-					       (cdr (second (get-statistics c)))))))
+       (jr 1600))
    (ensure-directories-exist (format nil "/home/martin/dat/~d/" dir-num))
    (loop for j from (- jc jr) upto (+ jc jr) by 20 do
 	(loop for i from (- ic ir) upto (+ ic ir) by 20 do
 	     (format t "~a~%" (list 'i i 'j j))
 	     (talk-arduino (format nil "(dac ~d ~d)~%" i j))
 					;(sleep 2)
-	     (loop for c in (list *cam2*) and k from 2 do 
+	     (loop for c in (list *cam1* *cam2*) and k from 1 do 
 		  (format t "acquire ~d ~a~%" k (list (get-statistics c) (multiple-value-list (get-n-buffers c))))
 		  
 		  (let ((im (if nil
@@ -876,9 +874,6 @@
 					;(acquire-single-image c :use-dark t)
 				(acquire-image-using-full-range c)
 				)))
-		    (unless (= (aref err (- k 1)) (cdr (second (get-statistics c))))
-		      (format t "ERROR ~a ~%" (get-statistics c))
-		      (setf (aref err (- k 1)) (cdr (second (get-statistics c)))))
 		    (write-pgm (format nil "/dev/shm/~d.pgm" k) im)
 		    (write-pgm (format nil "/home/martin/dat/~d/i~4,'0d_j~4,'0d_~d_~2,6$.pgm" dir-num i j k (get-exposure c)) im)))))))
 
