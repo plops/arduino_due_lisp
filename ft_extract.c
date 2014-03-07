@@ -69,6 +69,22 @@ int write_ics2(char*fn,int w, int h, int depth,void*buf)
   return 0;
 }
 
+// split at /
+char *gnu_basename(char *path)
+{
+  char *base = strrchr(path, '/');
+  return base ? base+1 : path;
+}
+
+// input: i2087_j1967_2_000082.00.pgm
+// output: 000082.00
+char *gnu_basename(char *file)
+{
+  char *last = strrchr(file, '.');
+  
+  return base ? base+1 : path;
+}
+
 int cx,cy,cw,ch;
 
 int
@@ -94,7 +110,9 @@ main(int argc,char**argv)
   fftw_plan fft_plan_b =fftw_plan_dft_2d(ch,cw,fft_out_b,fft_in_b,FFTW_BACKWARD, FFTW_ESTIMATE);
 
   int depth=argc-6;
-  complex float*vol=(complex float*) fftw_malloc(sizeof(complex float)*cw*ch*depth);
+  int vol_size=sizeof(complex float)*cw*ch*depth;
+  printf("allocating %d bytes for %dx%dx%d complex float volume\n",vol_size,cw,ch,depth);
+  complex float*vol=(complex float*) fftw_malloc(vol_size);
 
   double s=1/65535.0;
 
@@ -128,3 +146,6 @@ main(int argc,char**argv)
 
 // cp ~/dat/0/i0827_j2047_2_000160.00.pgm /dev/shm/2.pgm
 // ./ft_extract 99 140 80 84 /dev/shm/2.pgm
+
+// uses 20% of processors, reads data with 8Mbyte/s
+// in the beginning processor usage was arount 60%, perhaps the harddrive is limiting
