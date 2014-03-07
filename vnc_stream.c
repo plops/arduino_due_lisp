@@ -70,13 +70,13 @@ void fft_init()
 
 void fft_fill()
 {
-  int i;
+  int i; 
   double s=1/65535.0;
   read_pgm("/dev/shm/1.pgm",0);
   for(i=0;i<width[0]*height[0];i++){
     fft_in[0][i]=image[0][i]*s;
   }
-  read_pgm("/dev/shm/2.pgm",1);
+ read_pgm("/dev/shm/2.pgm",1);
   for(i=0;i<width[1]*height[1];i++){
     fft_in[1][i]=image[1][i]*s;
   }

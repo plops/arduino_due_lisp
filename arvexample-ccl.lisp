@@ -790,6 +790,8 @@
 (defparameter *bla*
  (average-images *cam1*))
 
+(ccl::*-2)
+
 #+nil
 (talk-arduino (format nil "(dac ~d 2047)" (+ (* 40 15) 2047)) )
 
@@ -802,7 +804,8 @@
 	 (goal-max (- 60000 dark-max)))
     (loop for i from 0 while (not (< 40000 ma 60000)) do
 	 (let ((new-exp (* (cond ((< ma 40000) 1.2)
-				 ((< 60000 ma) 0.8)) 
+				 ((< 60000 ma) 0.8)
+				 (t 1.0)) 
 			   (get-exposure c))))
 	   (set-exposure c new-exp)
 	   (format t "exposure time is ~a now~%" new-exp)
