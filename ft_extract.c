@@ -160,3 +160,7 @@ main(int argc,char**argv)
 // uses 60% of processor when data is in ram
 
 // for i in `ls ~/dat/0/i*_2_*.pgm|xargs -n1 basename|cut -d _ -f 1|uniq`;do time ./ft_extract 99 140 80 84 /media/b/$i.ics ~/dat/0/$i"_j"*"_2_"*.pgm;done 
+
+// on the ssd pigz -1 runs at 40Mbytes/s but it only compress 2.5Gb to 1.9Gb
+
+// with an empty institute i can copy at 11Mbytes/s from lab computer to notebook (too slow)
