@@ -50,7 +50,7 @@ int read_pgm(char*fn)
 int write_ics2(char*fn,int w, int h, int depth,void*buf)
 {
   ICS* ip;
-  Ics_DataType dt=Ics_complex64;
+  Ics_DataType dt=Ics_complex32;
   int ndims=3;
   size_t dims[3]={w,h,depth};
   int retval = IcsOpen (&ip, fn, "w2");
@@ -74,14 +74,14 @@ int cx,cy,cw,ch;
 int
 main(int argc,char**argv)
 {
-  if(argc<6)
-    printf("usage: ft_extract x y w h file1 [file2 ...]\n");
+  if(argc<7)
+    printf("usage: ft_extract x y w h output.ics file1 [file2 ...]\n");
   cx = atoi(argv[1]); // FIXME this is not safe at all, but i'm the only one using this
   cy = atoi(argv[2]);
   cw = atoi(argv[3]);
   ch = atoi(argv[4]);
 
-  read_pgm(argv[5]);
+  read_pgm(argv[6]);
 
   fftw_init_threads();
   fftw_plan_with_nthreads(4);
@@ -93,7 +93,7 @@ main(int argc,char**argv)
   fftw_complex*fft_out_b = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * cw * ch);
   fftw_plan fft_plan_b =fftw_plan_dft_2d(ch,cw,fft_out_b,fft_in_b,FFTW_BACKWARD, FFTW_ESTIMATE);
 
-  int depth=argc-5;
+  int depth=argc-6;
   complex float*vol=(complex float*) fftw_malloc(sizeof(complex float)*cw*ch*depth);
 
   double s=1/65535.0;
@@ -102,23 +102,13 @@ main(int argc,char**argv)
   printf("argc=%d\n",argc);
   for(v=0;v<argc;v++)
     printf("%s\n",argv[v]);
-  for(v=5;v<argc;v++){
+  for(v=6;v<argc;v++){
     int i,j;
     read_pgm(argv[v]);
     for(i=0;i<image_w*image_h;i++)
       fft_in[i]=image[i]*s;
 
-    char s[100];
-    sprintf(s,"%s.in.ics",argv[v]);
-    write_ics2(s,image_w,image_h,1,fft_in);
-
-
     fftw_execute(fft_plan);
-    
-
-
-    sprintf(s,"%s.out.ics",argv[v]);
-    write_ics2(s,image_w,image_h,1,fft_out);
    
     for(i=0;i<cw;i++)
       for(j=0;j<ch;j++)
@@ -126,13 +116,11 @@ main(int argc,char**argv)
 				  image_w*(cy+j-(int)floor(ch/2))];
     
     fftw_execute(fft_plan_b); 
-
-    
-  sprintf(s,"%s.ics",argv[v]);
-  write_ics2(s,cw,ch,1,fft_in_b);
-    
-    
+    for(i=0;i<cw*ch;i++)
+      vol[i+cw*ch*(v-6)] = fft_in_b[i];
   }
+  write_ics2(argv[5],cw,ch,depth,vol);
+      
   return 0;
 }
 
