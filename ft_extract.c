@@ -20,7 +20,6 @@ int read_pgm(char*fn)
   printf("reading %s\n",fn);
   FILE*f=fopen(fn,"r");
   if(!f){
-    usleep(2000); // sometimes the file does not exist
     f=fopen(fn,"r");
     if(!f)
       printf("error with fopen: '%s' %s\n",
@@ -53,7 +52,7 @@ int write_ics2(char*fn,int w, int h, int depth,void*buf)
   ICS* ip;
   Ics_DataType dt=Ics_complex64;
   int ndims=3;
-  size_t dims[ICS_MAXDIM]={w,h,depth};
+  size_t dims[3]={w,h,depth};
   int retval = IcsOpen (&ip, fn, "w2");
   if (retval != IcsErr_Ok) {
     fprintf (stderr, "Could not open output file: %s\n", IcsGetErrorText (retval));
@@ -94,9 +93,10 @@ main(int argc,char**argv)
   fftw_complex*fft_out_b = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * cw * ch);
   fftw_plan fft_plan_b =fftw_plan_dft_2d(ch,cw,fft_out_b,fft_in_b,FFTW_BACKWARD, FFTW_ESTIMATE);
 
-  double s=1/65535.0;
-  
+  int depth=argc-5;
+  complex float*vol=(complex float*) fftw_malloc(sizeof(complex float)*cw*ch*depth);
 
+  double s=1/65535.0;
 
   int v;
   printf("argc=%d\n",argc);
@@ -107,20 +107,36 @@ main(int argc,char**argv)
     read_pgm(argv[v]);
     for(i=0;i<image_w*image_h;i++)
       fft_in[i]=image[i]*s;
+
+    char s[100];
+    sprintf(s,"%s.in.ics",argv[v]);
+    write_ics2(s,image_w,image_h,1,fft_in);
+
+
     fftw_execute(fft_plan);
     
+
+
+    sprintf(s,"%s.out.ics",argv[v]);
+    write_ics2(s,image_w,image_h,1,fft_out);
+   
     for(i=0;i<cw;i++)
       for(j=0;j<ch;j++)
 	fft_out_b[i+cw*j]=fft_out[(cx+i-(int)floor(cw/2))+
 				  image_w*(cy+j-(int)floor(ch/2))];
     
     fftw_execute(fft_plan_b); 
-    char s[100];
-    sprintf(s,"%s.ics",argv[v]);
-    write_ics2(s,cw,ch,1,fft_in_b);
+
+    
+  sprintf(s,"%s.ics",argv[v]);
+  write_ics2(s,cw,ch,1,fft_in_b);
+    
+    
   }
   return 0;
 }
 
 // 2 x=384-256 y=442-256 w=73
-// ./ft_extract 128 186 84 84 /dev/shm/2.pgm
+
+// cp ~/dat/0/i0827_j2047_2_000160.00.pgm /dev/shm/2.pgm
+// ./ft_extract 99 140 80 84 /dev/shm/2.pgm
