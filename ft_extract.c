@@ -40,11 +40,33 @@ int read_pgm(char*fn)
   printf("reading data ..");
   if(image_w<image_w || image_h<image_h)
     return -1;
-  int n = fread(image,image_w*image_h,2,f);
-  if(n<image_h*image_w*2)
-    printf("fread didn't read enough bytes\n");
+  int n = fread(image,2,image_w*image_h,f);
+  if(n<image_h*image_w)
+    printf("fread read %d elements which is not the expected %d.\n",n,image_h*image_w);
   printf(". finished\n");
   fclose(f);
+  return 0;
+}
+
+int write_ics2(char*fn,int w, int h, int depth,void*buf)
+{
+  ICS* ip;
+  Ics_DataType dt=Ics_complex64;
+  int ndims=3;
+  size_t dims[ICS_MAXDIM]={w,h,depth};
+  int retval = IcsOpen (&ip, fn, "w2");
+  if (retval != IcsErr_Ok) {
+    fprintf (stderr, "Could not open output file: %s\n", IcsGetErrorText (retval));
+    return(-1);
+  }
+  IcsSetLayout (ip, dt, ndims, dims);
+  IcsSetData (ip, buf, w*h*depth*sizeof(fftw_complex));
+  IcsSetCompression (ip, IcsCompr_uncompressed, 0);
+  retval = IcsClose (ip);
+  if (retval != IcsErr_Ok) {
+    fprintf (stderr, "Could not write output file: %s\n", IcsGetErrorText (retval));
+    return(-1);
+  }
   return 0;
 }
 
@@ -73,19 +95,32 @@ main(int argc,char**argv)
   fftw_plan fft_plan_b =fftw_plan_dft_2d(ch,cw,fft_out_b,fft_in_b,FFTW_BACKWARD, FFTW_ESTIMATE);
 
   double s=1/65535.0;
+  
+
 
   int v;
+  printf("argc=%d\n",argc);
+  for(v=0;v<argc;v++)
+    printf("%s\n",argv[v]);
   for(v=5;v<argc;v++){
     int i,j;
+    read_pgm(argv[v]);
     for(i=0;i<image_w*image_h;i++)
       fft_in[i]=image[i]*s;
     fftw_execute(fft_plan);
     
     for(i=0;i<cw;i++)
       for(j=0;j<ch;j++)
-	fft_out_b[i+cw*j]=fft_out[(cx+i)+image_w*(cy+j)];
+	fft_out_b[i+cw*j]=fft_out[(cx+i-(int)floor(cw/2))+
+				  image_w*(cy+j-(int)floor(ch/2))];
     
     fftw_execute(fft_plan_b); 
+    char s[100];
+    sprintf(s,"%s.ics",argv[v]);
+    write_ics2(s,cw,ch,1,fft_in_b);
   }
   return 0;
 }
+
+// 2 x=384-256 y=442-256 w=73
+// ./ft_extract 128 186 84 84 /dev/shm/2.pgm
