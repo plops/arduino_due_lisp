@@ -870,12 +870,12 @@
 
 
 #+nil
-(loop for dir-num from 0 below 2 do
+(loop for dir-num from 0 below 15 do
  (let ((ic 2047)
        (ir 1500)
        (jc 2047)
        (jr 1600))
-   (ensure-directories-exist (format nil "~/dat/~d/" dir-num))
+   (ensure-directories-exist (format nil "/home/martin/dat/~d/" dir-num))
    (loop for j from (- jc jr) upto (+ jc jr) by 20 do
 	(loop for i from (- ic ir) upto (+ ic ir) by 20 do
 	     (format t "~a~%" (list 'i i 'j j))
@@ -890,9 +890,11 @@
 				(acquire-image-using-full-range c)
 				)))
 		    (write-pgm (format nil "/dev/shm/~d.pgm" k) im)
-		    (write-pgm (format nil "~/dat/~d/i~4,'0d_j~4,'0d_~d_~2,6$.pgm" dir-num i j k (get-exposure c)) im)))))))
+		    (write-pgm (format nil "/home/martin/dat/~d/i~4,'0d_j~4,'0d_~d_~2,6$.pgm" dir-num i j k (get-exposure c)) im)))))))
 
 ;; network usage is 2.2Mbytes/s
+;; (/ (* 11 1024) 2.2) => 5100 seconds for one scan
+
  
 
 
