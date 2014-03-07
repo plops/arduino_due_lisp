@@ -92,3 +92,7 @@ inotify_show: inotify_show.c
 
 vnc_stream: vnc_stream.c
 	gcc -ggdb -O0 -o vnc_stream vnc_stream.c -lvncserver -lfftw3 -lm -lfftw3_threads
+
+
+ft_extract: ft_extract.c
+	gcc -ggdb -Wextra -Wall -O3 -o ft_extract ft_extract.c -I/usr/local/include -L/usr/local/lib -lfftw3 -lm -lfftw3_threads -lics
