@@ -1,4 +1,4 @@
-(require :cffi)
+#.(require :cffi)
 (cffi:load-foreign-library "libid_lib.so")
 
 ;; int int int complex-double-float size=(+ (* 21 m) 80 (* n (+ 17 (* 2 krank))))
@@ -67,10 +67,12 @@ krank approximating array a."
     (values u s v)))
 
 #+nil
-(let* ((m 10)
-       (n 32)
-       (k 3)
+(let* ((m 1000)
+       (n 3002)
+       (k 300)
        (a (make-array (* m n) :element-type '(complex double-float))))
+  (loop for i below (length a) do
+       (setf (aref a i) (complex (random 1d0) (random 1d0))))
   (defparameter *bla*
     (multiple-value-list
      (idzr-asvd m n a k))))
