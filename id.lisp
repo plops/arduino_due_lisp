@@ -67,12 +67,13 @@ krank approximating array a."
     (values u s v)))
 
 #+nil
-(let* ((m 1000)
-       (n 3002)
-       (k 300)
-       (a (make-array (* m n) :element-type '(complex double-float))))
-  (loop for i below (length a) do
-       (setf (aref a i) (complex (random 1d0) (random 1d0))))
-  (defparameter *bla*
-    (multiple-value-list
-     (idzr-asvd m n a k))))
+(time
+ (let* ((m 20000)
+	(n 10002)
+	(k 300)
+	(a (make-array (* m n) :element-type '(complex double-float))))
+   (loop for i below (length a) do
+	(setf (aref a i) (complex (random 1d0) (random 1d0))))
+   (defparameter *bla*
+     (multiple-value-list
+      (idzr-asvd m n a k)))))
