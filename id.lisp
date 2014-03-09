@@ -68,9 +68,9 @@ krank approximating array a."
 
 #+nil
 (time
- (let* ((m 20000)
-	(n 10002)
-	(k 300)
+ (let* ((m 10000)
+	(n 10000)
+	(k 900)
 	(a (make-array (* m n) :element-type '(complex double-float))))
    (loop for i below (length a) do
 	(setf (aref a i) (complex (random 1d0) (random 1d0))))
