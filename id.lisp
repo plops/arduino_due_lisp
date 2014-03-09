@@ -66,14 +66,29 @@ krank approximating array a."
 		 (error "idzr-asvd didn't succeed."))))))))
     (values u s v)))
 
+
 #+nil
-(time
- (let* ((m 10000)
-	(n 10000)
-	(k 900)
-	(a (make-array (* m n) :element-type '(complex double-float))))
+(let* ((m 10000)
+       (n 10000)
+       (k 1000)
+       (a (make-array (* m n) :element-type '(complex double-float))))
+  (time
    (loop for i below (length a) do
-	(setf (aref a i) (complex (random 1d0) (random 1d0))))
+	(setf (aref a i) (complex (random 1d0) (random 1d0)))))
+  (time
+   (gc :full t))
+  (time
    (defparameter *bla*
      (multiple-value-list
       (idzr-asvd m n a k)))))
+
+;; 3.9Gb
+
+#+nil
+(time
+ (gc :full t))
+
+#+nil
+(let ((s (second *bla*)))
+  (loop for i below (length s) do
+       (format t "~d ~f~%" i (aref s i))))
