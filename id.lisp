@@ -213,8 +213,38 @@ krank approximating matrix A. The contents of A are destroyed."
 (defparameter *bla* (read-ics-volume (elt (directory "/media/sda4/b/20140309/0_/*.ics") 120)))
 #+nil
 (loop for i from 0 below 12 collect (code-char (aref *bla* i)))
-#+nil
+#+nil    
 (defparameter *bla2* (convert-ub2cdf *bla*))
 #+nil
-(let ((fns (directory "/media/sda4/b/20140309/0_/*.ics"))))
+(defun run ()
+ (defparameter *bla*
+   (let* ((fns (directory "/media/sda4/b/20140309/0_/*.ics"))
+	  (a (read-ics-volume (elt (directory "/media/sda4/b/20140309/0_/*.ics") 0)))
+	  (la (length a))
+	  (b (make-array (* la (length fns))
+			 :element-type '(complex double-float))))
+     (loop for fn in fns and j from 0 do
+	  (format t "~a~%" fn)
+	  (let ((a (read-ics-volume fn)))
+	    (dotimes (i (length a))
+	      (setf (aref b (+ (* j la) i)) (aref a i)))))
+     b)))
+#+nil
+(defparameter *bla* (run))
 
+#+nil
+(room)
+
+;; Dynamic space usage is:   3,109,631,104 bytes.
+;; Read-only space usage is:      5,824 bytes.
+;; Static space usage is:         4,032 bytes.
+;; Control stack usage is:        8,200 bytes.
+;; Binding stack usage is:        1,040 bytes.
+;; Control and binding stack usage is for the current thread only.
+;; Garbage collection is currently enabled.
+
+;; Breakdown for dynamic space:
+;;   2,727,567,504 bytes for         9 simple-array-complex-double-float objects.
+;;   194,924,960 bytes for 6,091,405 complex-double-float objects.
+;;   187,138,640 bytes for 1,312,047 other objects.
+;;   3,109,631,104 bytes for 7,403,461 dynamic objects (space total.)
