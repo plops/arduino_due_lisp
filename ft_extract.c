@@ -15,8 +15,8 @@ unsigned short *image;
 int initialized_p=0;
 int image_w=0,image_h=0;
 
-//#define D(x) do{x}while(0)
-#define D(x) do{if(0){x;}}while(0)
+#define D(x) do{x;}while(0)
+//#define D(x) do{if(0){x;}}while(0)
 
 int read_pgm(char*fn)
 {
@@ -73,11 +73,11 @@ int write_ics2(char*fn,int w, int h, int depth,void*buf)
 }
 
 // split at /
-char *gnu_basename(char *path)
-{
-  char *base = strrchr(path, '/');
-  return base ? base+1 : path;
-}
+/* char *gnu_basename(char *path) */
+/* { */
+/*   char *base = strrchr(path, '/'); */
+/*   return base ? base+1 : path; */
+/* } */
 
 // input: "i2087_j1967_2_000082.00.pgm"
 // output: 000082.00 (as double)
@@ -131,7 +131,9 @@ main(int argc,char**argv)
   for(v=6;v<argc;v++){
     int i,j;
     read_pgm(argv[v]);
+    D(printf("parsing '%s'\n",argv[v]));
     double s=1.0/parse_exposure(argv[v]);
+    D(printf("1/exposure=%g\n",s));
     for(i=0;i<image_w*image_h;i++)
       fft_in[i]=image[i]*s;
 
@@ -154,12 +156,15 @@ main(int argc,char**argv)
 // 2 x=384-256 y=442-256 w=73
 
 // cp ~/dat/0/i0827_j2047_2_000160.00.pgm /dev/shm/2.pgm
-// ./ft_extract 99 140 80 84 /dev/shm/2.pgm
+// ./ft_extract 99 140 80 84 output.ics /dev/shm/2.pgm
 
 // uses 20% of processors, reads data with 8Mbyte/s
 // uses 60% of processor when data is in ram
 
 // for i in `ls ~/dat/0/i*_2_*.pgm|xargs -n1 basename|cut -d _ -f 1|uniq`;do time ./ft_extract 99 140 80 84 /media/b/$i.ics ~/dat/0/$i"_j"*"_2_"*.pgm;done 
+
+// process the images in the sequence they were acquired
+// time for i in `ls /media/b/0/i*_2_*.pgm|xargs -n1 basename|cut -d _ -f 2|sort|uniq`;do ./ft_extract 99 140 80 84 /media/b/$i.ics /media/b/0/i????"_"$i"_2_"*.pgm;done 
 
 // on the ssd pigz -1 runs at 40Mbytes/s but it only compress 2.5Gb to 1.9Gb
 

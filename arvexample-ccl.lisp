@@ -870,14 +870,14 @@
 
 
 #+nil
-(loop for dir-num from 0 below 15 do
+(loop for dir-num from 3 below 15 do
  (let ((ic 2047)
        (ir 1500)
        (jc 2047)
        (jr 1600))
    (ensure-directories-exist (format nil "/home/martin/dat/~d/" dir-num))
-   (loop for j from (- jc jr) upto (+ jc jr) by 20 do
-	(loop for i from (- ic ir) upto (+ ic ir) by 20 do
+   (loop for j from (- jc jr) upto (+ jc jr) by 40 do
+	(loop for i from (- ic ir) upto (+ ic ir) by 40 do
 	     (format t "~a~%" (list 'i i 'j j))
 	     (talk-arduino (format nil "(dac ~d ~d)~%" i j))
 					;(sleep 2)
