@@ -215,6 +215,7 @@ krank approximating matrix A. The contents of A are destroyed."
 (loop for i from 0 below 12 collect (code-char (aref *bla* i)))
 #+nil    
 (defparameter *bla2* (convert-ub2cdf *bla*))
+
 #+nil
 (defun run ()
  (let* ((fns (directory "/media/sda4/b/20140309/0_/*.ics"))
@@ -233,20 +234,57 @@ krank approximating matrix A. The contents of A are destroyed."
 
 (byte 3 2)
 
+
+(defun .linear (a)
+  (make-array (array-total-size a)
+	      :element-type (array-element-type a)
+	      :displaced-to a))
+
+(defun .reshape (a dims)
+  (unless (= (array-total-size a)
+	     (reduce #'* dims))
+    (error "reshape: number of elements must match, they don't: ~a."
+	   (list (array-dimensions a)
+		 dims)))
+  (make-array dims :element-type (array-element-type a)
+	      :displaced-to a))
+
+#+nil
+(defparameter *bla4* (.reshape *bla* '(80 84 151 161)))
+
 (defmacro ind (&optional (start 0) (end 'end))
   `(cons ,start ',end))
 
 
-(ind)
+(defun replace-end (ind size)
+  (cond ((and (listp ind) (eq 'end (cdr ind))) (cons (car ind) size))
+	((and (listp ind)) (cons (car ind) (cdr ind)))
+	(t ind)))
+
+#+nil
+(replace-end (ind) 23)
+
+(defun ind-range (ind)
+  (and (listp ind) (- (cdr ind) (car ind))))
+#+nil
+(ind-range '(0 . 4))
+
 
 (defun subarray (a &rest rest)
-  (loop for size in (array-dimensions a)
-   (list rest)))
+  (let* ((inds
+	  (loop for size in (array-dimensions a) and r in rest collect
+	       (replace-end r size)))
+	 (number-of-ranges (count-if #'listp inds))
+	 (new-dims (remove-if #'null (loop for ind in inds collect
+					  (ind-range ind))))
+	 (b (make-array new-dims :element-type (array-element-type a))))
+    new-dims))
 
 
-(subarray (ind) (ind) 3)
+#+nil
+(subarray *bla4* (ind 3 12) (ind) 3 4)
 
-
+#+nil
 (write-pgm "/dev/shm/o.pgm" )
 
 (defun write-pgm (filename img &key (scale 1e-3))
