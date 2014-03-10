@@ -164,8 +164,10 @@ main(int argc,char**argv)
 // for i in `ls ~/dat/0/i*_2_*.pgm|xargs -n1 basename|cut -d _ -f 1|uniq`;do time ./ft_extract 99 140 80 84 /media/b/$i.ics ~/dat/0/$i"_j"*"_2_"*.pgm;done 
 
 // process the images in the sequence they were acquired
-// time for i in `ls /media/b/0/i*_2_*.pgm|xargs -n1 basename|cut -d _ -f 2|sort|uniq`;do ./ft_extract 99 140 80 84 /media/b/$i.ics /media/b/0/i????"_"$i"_2_"*.pgm;done 
+// time for i in `ls /home/martin/dat/20140309/1/i*_2_*.pgm|xargs -n1 basename|cut -d _ -f 2|sort|uniq`;do ./ft_extract 99 140 80 84 /media/b/1_/$i.ics /home/martin/dat/20140309/1/i????"_"$i"_2_"*.pgm;done 
+
 
 // on the ssd pigz -1 runs at 40Mbytes/s but it only compress 2.5Gb to 1.9Gb
 
 // with an empty institute i can copy at 11Mbytes/s from lab computer to notebook (too slow)
+// my harddrive is rather slow: maximum speed copying to ssd ist 10MBytes/s
