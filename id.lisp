@@ -86,10 +86,6 @@ krank approximating array a."
 (time
  (gc :full t))
 
-#+nil
-(let ((s (second *bla*)))
-  (loop for i below (length s) do
-       (format t "~d ~f~%" i (aref s i))))
 
 
 
@@ -150,10 +146,26 @@ krank approximating matrix A. The contents of A are destroyed."
 	       )))))))))
 
 #+nil
-(let* ((m 300) ;; 300x300 takes 1.8s
+(let* ((m 300) 
        (n 300)
-       (a (make-array (* n m) :element-type '(complex double-float))))
+       (k 300)
+       (a (make-array (* n m) :element-type '(complex double-float)))
+       (a2 (make-array (* n m) :element-type '(complex double-float))))
   (loop for i below (length a) do
-       (setf (aref a i) (complex (random 1d0) (random 1d0))))
+       (let ((v (complex (random 1d0) (random 1d0))))
+	 (setf (aref a i) v
+	       (aref a2 i) v)))
   (time
-   (defparameter *bla* (multiple-value-list (zgesvd a m n)))))
+   (defparameter *bla* (multiple-value-list (zgesvd a m n))))
+  (time
+   (defparameter *bla2*
+     (multiple-value-list
+      (idzr-asvd m n a2 k)))))
+
+#+nil
+(let ((s (second *bla*))
+      (s2 (second *bla2*)))
+  (loop for i below (length s) maximize
+       (progn
+	 (format t "~d ~g~%" i (- (aref s i) (aref s2 i)))
+	 (abs (- (aref s i) (aref s2 i))))))
