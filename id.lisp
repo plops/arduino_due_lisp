@@ -217,20 +217,63 @@ krank approximating matrix A. The contents of A are destroyed."
 (defparameter *bla2* (convert-ub2cdf *bla*))
 #+nil
 (defun run ()
- (defparameter *bla*
-   (let* ((fns (directory "/media/sda4/b/20140309/0_/*.ics"))
-	  (a (read-ics-volume (elt (directory "/media/sda4/b/20140309/0_/*.ics") 0)))
-	  (la (length a))
-	  (b (make-array (* la (length fns))
-			 :element-type '(complex double-float))))
-     (loop for fn in fns and j from 0 do
-	  (format t "~a~%" fn)
-	  (let ((a (read-ics-volume fn)))
-	    (dotimes (i (length a))
-	      (setf (aref b (+ (* j la) i)) (aref a i)))))
-     b)))
+ (let* ((fns (directory "/media/sda4/b/20140309/0_/*.ics"))
+	(a (read-ics-volume (elt (directory "/media/sda4/b/20140309/0_/*.ics") 0)))
+	(la (length a))
+	(b (make-array (* la (length fns))
+		       :element-type '(complex double-float))))
+   (loop for fn in fns and j from 0 do
+	(format t "~a~%" fn)
+	(let ((a (read-ics-volume fn)))
+	  (dotimes (i (length a))
+	    (setf (aref b (+ (* j la) i)) (aref a i)))))
+   b))
 #+nil
-(defparameter *bla* (run))
+(time (defparameter *bla* (run))) ;; takes 18s
+
+(byte 3 2)
+
+(defmacro ind (&optional (start 0) (end 'end))
+  `(cons ,start ',end))
+
+
+(ind)
+
+(defun subarray (a &rest rest)
+  (loop for size in (array-dimensions a)
+   (list rest)))
+
+
+(subarray (ind) (ind) 3)
+
+
+(write-pgm "/dev/shm/o.pgm" )
+
+(defun write-pgm (filename img &key (scale 1e-3))
+  (declare (type simple-string filename)
+	   #+sbcl (values null &optional))
+  (destructuring-bind (h w) (array-dimensions img)
+    (declare (type fixnum w h))
+    (with-open-file (s filename
+                       :direction :output
+                       :if-exists :supersede
+                       :if-does-not-exist :create)
+      (declare (stream s))
+      (format s "P5~%~D ~D~%255~%" w h))
+    (with-open-file (s filename 
+                       :element-type '(unsigned-byte 8)
+                       :direction :output
+                       :if-exists :append) ;; FIXME: i think this append doesn't work as expected and sometimes eats one of the new lines
+      (let* ((data-1d (make-array (* h w)
+				  :element-type (array-element-type img)
+				  :displaced-to img))
+	     (ub8 (make-array (* h w)
+			      :element-type '(unsigned-byte 8))))
+	(dotimes (i (* h w))
+	  (setf (aref ub8 i) (min 255 (max 0 (* scale (abs (aref data-1d i)))))))
+        (write-sequence data-1d s)))
+    nil))
+
 
 #+nil
 (room)

@@ -499,7 +499,7 @@
     (with-open-file (s filename 
                        :element-type '(unsigned-byte 16)
                        :direction :output
-                       :if-exists :append)
+                       :if-exists :append) ;; FIXME: i think this append doesn't work as expected and sometimes eats one of the new lines
       (let ((data-1d (make-array 
                       (* h w)
                       :element-type '(unsigned-byte 16)
