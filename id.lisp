@@ -169,3 +169,52 @@ krank approximating matrix A. The contents of A are destroyed."
        (progn
 	 (format t "~d ~g~%" i (- (aref s i) (aref s2 i)))
 	 (abs (- (aref s i) (aref s2 i))))))
+
+(defun read-ics-volume (name &key (x 80) (y 84) (z 151))
+  (let ((pos
+         (with-open-file (s name :direction :input)
+           (do ((l (read s) (read s)))
+               ((string= "END" (unless (numberp l) (string l)))))
+           (file-position s))))
+    (with-open-file (s name :direction :input
+                       :element-type '(unsigned-byte 8))
+      ;; FIXME: why do I need -170 offset?
+      (file-position s (+ 1 pos))
+      (let* ((a1 (make-array (* z y x 16)
+                             :element-type '(unsigned-byte 8)
+					; :displaced-to a
+			     )))
+        (read-sequence a1 s)
+        (let ((a (make-array (* z y x)
+			     :element-type '(complex double-float))))
+	  (cffi:with-pointer-to-vector-data (a1p a1)
+	   (cffi:with-pointer-to-vector-data (ap a)
+	     (loop for i  below (* z y x 2) do
+		  (setf (cffi:mem-aref ap :int i)
+			(cffi:mem-aref a1p :int i)))))
+	  a)))))
+
+
+(defun convert-ub2cdf (a)
+  (declare (optimize (safety 0)))
+  (the (simple-array (complex double-float) (#.(/ #xf7bc00 16)))
+       a)
+  #+nil
+  (let ((len (length a)))
+    (make-array (floor len 16)
+		:element-type '(complex double-float)
+		:displaced-to a)))
+
+#+nil
+(defparameter *blub*
+  (multiple-value-list
+   (zgesvd *bla* 80 (* 151 84))))
+#+nil
+(defparameter *bla* (read-ics-volume (elt (directory "/media/sda4/b/20140309/0_/*.ics") 120)))
+#+nil
+(loop for i from 0 below 12 collect (code-char (aref *bla* i)))
+#+nil
+(defparameter *bla2* (convert-ub2cdf *bla*))
+#+nil
+(let ((fns (directory "/media/sda4/b/20140309/0_/*.ics"))))
+
