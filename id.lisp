@@ -270,6 +270,21 @@ krank approximating matrix A. The contents of A are destroyed."
 (ind-range '(0 . 4))
 
 
+(defun gen-loop-rec (indexes cmd)
+  (if indexes
+      (destructuring-bind (var start end) (car indexes)
+	`(loop for ,var from ,start below ,end do
+	      ,(gen-loop-rec (cdr indexes) (cmd))))
+      (cmd)))
+
+#+nil
+(gen-loop-rec '((i 21 213) (j 3 24)) #'(lambda (i j) (setf (aref a i j) 3)))
+
+
+(defmacro dorec (indexes &body)
+  (loop for ind in indexes collect
+       (dotimes )))
+
 (defun subarray (a &rest rest)
   (let* ((inds
 	  (loop for size in (array-dimensions a) and r in rest collect
@@ -279,6 +294,8 @@ krank approximating matrix A. The contents of A are destroyed."
 					  (ind-range ind))))
 	 (b (make-array new-dims :element-type (array-element-type a))))
     new-dims))
+
+(loop i)
 
 
 #+nil
