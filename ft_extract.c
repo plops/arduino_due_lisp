@@ -165,7 +165,7 @@ main(int argc,char**argv)
 // for i in `ls ~/dat/0/i*_2_*.pgm|xargs -n1 basename|cut -d _ -f 1|uniq`;do time ./ft_extract 99 140 80 84 /media/b/$i.ics ~/dat/0/$i"_j"*"_2_"*.pgm;done 
 
 // process the images in the sequence they were acquired
-// time for i in `ls /home/martin/dat/20140309/1/i*_2_*.pgm|xargs -n1 basename|cut -d _ -f 2|sort|uniq`;do ./ft_extract 99 140 80 84 /media/b/1_/$i.ics /home/martin/dat/20140309/1/i????"_"$i"_2_"*.pgm;done
+// time for i in `ls /home/martin/dat/20140309/1/i*_2_*.pgm|xargs -n1 basename|cut -d _ -f 2|sort|uniq`;do ./ft_extract 99 140 80 84 /home/martin/dat/20140309/1_/$i.ics /home/martin/dat/20140309/1/i????"_"$i"_2_"*.pgm;done
 // time for i in `ls /home/martin/dat/20140309/0/i*_2_*.pgm|xargs -n1 basename|cut -d _ -f 2|sort|uniq`;do ./ft_extract 99 140 80 84 /home/martin/dat/20140309/0_/$i.ics /home/martin/dat/20140309/0/i????"_"$i"_2_"*.pgm;done 
 
 // matlab code to read the ics files and average over the intensity in
