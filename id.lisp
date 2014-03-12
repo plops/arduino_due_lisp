@@ -216,8 +216,7 @@ krank approximating matrix A. The contents of A are destroyed."
 #+nil    
 (defparameter *bla2* (convert-ub2cdf *bla*))
 
-#+nil
-(defun run ()
+(defun load-all-ics ()
  (let* ((fns (directory "/media/sda4/b/20140309/0_/*.ics"))
 	(a (read-ics-volume (elt (directory "/media/sda4/b/20140309/0_/*.ics") 0)))
 	(la (length a))
@@ -230,9 +229,7 @@ krank approximating matrix A. The contents of A are destroyed."
 	    (setf (aref b (+ (* j la) i)) (aref a i)))))
    b))
 #+nil
-(time (defparameter *bla* (run))) ;; takes 18s
-
-(byte 3 2)
+(time (defparameter *bla* (load-all-ics))) ;; takes 18s
 
 
 (defun .linear (a)
@@ -269,21 +266,25 @@ krank approximating matrix A. The contents of A are destroyed."
 #+nil
 (ind-range '(0 . 4))
 
-
-(defun gen-loop-rec (indexes cmd)
-  (if indexes
-      (destructuring-bind (var start end) (car indexes)
-	`(loop for ,var from ,start below ,end do
-	      ,(gen-loop-rec (cdr indexes) (cmd))))
-      (cmd)))
-
+(defmacro do-region ((indices end &optional (start '(0 0 0))) &body body)
+  "Write intertwined loops to traverse a vector, an image or a volume."
+  (unless (and (= (length indices)
+		  (length end)))
+    (error "Number of indices and interval-ends are not equal."))
+  (labels ((rec (ind end start acc) ;; several loops
+             (if (null end)
+                 acc
+                 (rec (cdr ind) (cdr end) (cdr start)
+                      `((loop for ,(car ind) from ,(car start)
+                           below ,(car end) do ,@acc))))))
+    (first (rec (reverse indices) ;; first index is outermost loop
+		(reverse end)
+		(reverse start) body))))
 #+nil
-(gen-loop-rec '((i 21 213) (j 3 24)) #'(lambda (i j) (setf (aref a i j) 3)))
-
-
-(defmacro dorec (indexes &body)
-  (loop for ind in indexes collect
-       (dotimes )))
+(let ((sum 0))
+  (do-region ((k j i) (4 4 5))
+    (incf sum (+ k j i)))
+  sum)
 
 (defun subarray (a &rest rest)
   (let* ((inds
@@ -292,10 +293,16 @@ krank approximating matrix A. The contents of A are destroyed."
 	 (number-of-ranges (count-if #'listp inds))
 	 (new-dims (remove-if #'null (loop for ind in inds collect
 					  (ind-range ind))))
-	 (b (make-array new-dims :element-type (array-element-type a))))
-    new-dims))
+	 (b (make-array new-dims :element-type (array-element-type a)))
+	 (a1 (.linear a))
+	 (b1 (.linear b)))
+    #+nil
+    (dotimes (i (reduce #'* new-dims))
+      (setf (aref b1 (+ ))))
+    #+nil
+    b
+    inds))
 
-(loop i)
 
 
 #+nil
@@ -328,6 +335,10 @@ krank approximating matrix A. The contents of A are destroyed."
 	  (setf (aref ub8 i) (min 255 (max 0 (* scale (abs (aref data-1d i)))))))
         (write-sequence data-1d s)))
     nil))
+
+
+
+
 
 
 #+nil
