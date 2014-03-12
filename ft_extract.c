@@ -42,6 +42,7 @@ int read_pgm(char*fn)
   D(printf("reading data .."));
   if(image_w<image_w || image_h<image_h)
     return -1;
+  fseek(f,-2*image_w*image_h,SEEK_END);
   int n = fread(image,2,image_w*image_h,f);
   if(n<image_h*image_w)
     printf("fread read %d elements which is not the expected %d.\n",n,image_h*image_w);
@@ -164,8 +165,17 @@ main(int argc,char**argv)
 // for i in `ls ~/dat/0/i*_2_*.pgm|xargs -n1 basename|cut -d _ -f 1|uniq`;do time ./ft_extract 99 140 80 84 /media/b/$i.ics ~/dat/0/$i"_j"*"_2_"*.pgm;done 
 
 // process the images in the sequence they were acquired
-// time for i in `ls /home/martin/dat/20140309/1/i*_2_*.pgm|xargs -n1 basename|cut -d _ -f 2|sort|uniq`;do ./ft_extract 99 140 80 84 /media/b/1_/$i.ics /home/martin/dat/20140309/1/i????"_"$i"_2_"*.pgm;done 
+// time for i in `ls /home/martin/dat/20140309/1/i*_2_*.pgm|xargs -n1 basename|cut -d _ -f 2|sort|uniq`;do ./ft_extract 99 140 80 84 /media/b/1_/$i.ics /home/martin/dat/20140309/1/i????"_"$i"_2_"*.pgm;done
+// time for i in `ls /home/martin/dat/20140309/0/i*_2_*.pgm|xargs -n1 basename|cut -d _ -f 2|sort|uniq`;do ./ft_extract 99 140 80 84 /home/martin/dat/20140309/0_/$i.ics /home/martin/dat/20140309/0/i????"_"$i"_2_"*.pgm;done 
 
+// matlab code to read the ics files and average over the intensity in
+// each image. this gives a map of how much light is coupled into the
+// fiber for each scan mirror angle
+/* me = newim([161 151]); */
+/* for i=0:161; */
+/* me(i,:) = mean(abs(readim(['/media/b/20140309/0_/' fns(i+1).name])),[],[1 2]); */
+/*     i */
+/* end */
 
 // on the ssd pigz -1 runs at 40Mbytes/s but it only compress 2.5Gb to 1.9Gb
 
