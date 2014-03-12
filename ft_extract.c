@@ -136,7 +136,7 @@ main(int argc,char**argv)
     double s=1.0/parse_exposure(argv[v]);
     D(printf("1/exposure=%g\n",s));
     for(i=0;i<image_w*image_h;i++)
-      fft_in[i]=image[i]*s;
+      fft_in[i]=(image[i]-100)*s;
 
     fftw_execute(fft_plan);
    
@@ -176,6 +176,9 @@ main(int argc,char**argv)
 /* me(i,:) = mean(abs(readim(['/media/b/20140309/0_/' fns(i+1).name])),[],[1 2]); */
 /*     i */
 /* end */
+
+// me>10000 are images, where sufficient 
+
 
 // on the ssd pigz -1 runs at 40Mbytes/s but it only compress 2.5Gb to 1.9Gb
 
