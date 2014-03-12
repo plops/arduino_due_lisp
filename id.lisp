@@ -286,6 +286,50 @@ krank approximating matrix A. The contents of A are destroyed."
     (incf sum (+ k j i)))
   sum)
 
+;; example index: x y z  stride w h d
+;; x+w*y+z*w*h = x+w*(y+z*h) = (z*h+y)*w+x
+;; p=x+w*y => y = p/w  x=p mod w
+;; p=(z*h+y)*w+x => z = p/(h*w)  y=(p-z*w*h)/w  x=p-z*w*h-y*w
+;;                                              x=p-w*(y+z*h)
+
+;; x y z t : w h d T
+;; p=x+w y+wh z+whd t
+;; t = p/(whd)
+;; z = (p-t whd) / (wh)
+;; y = (p - t whd - z wh)/ w
+;; x = (p - t whd - z wh - y*w)
+
+;; c0 c1 c2 c3 : w0 w1 w2 w3
+;; p = c0 + w0 c1 + w0 w1 c2 + w0 w1 w2 c3 = sum(prod(w_j,j,i-1,i)*c_i,i,0,n-1)
+;; n=3 c3 = p/prod(w_j,j,0,2)
+;; c2 = (p-c3*prod(w_j,j,0,2))/prod(w_j,j,0,1)
+;; c1 = (p-c3*prod(w_j,j,0,2)-c2*prod(w_j,j,0,1))/prod(w_j,j,0,0)
+;; c0 = (p-c3*prod(w_j,j,0,2)-c2*prod(w_j,j,0,1)-c1*prod(w_j,j,0,0))
+;; c4 = 0
+;; c-1 = 0
+;; n=1..2 c_n = (p-sum(c_i prod(w_j,j,0,i-1),i,n+1,nmax))/prod(w_j,j,0,n-1)
+;; n=0 c_n = (p-sum(c_i prod(w_j,j,0,i-1),i,n+1,nmax))
+(defun 1d-index (strides indices)
+  ;; stridex: d h w
+  ;; indices: z y x
+  (let ((start (elt indices 0)))
+    (loop for i from 1 below (length strides) do
+	 (setf start (+ (* start (elt strides i))
+			(elt indices i))))
+    start))
+
+#+nil
+(1d-index '(4 4 5) '(1 2 3))
+
+(defun multi-index (strides p)
+    ;; stridex: d h w
+  (let ((res (list (floor p (reduce #'* (cdr strides))))))
+    (loop for i below (1- (length strides)) do
+	 (push (+ p (- ))))))
+
+#+nil
+(multi-index '(4 4 5) 33)
+
 (defun subarray (a &rest rest)
   (let* ((inds
 	  (loop for size in (array-dimensions a) and r in rest collect
@@ -296,12 +340,10 @@ krank approximating matrix A. The contents of A are destroyed."
 	 (b (make-array new-dims :element-type (array-element-type a)))
 	 (a1 (.linear a))
 	 (b1 (.linear b)))
-    #+nil
+    
     (dotimes (i (reduce #'* new-dims))
-      (setf (aref b1 (+ ))))
-    #+nil
-    b
-    inds))
+      (setf (aref b1 (1d-index new-dims i))))
+    b))
 
 
 
