@@ -151,18 +151,23 @@ end
 function read_ics(fn)
     pos = find_ics_raw_start(fn)
     f=open(fn)
-    seek(f,pos) # 2e 75 4a are the correct first 3 bytes
-    #a=read(f,Complex128,80,84,151)
-    a=read(f,Uint8,80)
+    seek(f,pos)
+    a=read(f,Complex128,80,84,151)
     close(f)
     a
 end
-
-
 
 a = read_ics(dir * first(fns));
           
 (filesize(dir * first(fns))-519)/(80*84*16)
 
+size(a[:,:,1])
 
-read(
+
+ar=reshape(abs(a[:,:,1]),prod(size(a[:,:,1])))
+mi,ma = extrema(ar)
+a8=uint8(div((ar.-mi)*255,ma-mi))
+f=open("/dev/shm/o.pgm","w")
+@printf(f,"P5\n80 84\n");
+write(f,a8);
+close(f);
