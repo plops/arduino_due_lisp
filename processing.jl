@@ -152,7 +152,7 @@ function read_ics(fn)
     pos = find_ics_raw_start(fn)
     f=open(fn)
     seek(f,pos)
-    a=read(f,Complex128,80,84,151)
+    a=read(f,Complex64,80,84,151)
     close(f)
     a
 end
@@ -168,6 +168,6 @@ ar=reshape(abs(a[:,:,1]),prod(size(a[:,:,1])))
 mi,ma = extrema(ar)
 a8=uint8(div((ar.-mi)*255,ma-mi))
 f=open("/dev/shm/o.pgm","w")
-@printf(f,"P5\n80 84\n");
+@printf(f,"P5\n80 84\n255\n");
 write(f,a8);
 close(f);
