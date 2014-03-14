@@ -166,7 +166,12 @@ size(a[:,:,1])
 function write_pgm(a,fn="/dev/shm/o.pgm")
     ar=reshape(a,prod(size(a)))
     mi,ma = extrema(ar)
-    a8=uint8(div((ar.-mi)*255,ma-mi))
+    s = 0;
+    if ma!=mi
+        s=255/(ma-mi);
+    else
+        s=1;
+    a8=uint8(min(255,max(0,floor((ar.-mi)*s))))
     f=open(fn,"w")
     @printf(f,"P5\n%d %d\n255\n",size(a,1),size(a,2));
     write(f,a8);
@@ -220,6 +225,7 @@ asmall=reshape(a,80*84,151*161)[reshape(acamb,80*84),reshape(aangb,151*161)]
 
 cd("/dev/shm/") do
     open("outfile","w") do f
+        s = svdobj[:S];
         for i=1:length(s)
             @printf(f,"%d %f\n",i,s[i])
         end
@@ -234,8 +240,19 @@ cd("/dev/shm/") do
 end
 
 run(`gnuplot /dev/shm/outfile.gp`)
+
+
 run(`evince /dev/shm/plot.ps`)
 
-for i=1:100
-    write_pgm(reshape(abs(u[:,i]),80,84),@sprintf("/dev/shm/%04d.pgm",i))
+
+
+@time for i=1:1000
+    urec = Array(Complex64,80*84);
+    urec[reshape(acamb,80*84)]= svdobj[:U][:,i];
+    try
+        write_pgm(reshape(abs(urec),80,84),@sprintf("/dev/shm/%04d.pgm",i))
+    catch
+    end
 end
+
+extrema(abs(urec))
