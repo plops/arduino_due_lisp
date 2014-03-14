@@ -264,6 +264,9 @@ end
     end
 end
 
+@time asmalli=pinv(asmall);
+#  elapsed time: 78.32984076 seconds (1626177148 bytes allocated)
+
 size(svdobj[:V])
    
 extrema(abs(urec))
