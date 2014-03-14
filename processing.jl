@@ -296,7 +296,7 @@ end
 ## (9724,9724)
 
 
-@time for i=9000:9724
+@time for i=1:9724
     rec = Array(Complex64,151*161);
     rec[reshape(aangb,151*161)]= recon[:,i];
     try
@@ -305,3 +305,5 @@ end
     end
 end
 
+# i only have openh264 right now and this encoder needs images sizes to be multiples of 16:
+# for i in r*.pgm ;do pnmcut -width 144 -height 160 $i > cut.pgm ; convert cut.pgm o.yuv ; cat o.yuv >> ../o.yuv;done
