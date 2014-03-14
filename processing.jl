@@ -295,7 +295,13 @@ end
 ## julia> size(recon)
 ## (9724,9724)
 
-    
-size(svdobj[:V])
-   
-extrema(abs(urec))
+
+@time for i=9000:9724
+    rec = Array(Complex64,151*161);
+    rec[reshape(aangb,151*161)]= recon[:,i];
+    try
+        write_pgm(reshape(abs(rec),151,161),@sprintf("/dev/shm/r%04d.pgm",i))
+    catch
+    end
+end
+
