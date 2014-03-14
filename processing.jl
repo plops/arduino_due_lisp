@@ -118,8 +118,9 @@ match(r"^j....\.ics$","bla.mat").match
 
 vcat([1,2,3],[4,5,6])
 
-function find_ics_files() 
-    fns = readdir("/media/sda4/b/20140309/0_/")
+dir = "/media/sda4/b/20140309/0_/"
+function find_ics_files(dir) 
+    fns = readdir(dir)
     res = [];
     for f in fns
         m = match(r"^j....\.ics$",f) 
@@ -129,8 +130,24 @@ function find_ics_files()
     end
     res
 end
+fns=find_ics_files(dir)
 
 
-filter x!=nothing
+ismatch(r"^end$","end\n")
+
+
+
+function find_ics_raw_start(fn)
+    # locate the word "end" in the ics file
+    f=open(fn)
+    while !ismatch(r"end",readline(f))
+    end
+    res = position(f)
+    close(f)
+    res
+end
+find_ics_raw_start(dir * first(fns))
+
+
 
 read(
