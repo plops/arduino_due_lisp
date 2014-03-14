@@ -189,6 +189,17 @@ i = 1;
     i = i+1;
 end
 
+a2=Array(Complex64,80,84,151,161);
+dir2 = "/media/sda4/b/20140309/1_/"
+fns=find_ics_files(dir2)
+i = 1;
+@time for f in fns
+    println(f)
+    a2[:,:,:,i] = read_ics(dir * fns[i])
+    i = i+1;
+end
+
+    
 @time extrema(abs(a)) # 3.7s
 
 a = reshape(a,80*84,151*161)
@@ -208,8 +219,12 @@ aangb = (aang .> quantile(reshape(aang,151*161),.6));
 
 write_pgm(aang,"/dev/shm/aang.pgm")
 write_pgm(aangb,"/dev/shm/aangb.pgm")
-asmall=reshape(a,80*84,151*161)[reshape(acamb,80*84),reshape(aangb,151*161)]
-## julia> size(asmall)
+    asmall=reshape(a,80*84,151*161)[reshape(acamb,80*84),reshape(aangb,151*161)]
+
+
+ asmall2=reshape(a2,80*84,151*161)[reshape(acamb,80*84),reshape(aangb,151*161)]
+
+    ## julia> size(asmall)
 ## (3360,9724)
 
 @time svdobj  = svdfact(asmall); 
@@ -267,6 +282,20 @@ end
 @time asmalli=pinv(asmall);
 #  elapsed time: 78.32984076 seconds (1626177148 bytes allocated)
 
+
+@time recon = asmalli * asmall2;
+# 31s
+
+## julia> size(asmall2)
+## (3360,9724)
+
+## julia> size(asmall)
+## (3360,9724)
+
+## julia> size(recon)
+## (9724,9724)
+
+    
 size(svdobj[:V])
    
 extrema(abs(urec))
