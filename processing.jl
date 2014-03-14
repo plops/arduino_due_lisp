@@ -203,9 +203,12 @@ aangb = (aang .> quantile(reshape(aang,151*161),.6));
 
 write_pgm(aang,"/dev/shm/aang.pgm")
 write_pgm(aangb,"/dev/shm/aangb.pgm")
+asmall=reshape(a,80*84,151*161)[reshape(acamb,80*84),reshape(aangb,151*161)]
+## julia> size(asmall)
+## (3360,9724)
 
-@time (u,s,v) = svd(a,thin=true); # this is using 4 processors
-
+@time svdobj  = svdfact(asmall); 
+## elapsed time: 65.275851006 seconds (1060689224 bytes allocated)
 
 
 # julia> size(a)
