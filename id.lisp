@@ -321,15 +321,42 @@ krank approximating matrix A. The contents of A are destroyed."
 #+nil
 (1d-index '(4 4 5) '(1 2 3))
 
+;; http://julia.readthedocs.org/en/latest/manual/arrays/
+
 (defun multi-index (strides p)
-    ;; stridex: d h w
-  (let ((res (list (floor p (reduce #'* (cdr strides))))))
-    (loop for i below (1- (length strides)) do
-	 (push (+ p (- ))))))
+  ;; stridex: d h w
+  (let* ((dims (length strides))
+	 (c (make-array dims :element-type 'fixnum)))
+    (format t "dims=~a, strides=~a~%" dims strides)
+    (setf (aref c (1- dims)) (floor p (reduce #'* (subseq strides 1 (length strides)))))
+    (format t "p=~a c_(dims-1)=c(~a)=~a~%" p (1- dims) (aref c (1- dims)))
+    (macrolet ((prod ((var start end) &body body)
+		 `(let ((prod 1))
+		    (loop for ,var from ,start below ,end do
+			 (setf prod (* prod ,@body)))
+		    prod)))
+      (loop for n from (- dims 2) downto 1 do
+	  (setf (aref c n)
+		(floor (- p (loop for i from (+ n 1) below dims sum
+				 (prog1
+				     (* (aref c i) (prod (j 0 i) (elt strides j)))
+				   (format t "~a~%" (list  (aref c i) 'i i (prod (j 0 i) (elt strides j)))))))
+		       (prod (j 0 (- n 1)) (elt strides j))))
+	   (format t "filling ~a~%" (list n (aref c n))) )
+      (let ((n 0))
+	(setf (aref c 0)
+	      (- p (loop for i from (+ n 1) below (1- dims) sum
+			(* (aref c i) (prod (j 0 i) (elt strides j))))))))
+    c))
+#+nil
+(let ((strides '(4 4
+		 5 3)))
+ (floor 733 (reduce #'* (subseq strides 0 (1- (length strides))))))
 
 #+nil
-(multi-index '(4 4 5) 33)
-
+(multi-index '(4 2) 8)
+#+nil
+(1d-index '(2 4) '(2 1))
 (defun subarray (a &rest rest)
   (let* ((inds
 	  (loop for size in (array-dimensions a) and r in rest collect
