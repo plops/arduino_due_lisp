@@ -25,9 +25,9 @@ map(x->x^2+2x-1,[1,3,-1])
 map(x->x^2+2x-1,[1 3 -1])
 
 
-function f(x,y)
-    x + y, x*y
-end
+## function f(x,y)
+##     x + y, x*y
+## end
 
 x= (3,4)
 f(x...)
@@ -163,11 +163,11 @@ a = read_ics(dir * first(fns));
 
 size(a[:,:,1])
 
-function write_pgm(a)
+function write_pgm(a,fn="/dev/shm/o.pgm")
     ar=reshape(a,prod(size(a)))
     mi,ma = extrema(ar)
     a8=uint8(div((ar.-mi)*255,ma-mi))
-    f=open("/dev/shm/o.pgm","w")
+    f=open(fn,"w")
     @printf(f,"P5\n%d %d\n255\n",size(a,1),size(a,2));
     write(f,a8);
     close(f);
@@ -178,7 +178,7 @@ write_pgm(abs(a[:,:,1]))
 a=Array(Complex64,80,84,151,161);
 fns=find_ics_files(dir)
 i = 1;
-for f in fns
+@time for f in fns
     println(f)
     a[:,:,:,i] = read_ics(dir * fns[i])
     i = i+1;
@@ -188,7 +188,18 @@ end
 
 a = reshape(a,80*84,151*161)
 
+@time acam = mean(abs(a),[3 4]);
+
+write_pgm(acam,"/dev/shm/acam.pgm")
+
+@time aang = squeeze(mean(abs(a),[1 2]),[1 2]);
+
+
+write_pgm(aang,"/dev/shm/aang.pgm")
+
 @time (u,s,v) = svd(a,thin=true); # this is using 4 processors
+
+
 
 # julia> size(a)
 # (6720,24311)
@@ -208,9 +219,13 @@ end
 
 cd("/dev/shm/") do
     open("outfile.gp","w") do f
-        println(f,"""set term posts; set grid;set outpu "/dev/shm/plot.ps"; set log y; plot "/dev/shm/outfile" u 1:2""")
+        println(f,"""set term posts; set grid;set outpu "/dev/shm/plot.ps"; set log y; plot "/dev/shm/outfile" u 1:2 w l""")
     end
 end
 
 run(`gnuplot /dev/shm/outfile.gp`)
 run(`evince /dev/shm/plot.ps`)
+
+for i=1:100
+    write_pgm(reshape(abs(u[:,i]),80,84),@sprintf("/dev/shm/%04d.pgm",i))
+end
