@@ -195,4 +195,22 @@ a = reshape(a,80*84,151*161)
 # elapsed time: 632.120279614 seconds (6320399940 bytes allocated)
 
 # diagm(s)
-# svdfact is  more efficient than svd
+# svdfact is  more efficient than sv
+
+cd("/dev/shm/") do
+    open("outfile","w") do f
+        for i=1:length(s)
+            @printf(f,"%d %f\n",i,s[i])
+        end
+    end
+end
+
+
+cd("/dev/shm/") do
+    open("outfile.gp","w") do f
+        println(f,"""set term posts; set grid;set outpu "/dev/shm/plot.ps"; set log y; plot "/dev/shm/outfile" u 1:2""")
+    end
+end
+
+run(`gnuplot /dev/shm/outfile.gp`)
+run(`evince /dev/shm/plot.ps`)
