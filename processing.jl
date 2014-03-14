@@ -192,10 +192,17 @@ a = reshape(a,80*84,151*161)
 
 write_pgm(acam,"/dev/shm/acam.pgm")
 
+acamb = (acam .> quantile(reshape(acam,80*84),.5));
+
+write_pgm(acamb*1.0,"/dev/shm/acamb.pgm")
+
 @time aang = squeeze(mean(abs(a),[1 2]),[1 2]);
+
+aangb = (aang .> quantile(reshape(aang,151*161),.6));
 
 
 write_pgm(aang,"/dev/shm/aang.pgm")
+write_pgm(aangb,"/dev/shm/aangb.pgm")
 
 @time (u,s,v) = svd(a,thin=true); # this is using 4 processors
 
