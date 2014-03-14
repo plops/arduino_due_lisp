@@ -185,3 +185,14 @@ for f in fns
 end
 
 @time extrema(abs(a)) # 3.7s
+
+a = reshape(a,80*84,151*161)
+
+@time (u,s,v) = svd(a,thin=true); # this is using 4 processors
+
+# julia> size(a)
+# (6720,24311)
+# elapsed time: 632.120279614 seconds (6320399940 bytes allocated)
+
+# diagm(s)
+# svdfact is  more efficient than svd
