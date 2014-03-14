@@ -151,11 +151,14 @@ end
 function read_ics(fn)
     pos = find_ics_raw_start(fn)
     f=open(fn)
-    seek(f,pos-1)
-    a=read(f,Complex128,80,84,151)
+    seek(f,pos) # 2e 75 4a are the correct first 3 bytes
+    #a=read(f,Complex128,80,84,151)
+    a=read(f,Uint8,80)
     close(f)
     a
 end
+
+
 
 a = read_ics(dir * first(fns));
           
