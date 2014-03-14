@@ -146,8 +146,20 @@ function find_ics_raw_start(fn)
     close(f)
     res
 end
-find_ics_raw_start(dir * first(fns))
+#find_ics_raw_start(dir * first(fns))
 
+function read_ics(fn)
+    pos = find_ics_raw_start(fn)
+    f=open(fn)
+    seek(f,pos-1)
+    a=read(f,Complex128,80,84,151)
+    close(f)
+    a
+end
+
+a = read_ics(dir * first(fns));
+          
+(filesize(dir * first(fns))-519)/(80*84*16)
 
 
 read(
