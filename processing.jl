@@ -246,7 +246,7 @@ run(`evince /dev/shm/plot.ps`)
 
 
 
-@time for i=1:1000
+@time for i=1:2000
     urec = Array(Complex64,80*84);
     urec[reshape(acamb,80*84)]= svdobj[:U][:,i];
     try
@@ -255,4 +255,15 @@ run(`evince /dev/shm/plot.ps`)
     end
 end
 
+@time for i=1:2000
+    vrec = Array(Complex64,151*161);
+    vrec[reshape(aangb,151*161)]= svdobj[:V][:,i];
+    try
+        write_pgm(reshape(abs(vrec),151,161),@sprintf("/dev/shm/v%04d.pgm",i))
+    catch
+    end
+end
+
+size(svdobj[:V])
+   
 extrema(abs(urec))
