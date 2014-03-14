@@ -163,11 +163,25 @@ a = read_ics(dir * first(fns));
 
 size(a[:,:,1])
 
+function write_pgm(a)
+    ar=reshape(a,prod(size(a)))
+    mi,ma = extrema(ar)
+    a8=uint8(div((ar.-mi)*255,ma-mi))
+    f=open("/dev/shm/o.pgm","w")
+    @printf(f,"P5\n%d %d\n255\n",size(a,1),size(a,2));
+    write(f,a8);
+    close(f);
+end
 
-ar=reshape(abs(a[:,:,1]),prod(size(a[:,:,1])))
-mi,ma = extrema(ar)
-a8=uint8(div((ar.-mi)*255,ma-mi))
-f=open("/dev/shm/o.pgm","w")
-@printf(f,"P5\n80 84\n255\n");
-write(f,a8);
-close(f);
+write_pgm(abs(a[:,:,1]))
+
+a=Array(Complex64,80,84,151,161);
+fns=find_ics_files(dir)
+i = 1;
+for f in fns
+    println(f)
+    a[:,:,:,i] = read_ics(dir * fns[i])
+    i = i+1;
+end
+
+@time extrema(abs(a)) # 3.7s
