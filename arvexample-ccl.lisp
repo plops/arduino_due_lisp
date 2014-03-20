@@ -38,6 +38,8 @@
 
 
 (defun char*-to-lisp (str-pointer &key (max-length 100))
+  (when (cffi:null-pointer-p str-pointer)
+    (error "trying to access null pointer."))
   (let* ((name (loop for j from 0 below max-length
 		  and c = (ccl:%get-unsigned-byte str-pointer j) until (= c 0)
 		  collect (code-char c)))) ;; first char is collected twice
@@ -660,15 +662,21 @@
 (defvar *serial* nil)
 
 
+(define-condition no-arduino () ())
 ;; in gentoo user should be in group uucp for access to ACM device
 (defparameter *serial*
-  (ccl::make-serial-stream (concatenate 'string "/dev/" (pathname-name (first (directory "/dev/ttyACM*"))))
+  (let ((fn (first (directory "/dev/ttyACM*"))))
+    (if fn
+	(ccl::make-serial-stream (concatenate 'string "/dev/" (pathname-name fn))
 					;:format 'character
-                           :baud-rate 115200
-                           :parity nil
-                           :char-bits 8
-                           :stop-bits 1 
-                           :flow-control nil))
+				 :baud-rate 115200
+				 :parity nil
+				 :char-bits 8
+				 :stop-bits 1 
+				 :flow-control nil)
+	(progn
+	  (break "no arduino to connect to.")
+	 nil))))
 #+nil
 (progn
   (format *serial* "(dac ~d ~d)~%" (+ -900 2048) (+ 130 2048)) 
