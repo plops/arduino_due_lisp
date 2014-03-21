@@ -400,6 +400,9 @@
 			       :displaced-to a))
 	       (data (pref b #>ArvBuffer.data)))
 	  (cond
+	    ((string= (pixel-format cam) "Mono8")
+	     (dotimes (i (min (length a1) np))
+	       (setf (aref a1 i) (* 8 (%get-unsigned-byte data i)))))
 	    ((string= (pixel-format cam) "Mono12")
 	     (dotimes (i (min (length a1) (floor np 2)))
 	       (setf (aref a1 i) (%get-unsigned-word data (* 2 i)))))
@@ -480,11 +483,19 @@
 #+nil
 (push-buffer *cam2*)
 (defmethod acquire-single-image ((c camera) &key (use-dark t))
-  ;(dotimes (i 1) (push-buffer c))
   (start-acquisition c)
   (prog1
       (pop-block-copy-push-buffer c :use-dark use-dark)
     (stop-acquisition c)))
+
+(defmethod acquire-continuous-images ((c camera) &key (use-dark t) (fun #'(lambda (x) nil)))
+  "continuously acquire image and pass each to the function
+fun. acquisition stops when fun returns non-t value."
+  (start-acquisition c)
+  (let ((do-acquire-p t))
+    (loop while do-acquire-p do
+	 (setf do-acquire-p (funcall fun (pop-block-copy-push-buffer c :use-dark use-dark)))))
+  (stop-acquisition c))
 
 (defun write-pgm (filename img)
   (declare (type simple-string filename)
@@ -509,11 +520,12 @@
         (write-sequence data-1d s)))
     nil))
 
+
+;; if no camera is connected, make sure to call arv-fake-gv-camera-0.4
 #+nil
-(defparameter *cam1*
-	   (make-instance 'camera))
-
-
+(defparameter *cam1* (make-instance 'camera))
+#+nil
+(set-pixel-format *cam1* "Mono8")
 #+nil
 (progn  (set-region *cam1* :x 712 :y 712 :w 600 :h 600)
 	(loop for c in (list *cam1*) and i from 1 do 
@@ -523,12 +535,21 @@
 	     (push-buffer c)
 	     (write-pgm (format nil "/dev/shm/~d.pgm" i)
 			(acquire-single-image c :use-dark nil))))
+#+nil
+(defparameter *bla*
+ (acquire-single-image *cam1* :use-dark nil))
 
+#+nil
+(time
+ (let ((count 0))
+   (acquire-continuous-images *cam1* :use-dark nil :fun #'(lambda (im) (when (< (incf count) 100)
+									 t)))))
+;; 31.5s
 
 #+nil
 (dotimes (i 100)
  (write-pgm (format nil "/dev/shm/~d.pgm" 1)
-	    (acquire-single-image *cam1* :use-dark t)))
+	    (acquire-single-image *cam1* :use-dark nil)))
 
 #+nil
 (defparameter *cam2*
