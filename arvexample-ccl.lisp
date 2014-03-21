@@ -358,11 +358,13 @@
   (let ((b (timeout-pop-buffer-blocking cam 10000))
 	(dark1 (when (and use-dark (dark-image cam))
 		 (let ((d (dark-image cam)))
+		   ; (declare (type (simple-array (unsigned-byte 16) 2) d))
 		   (assert (equal (list (aoi-height cam) (aoi-width cam))
 				  (array-dimensions d)))
 		      (make-array (reduce #'* (array-dimensions d))
 				  :element-type (array-element-type d)
 				  :displaced-to d)))))
+    ;(declare (type (or null (simple-array (unsigned-byte 16) 1)) dark1))
     (loop while (or (cffi:null-pointer-p b)
 		    (and (not (cffi:null-pointer-p b))
 			 (/= #$ARV_BUFFER_STATUS_SUCCESS (pref b #>ArvBuffer.status)))
@@ -399,10 +401,15 @@
 			       :element-type (array-element-type a)
 			       :displaced-to a))
 	       (data (pref b #>ArvBuffer.data)))
+	  (declare
+	   (optimize (speed 3))
+	   ;(type (simple-array (unsigned-byte 16) 2) a)
+	   ;(type (simple-array (unsigned-byte 16) 1) a1)
+	   )
 	  (cond
 	    ((string= (pixel-format cam) "Mono8")
 	     (dotimes (i (min (length a1) np))
-	       (setf (aref a1 i) (* 8 (%get-unsigned-byte data i)))))
+	       (setf (aref a1 i) (* 256 (%get-unsigned-byte data i)))))
 	    ((string= (pixel-format cam) "Mono12")
 	     (dotimes (i (min (length a1) (floor np 2)))
 	       (setf (aref a1 i) (%get-unsigned-word data (* 2 i)))))
@@ -425,6 +432,7 @@
 	      (setf (aref a1 i) (min 65535 (max 0 (+ (aref a1 i)  (- (aref dark1 i)) 100))))))
 	  a)
 	(push-buffer cam b))))
+
 
 (defmethod get-statistics ((cam camera))
   (cffi:with-foreign-objects ((completed :uint64)
@@ -542,9 +550,11 @@ fun. acquisition stops when fun returns non-t value."
 #+nil
 (time
  (let ((count 0))
-   (acquire-continuous-images *cam1* :use-dark nil :fun #'(lambda (im) (when (< (incf count) 100)
-									 t)))))
-;; 31.5s
+   (acquire-continuous-images *cam1* :use-dark nil :fun #'(lambda (im)
+							    (write-pgm (format nil "/dev/shm/~3,'0d.pgm" count) im)
+							    (when (< (incf count) 100)
+							      t)))))
+;; 23.9s
 
 #+nil
 (dotimes (i 100)
