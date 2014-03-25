@@ -687,11 +687,35 @@ fun. acquisition stops when fun returns non-t value."
 #+nil
 (talk-arduino "(+ 2000 2047)")
 #+nil
-(talk-arduino "(pin-mode 11 1)")
+(talk-arduino "(+ 2 2)")
 #+nil
-(talk-arduino "(pin-mode 12 1)")
+(talk-arduino "(pin-mode 11 1)") ;; 40 cam1
 #+nil
-(talk-arduino "(progn (digital-write 11 1)(digital-write 12 1) (delay 10) (digital-write 11 0) (digital-write 12 0))")
+(talk-arduino "(pin-mode 12 1)") ;; 65 cam2
+#+nil
+(loop for i from 1900 upto 2000 by 1 do
+     (sleep .02)
+     (talk-arduino
+      (format nil "(progn
+ (dac ~d 2047)
+ (delay 100)
+ (digital-write 11 1)
+ (digital-write 12 1) 
+ (delay 10) 
+ (digital-write 11 0)
+ (digital-write 12 0))" i))
+     )
+
+#+nil
+(dotimes (i 10)
+  (sleep .2)
+  (talk-arduino "(progn
+ (digital-write 11 1)
+ (digital-write 12 1) 
+ (delay 10) 
+ (digital-write 11 0)
+ (digital-write 12 0))"))
+
 ;; fsm moves +/- 1.5 degree, (26.2 mrad) for voltages in +/- 10v
 ;; (* 150 (tan 26.2e-3)) corresponds to 3.9 mm after 150mm
 
