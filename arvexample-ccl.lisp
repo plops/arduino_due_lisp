@@ -364,7 +364,7 @@
 		      (make-array (reduce #'* (array-dimensions d))
 				  :element-type (array-element-type d)
 				  :displaced-to d)))))
-    ;(declare (type (or null (simple-array (unsigned-byte 16) 1)) dark1))
+    (declare (type (or null (array (unsigned-byte 16) 1)) dark1))
     (loop while (or (cffi:null-pointer-p b)
 		    (and (not (cffi:null-pointer-p b))
 			 (/= #$ARV_BUFFER_STATUS_SUCCESS (pref b #>ArvBuffer.status)))
@@ -403,8 +403,8 @@
 	       (data (pref b #>ArvBuffer.data)))
 	  (declare
 	   (optimize (speed 3))
-	   ;(type (simple-array (unsigned-byte 16) 2) a)
-	   ;(type (simple-array (unsigned-byte 16) 1) a1)
+	   (type (simple-array (unsigned-byte 16) 2) a)
+	   (type (array (unsigned-byte 16) 1) a1)
 	   )
 	  (cond
 	    ((string= (pixel-format cam) "Mono8")
@@ -533,6 +533,25 @@ fun. acquisition stops when fun returns non-t value."
 #+nil
 (defparameter *cam1* (make-instance 'camera))
 #+nil
+(set-region *cam1* :x 103 :y 379 :w 728 :h 64)
+#+nil
+(set-pixel-format *cam1* "Mono12Packed")
+#+nil
+(set-acquisition-mode *cam1* 'continuous)
+#+nil
+(set-exposure *cam1* 105d0)
+
+#+nil
+(time
+ (defparameter *bla* ;; 300 images in 1.9s
+   (progn
+     (start-acquisition *cam1*)
+     (prog1
+	 (loop for i below 300 collect
+	      (pop-block-copy-push-buffer *cam1* :use-dark nil))
+       (stop-acquisition *cam1*)))))
+
+#+nil
 (set-pixel-format *cam1* "Mono8")
 #+nil
 (progn  (set-region *cam1* :x 712 :y 712 :w 600 :h 600)
@@ -545,7 +564,10 @@ fun. acquisition stops when fun returns non-t value."
 			(acquire-single-image c :use-dark nil))))
 #+nil
 (defparameter *bla*
- (acquire-single-image *cam1* :use-dark nil))
+  (acquire-single-image *cam1* :use-dark nil))
+
+#+nil
+(push-buffer *cam1*)
 
 #+nil
 (time
