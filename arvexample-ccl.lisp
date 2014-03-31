@@ -693,12 +693,12 @@ fun. acquisition stops when fun returns non-t value."
 #+nil
 (talk-arduino "(pin-mode 12 1)") ;; 65 cam2
 #+nil
-(loop for i from 1900 upto 2000 by 1 do
+(loop for i from 600 upto 2000 by 10 do
      (sleep .02)
      (talk-arduino
       (format nil "(progn
  (dac ~d 2047)
- (delay 100)
+ (delay 10)
  (digital-write 11 1)
  (digital-write 12 1) 
  (delay 10) 
