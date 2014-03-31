@@ -93,15 +93,17 @@
       (setf arv-stream (cffi:null-pointer)))))
 
 
+
 (defmethod set-region ((cam camera) &key (x 0) (y 0)
 				      (w (- (sensor-width cam) x))
-				      (h (- (sensor-height cam) y)))
+				      (h (- (sensor-height cam) y))
+				      (keep-old t))
   (assert (<= 0 x (1- (sensor-width cam))))
   (assert (<= 0 y (1- (sensor-height cam))))
   (assert (<= 0 (+ x w) (sensor-width cam)))
   (assert (<= 0 (+ y h) (sensor-height cam)))
   (multiple-value-bind (ox oy ow oh) (get-region cam)
-    (when (and (= ox x) (= oy y) (= ow w) (= oh h))
+    (when (or keep-old (and (= ox x) (= oy y) (= ow w) (= oh h)))
       (return-from set-region (get-region cam))))
   (gc-integer-set-value cam "Width" w)
   (gc-integer-set-value cam "Height" h)
@@ -113,6 +115,7 @@
     (destroy-stream cam)
     (setf arv-stream (create-stream cam))
     (push-buffer cam)))
+
 
 (defun next-dividable-by-4 (n)
   (* 4 (ceiling n 4)))
@@ -127,6 +130,7 @@
 (defmethod get-packet-size ((cam camera))
   (gc-integer-get-value cam "GevSCPSPacketSize"))
 
+
 (defmethod get-region ((cam camera))
   (let ((x (gc-integer-get-value cam "OffsetX"))
 	(y (gc-integer-get-value cam "OffsetY"))
@@ -138,6 +142,9 @@
 	      aoi-x x
 	      aoi-y y))
     (values x y w h)))
+
+#+nil
+(get-region *cam1*)
 
 (defmethod camera-get-genicam-xml ((camera camera))
   (with-slots (arv-device) camera
@@ -176,6 +183,7 @@
 	    arv-xml-size n
 	    arv-gc (#_arv_gc_new arv-device xml n))
       (assert (not (cffi:null-pointer-p arv-gc))))
+    
     (set-region cam)))
 
 (defmethod gc-get-node ((cam camera) str)
@@ -543,7 +551,21 @@ fun. acquisition stops when fun returns non-t value."
 
 ;; if no camera is connected, make sure to call arv-fake-gv-camera-0.4
 #+nil
-(defparameter *cam1* (make-instance 'camera))
+(defparameter *cam1* (make-instance 'camera :name "Basler-21433540"))
+#+nil
+(set-pixel-format *cam1* "Mono12Packed")
+#+nil
+(set-acquisition-mode *cam1* 'single-frame)
+#+nil
+(defparameter *bla* (acquire-single-image *cam1* :use-dark nil))
+
+#+nil
+(get-region *cam1*)
+#+nil
+(set-region *cam1* :keep-old nil :h 1024 :w 1024 :y 23 :x 0)
+
+#+nil
+(defparameter *cam2* (make-instance 'camera :name "Basler-21433565"))
 #+nil
 (set-region *cam1* :x 103 :y 379 :w 800 :h 64)
 #+nil
@@ -584,12 +606,6 @@ fun. acquisition stops when fun returns non-t value."
 	     (push-buffer c)
 	     (write-pgm (format nil "/dev/shm/~d.pgm" i)
 			(acquire-single-image c :use-dark nil))))
-#+nil
-(defparameter *bla*
-  (acquire-single-image *cam1* :use-dark nil))
-
-#+nil
-(push-buffer *cam1*)
 
 #+nil
 (time
@@ -708,6 +724,37 @@ fun. acquisition stops when fun returns non-t value."
 
 #+nil
 (talk-arduino "(dac 2000 2047)")
+#+nil
+(talk-arduino "(+ 2000 2047)")
+#+nil
+(talk-arduino "(+ 2 2)")
+#+nil
+(talk-arduino "(pin-mode 11 1)") ;; 40 cam1
+#+nil
+(talk-arduino "(pin-mode 12 1)") ;; 65 cam2
+#+nil
+(loop for i from 600 upto 2000 by 10 do
+     (sleep .02)
+     (talk-arduino
+      (format nil "(progn
+ (dac ~d 2047)
+ (delay 10)
+ (digital-write 11 1)
+ (digital-write 12 1) 
+ (delay 10) 
+ (digital-write 11 0)
+ (digital-write 12 0))" i))
+     )
+
+#+nil
+(dotimes (i 10)
+  (sleep .2)
+  (talk-arduino "(progn
+ (digital-write 11 1)
+ (digital-write 12 1) 
+ (delay 10) 
+ (digital-write 11 0)
+ (digital-write 12 0))"))
 
 ;; fsm moves +/- 1.5 degree, (26.2 mrad) for voltages in +/- 10v
 ;; (* 150 (tan 26.2e-3)) corresponds to 3.9 mm after 150mm
