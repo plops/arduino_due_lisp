@@ -558,15 +558,27 @@ fun. acquisition stops when fun returns non-t value."
 (set-acquisition-mode *cam1* 'single-frame)
 #+nil
 (defparameter *bla* (acquire-single-image *cam1* :use-dark nil))
-
+;; 65 1024x1024+452+21
+;; 40 1024x1024+135+0
+;; 66 600x600+520+213
 #+nil
-(loop for c in (list *cam1* *cam2* *cam3*) do
-     (set-acquisition-mode c 'single-frame)
-     (set-pixel-format c "Mono12Packed"))
+(progn
+ (loop for c in (list *cam1* *cam2* *cam3*) do
+      (set-acquisition-mode c 'single-frame)
+      (set-pixel-format c "Mono12Packed")
+      )
+ (set-region *cam2* :keep-old nil :h 1024 :w 1024 :x 452 :y 21)
+ (set-region *cam1* :keep-old nil :h 1024 :w 1024 :x 135 :y 0)
+ (set-region *cam3* :keep-old nil :h 600 :w 600 :x 520 :y 213))
 #+nil
 (defparameter *bla*
  (loop for c in (list *cam1* *cam2* *cam3*) collect
-      (acquire-single-image c :use-dark nil)))
+      (acquire-image-using-full-range c :use-dark nil)))
+
+#+nil
+(loop for e in *bla* and i from 0 do
+     (write-pgm (format nil "/dev/shm/~d.pgm" i)
+		e))
 
 #+nil
 (get-region *cam1*)
@@ -605,6 +617,12 @@ fun. acquisition stops when fun returns non-t value."
 
 #+nil
 (destroy-stream *cam1*)
+
+#+nil
+(progn
+  (destroy-stream *cam1*)
+  (destroy-stream *cam2*)
+  (destroy-stream *cam3*))
 
 #+nil
 (set-pixel-format *cam1* "Mono8")
@@ -734,7 +752,7 @@ fun. acquisition stops when fun returns non-t value."
 (+ 30 3.5 2.5 13.5 9) ;; path camera 2 (good interference)
 
 #+nil
-(talk-arduino "(dac 2041 2047)")
+(talk-arduino "(dac 1841 2047)")
 #+nil
 (talk-arduino "(+ 2000 2047)")
 #+nil
@@ -756,6 +774,9 @@ fun. acquisition stops when fun returns non-t value."
  (digital-write 11 0)
  (digital-write 12 0))" i))
      )
+
+#+nil
+(talk-arduino "(dac 2048 2448)")
 
 #+nil
 (dotimes (i 10)
@@ -946,7 +967,9 @@ fun. acquisition stops when fun returns non-t value."
   "vary exposure time to keep gray values within 40000 .. 60000. note: if a dark image is subtracted i introduce an offset of 100. in particular for the cmos camera the dark images can have quite high values."
   (let* ((im (acquire-single-image c :use-dark use-dark))
 	 (ma (.max im))
-	 (dark-max (.max (dark-image c)))
+	 (dark-max (if use-dark 
+		       (.max (dark-image c))
+		       0))
 	 (goal-min (- 40000 dark-max))
 	 (goal-max (- 60000 dark-max)))
     (loop for i from 0 while (not (< goal-min ma goal-max)) do
@@ -994,6 +1017,7 @@ fun. acquisition stops when fun returns non-t value."
   (talk-arduino "(digital-write 8 0)")
   (setf (dark-image *cam1*) (average-images *cam1* :number 100 :use-dark nil))
   (setf (dark-image *cam2*) (average-images *cam2* :number 100 :use-dark nil))
+  (setf (dark-image *cam3*) (average-images *cam3* :number 100 :use-dark nil))
   (sleep .2)
   (talk-arduino "(digital-write 8 1)"))
 
@@ -1016,13 +1040,13 @@ fun. acquisition stops when fun returns non-t value."
        (ir 1500)
        (jc 2047)
        (jr 1600))
-   (ensure-directories-exist (format nil "/home/martin/dat/~d/" dir-num))
+   (ensure-directories-exist (format nil "/media/sdc1/dat/~d/" dir-num))
    (loop for j from (- jc jr) upto (+ jc jr) by 40 do
 	(loop for i from (- ic ir) upto (+ ic ir) by 40 do
 	     (format t "~a~%" (list 'i i 'j j))
 	     (talk-arduino (format nil "(dac ~d ~d)~%" i j))
 					;(sleep 2)
-	     (loop for c in (list *cam1* *cam2*) and k from 1 do 
+	     (loop for c in (list *cam1* *cam2* *cam3*) and k from 1 do 
 		  (format t "acquire ~d ~a~%" k (list (get-statistics c) (multiple-value-list (get-n-buffers c))))
 		  
 		  (let ((im (if nil
@@ -1031,7 +1055,7 @@ fun. acquisition stops when fun returns non-t value."
 				(acquire-image-using-full-range c)
 				)))
 		    (write-pgm (format nil "/dev/shm/~d.pgm" k) im)
-		    (write-pgm (format nil "/home/martin/dat/~d/i~4,'0d_j~4,'0d_~d_~2,6$.pgm" dir-num i j k (get-exposure c)) im)))))))
+		    (write-pgm (format nil "/media/sdc1/dat/~d/i~4,'0d_j~4,'0d_~d_~2,6$.pgm" dir-num i j k (get-exposure c)) im)))))))
 
 ;; network usage is 2.2Mbytes/s
 ;; (/ (* 11 1024) 2.2) => 5100 seconds for one scan
