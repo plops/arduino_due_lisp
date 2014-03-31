@@ -114,9 +114,14 @@
     (setf arv-stream (create-stream cam))
     (push-buffer cam)))
 
+(defun next-dividable-by-4 (n)
+  (* 4 (ceiling n 4)))
+
 (defmethod set-packet-size ((cam camera) mtu)
-  (unless (= mtu (gc-integer-get-value cam "GevSCPSPacketSize"))
-    (gc-integer-set-value cam "GevSCPSPacketSize" mtu))
+  ;; ensure packet size to be multiple of 32bit
+  (let ((mtu4 (next-dividable-by-4 mtu)))
+    (unless (= mtu4 (gc-integer-get-value cam "GevSCPSPacketSize"))
+      (gc-integer-set-value cam "GevSCPSPacketSize" mtu4)))
   (gc-integer-get-value cam "GevSCPSPacketSize"))
 
 (defmethod get-packet-size ((cam camera))
@@ -540,29 +545,30 @@ fun. acquisition stops when fun returns non-t value."
 #+nil
 (defparameter *cam1* (make-instance 'camera))
 #+nil
-(set-region *cam1* :x 103 :y 379 :w 128 :h 64)
+(set-region *cam1* :x 103 :y 379 :w 800 :h 64)
 #+nil
 (set-pixel-format *cam1* "Mono12Packed")
 #+nil
 (set-acquisition-mode *cam1* 'continuous)
 #+nil
-(set-exposure *cam1* 105d0)
+(set-exposure *cam1* 2105d0)
 #+nil
 (set-packet-size *cam1* 1400)
 #+nil
 (get-packet-size *cam1*)
 #+nil
-(time
- (defparameter *bla* ;; 300 images in 1.9s
-   (progn
-     (start-acquisition *cam1*)
-     (prog1
-	 (let ((buf (pop-block-copy-push-buffer *cam1* :use-dark nil)))
-	  (loop for i below 299 do
-	       (pop-block-copy-push-buffer *cam1* :out buf :use-dark nil)))
-       (stop-acquisition *cam1*)))))
+(defparameter *bla* ;; 300 images in 1.9s
+  (progn
+    (start-acquisition *cam1*)
+    (prog1
+	(let ((buf (pop-block-copy-push-buffer *cam1* :use-dark nil)))
+	  (time
+	   (loop for i below 3000 do
+		(pop-block-copy-push-buffer *cam1* :out buf :use-dark nil))))
+      (stop-acquisition *cam1*))))
 
-
+#+nil
+(#_arv_shutdown)
 
 #+nil
 (destroy-stream *cam1*)
