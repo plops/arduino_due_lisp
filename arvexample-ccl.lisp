@@ -560,12 +560,23 @@ fun. acquisition stops when fun returns non-t value."
 (defparameter *bla* (acquire-single-image *cam1* :use-dark nil))
 
 #+nil
+(loop for c in (list *cam1* *cam2* *cam3*) do
+     (set-acquisition-mode c 'single-frame)
+     (set-pixel-format c "Mono12Packed"))
+#+nil
+(defparameter *bla*
+ (loop for c in (list *cam1* *cam2* *cam3*) collect
+      (acquire-single-image c :use-dark nil)))
+
+#+nil
 (get-region *cam1*)
 #+nil
 (set-region *cam1* :keep-old nil :h 1024 :w 1024 :y 23 :x 0)
 
 #+nil
 (defparameter *cam2* (make-instance 'camera :name "Basler-21433565"))
+#+nil
+(defparameter *cam3* (make-instance 'camera :name "Basler-21433566"))
 #+nil
 (set-region *cam1* :x 103 :y 379 :w 800 :h 64)
 #+nil
@@ -723,7 +734,7 @@ fun. acquisition stops when fun returns non-t value."
 (+ 30 3.5 2.5 13.5 9) ;; path camera 2 (good interference)
 
 #+nil
-(talk-arduino "(dac 2000 2047)")
+(talk-arduino "(dac 2041 2047)")
 #+nil
 (talk-arduino "(+ 2000 2047)")
 #+nil
