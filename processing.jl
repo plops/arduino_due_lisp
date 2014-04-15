@@ -161,6 +161,8 @@ extrema([1 2 3 4 5])
 
 findmin([1 2 3 4 5])
 
+minimum([1 2 3 4 5])
+
 
 # string concatenation    
 "Hallo" * " Welt"
@@ -278,7 +280,8 @@ size(a[:,:,1])
 # scaled between 0 and 255
 function write_pgm(a,fn="/dev/shm/o.pgm")
     ar=reshape(a,prod(size(a)))
-    mi,ma = extrema(ar)
+    mi = minimum(ar)
+    ma = maximum(ar)
     s = 0;
     if ma!=mi
         s=255/(ma-mi);
@@ -430,8 +433,39 @@ end
 
 
 
-
+# this gives an overview of some datatypes and their ranges
 for T = {Int8,Int16,Int32,Int64,Int128,Uint8,Uint16,Uint32,Uint64,Uint128}
     println("$(lpad(T,7)): [$(typemin(T)),$(typemax(T))]")
 end
 
+
+
+# read a pgm file
+
+l=open("/media/sdc1/dat/3/i1387_j2527_1_012845.00.pgm","r")
+
+l1=readline(l)
+
+l1=="P5\n"
+
+l2=readline(l)
+
+split(l2)
+
+(w,h)=map(int,split(l2))
+
+l3=readline(l)
+
+65535 == int(split(l3)[1])
+
+buf=read(l,Uint16,w,h)
+
+
+buf2=copy(buf)
+
+for i=1:size(buf,1), j=1:size(buf,2)
+    buf2[i,j]=bswap(buf[i,j])
+end
+
+
+write_pgm(buf2, "/dev/shm/o.pgm")

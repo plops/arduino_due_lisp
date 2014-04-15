@@ -752,7 +752,7 @@ fun. acquisition stops when fun returns non-t value."
 (+ 30 3.5 2.5 13.5 9) ;; path camera 2 (good interference)
 
 #+nil
-(talk-arduino "(dac 1841 2047)")
+(talk-arduino "(dac 1041 2047)")
 #+nil
 (talk-arduino "(+ 2000 2047)")
 #+nil
@@ -762,18 +762,24 @@ fun. acquisition stops when fun returns non-t value."
 #+nil
 (talk-arduino "(pin-mode 12 1)") ;; 65 cam2
 #+nil
-(loop for i from 600 upto 2000 by 10 do
-     (sleep .02)
-     (talk-arduino
-      (format nil "(progn
+(talk-arduino "(pin-mode 10 1)") ;; 66 cam3
+#+nil
+(progn
+  (loop for i from 600 upto 2000 by 10 do
+       (sleep .02)
+      (talk-arduino
+       (format nil "(progn
  (dac ~d 2047)
  (delay 10)
  (digital-write 11 1)
  (digital-write 12 1) 
+ (digital-write 10 1) 
  (delay 10) 
  (digital-write 11 0)
- (digital-write 12 0))" i))
-     )
+ (digital-write 12 0)
+ (digital-write 10 0))" i))
+      )
+  (format t "finished2"))
 
 #+nil
 (talk-arduino "(dac 2048 2448)")
