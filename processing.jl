@@ -168,6 +168,10 @@ findmin([1 2 3 4 5])
 
 ccall((:sin,"libm"),Float64,(Float64,),12.0)
 
+# note: make sure julias garbage collector doesn't move the addresses
+# around while you are in a c-call
+# pointer_to_array()
+
 
 # matlab uses saturated integer arithmetic:
 # adding to a big value, value stays the same
@@ -180,12 +184,16 @@ ccall((:sin,"libm"),Float64,(Float64,),12.0)
 # neat example:
 
 
-f(k) = 5k-1
+f(k) = 5k-1;
 
 
 help(code_native)
 
-code_native(f,(Int,))
+code_native(f,(Int,)
+            
+code_llvm(f,(Int,))
+
+code_typed(f,(Int,))            
 
 function g(k)
     for i=1:10
@@ -195,6 +203,8 @@ function g(k)
 end
 
 code_native(g,(Int,))
+ 
+code_llvm(g,(Int,))           
 
 # compiler (llvm) optimizes the loop to a multiplication
 
@@ -434,4 +444,17 @@ end
 for T = {Int8,Int16,Int32,Int64,Int128,Uint8,Uint16,Uint32,Uint64,Uint128}
     println("$(lpad(T,7)): [$(typemin(T)),$(typemax(T))]")
 end
+
+
+
+using Readline
+using REPL
+using ImageView
+using Images
+a=imread("/home/martin/Downloads/franck/a59120v.bmp")
+
+help(display)
+
+display(a)
+
 
