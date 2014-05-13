@@ -442,30 +442,45 @@ end
 
 # read a pgm file
 
-l=open("/media/sdc1/dat/3/i1387_j2527_1_012845.00.pgm","r")
-
-l1=readline(l)
-
-l1=="P5\n"
-
-l2=readline(l)
-
-split(l2)
-
-(w,h)=map(int,split(l2))
-
-l3=readline(l)
-
-65535 == int(split(l3)[1])
-
-buf=read(l,Uint16,w,h)
-
-
-buf2=copy(buf)
-
-for i=1:size(buf,1), j=1:size(buf,2)
-    buf2[i,j]=bswap(buf[i,j])
+function read_pgm(fn)
+    l=open(fn,"r")
+    l1=readline(l)
+    l1=="P5\n"
+    l2=readline(l)
+    split(l2)
+    (w,h)=map(int,split(l2))
+    l3=readline(l)
+    65535 == int(split(l3)[1])
+    buf=read(l,Uint16,w,h)
+    buf2=copy(buf)
+    for i=1:size(buf,1), j=1:size(buf,2)
+        buf2[i,j]=bswap(buf[i,j])
+    end
+    buf2
 end
+
+buf2=read_pgm("/media/sdc1/dat/3/i1387_j2527_1_012845.00.pgm")
+
+
+function find_pgm_files(dir) 
+    fns = readdir(dir)
+    res = [];
+    for f in fns
+        m = match(r"^i.*\.pgm$",f) 
+        if m != nothing
+            res = vcat(res,m.match);
+        end
+    end
+    res
+end
+
+dir4="/media/sdc1/dat/3/";
+
+find_pgm_files(dir4)
 
 
 write_pgm(buf2, "/dev/shm/o.pgm")
+
+fft(buf2)
+
+write_pgm(abs(fft(buf2)), "/dev/shm/of.pgm")
