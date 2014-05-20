@@ -586,6 +586,8 @@ fun. acquisition stops when fun returns non-t value."
 (set-region *cam1* :keep-old nil :h 1024 :w 1024 :y 23 :x 0)
 
 #+nil
+(defparameter *cam1* (make-instance 'camera :name "Basler-21433540"))
+#+nil
 (defparameter *cam2* (make-instance 'camera :name "Basler-21433565"))
 #+nil
 (defparameter *cam3* (make-instance 'camera :name "Basler-21433566"))
@@ -782,7 +784,7 @@ fun. acquisition stops when fun returns non-t value."
   (format t "finished2"))
 
 #+nil
-(talk-arduino "(dac 2048 2448)")
+(talk-arduino "(dac 2048 2148)")
 
 #+nil
 (dotimes (i 10)

@@ -486,8 +486,24 @@ end
 
 dir4="/media/sdc1/dat/3/";
 
-find_pgm_files(dir4)
+find_pgm_files(dir4);
 
+begin
+    res = [];
+    for f in find_pgm_files(dir4)
+        m = match(r"^i(.*)_j(.*)_1_(.*)\.pgm$",f) 
+        if m != nothing
+            i = div(int(m.captures[1])-547,40);
+            j = div(int(m.captures[2])-447,40);
+            expos = float(m.captures[3]);
+            res = vcat(res,(m.match,i,j,expos));
+        end
+    end
+    res
+end
+            
+
+   
 
 write_pgm(buf2, "/dev/shm/o.pgm")
 
