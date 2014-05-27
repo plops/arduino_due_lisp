@@ -490,11 +490,12 @@ find_pgm_files(dir4);
 
 begin
     res = [];
+    imgs = 
     for f in find_pgm_files(dir4)
         m = match(r"^i(.*)_j(.*)_1_(.*)\.pgm$",f) 
         if m != nothing
-            i = div(int(m.captures[1])-547,40);
-            j = div(int(m.captures[2])-447,40);
+            i = div(int(m.captures[1])-547,40)+1;
+            j = div(int(m.captures[2])-447,40)+1;
             expos = float(m.captures[3]);
             res = vcat(res,(m.match,i,j,expos));
         end

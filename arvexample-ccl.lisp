@@ -1071,6 +1071,39 @@ fun. acquisition stops when fun returns non-t value."
  
 
 
+(setf asdf:*central-registry* '(*default-pathname-defaults* #p"/home/martin/stage/cl-cffi-fftw3/"))
+#+nil
+(asdf:load-system "fftw")
+
+(fftw:prepare-threads)
 
 
+(defparameter *bla* (acquire-image-using-full-range *cam1* :use-dark nil))
 
+(destructuring-bind (h w) (array-dimensions *bla*)
+ (let* (;; allocate a 1d array
+	(a1 (make-array (* w h) :element-type '(complex double-float)))
+	;; create a 2d array for access
+	(a (make-array (list h w) :element-type '(complex double-float)
+		       :displaced-to a1))
+	#+nil(b1 (make-array (array-total-size *bla*) :element-type (array-element-type *bla*)
+			:displaced-to *bla*)))
+  
+
+   (dotimes (i w)
+     (dotimes (j h)
+       (setf (aref a j i) (complex (* 1d0 (aref *bla* j i))))))
+
+   (format t "running FFT!~%")
+   ;; call fftw
+   (time (defparameter *bla2* (fftw:ft a)))
+   ;; takes 1.5s 75Mb allocated
+
+   ;; print out each element of the array. scale data to lie within 0..9
+#+nil   (progn
+     (terpri)
+     (destructuring-bind (h w) (array-dimensions *bla*)
+       (dotimes (j h)
+	 (dotimes (i w)
+	   (format t "~1,'0d" (floor (abs (aref *bla* j i)) (/ (* h w) 9))))
+	 (terpri))))))
