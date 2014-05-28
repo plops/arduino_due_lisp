@@ -759,6 +759,7 @@ fun. acquisition stops when fun returns non-t value."
 (talk-arduino "(+ 2000 2047)")
 #+nil
 (talk-arduino "(+ 2 2)")
+;; trigger
 #+nil
 (talk-arduino "(pin-mode 11 1)") ;; 40 cam1
 #+nil
@@ -1140,6 +1141,8 @@ fun. acquisition stops when fun returns non-t value."
 #+nil
 (defparameter *bla2-abs* (.log (.abs* *bla2*)))
 
+#+nil
+(.mean (extract (.abs* *bla2*) :x (+ 33 193) :y (+ 33 -10) :w 66 :h 66))
 (defun .uint16 (a)
   (let* ((b (make-array (array-dimensions a) :element-type '(unsigned-byte 16)))
 	 (b1 (.linear b))
@@ -1253,7 +1256,9 @@ fun. acquisition stops when fun returns non-t value."
 				   (- i (floor w 2)))))))
     b))
 
+#+nil
 (write-pgm "/dev/shm/r.pgm" (.uint16 (.rr '(128 128))))
+#+nil
 (write-pgm "/dev/shm/p.pgm" (.uint16 (.phiphi '(128 128))))
 
 ;; use rr to create an array where the value in radial circles
@@ -1261,8 +1266,53 @@ fun. acquisition stops when fun returns non-t value."
 ;; each pixel gets a unique id and they are sorted on concentric
 ;; circles starting from the center
 
+#+nil
 (let* ((w 128)
        (s (list w w))
        (r (.* (.rr s) (* 4 pi w)))
        (p (.phiphi s)))
  (write-pgm "/dev/shm/i.pgm" (.uint16 (.+ r p))))
+
+(defun .mean (a)
+  (let ((sum 0)
+	(a1 (.linear a)))
+    (dotimes (i (length a1))
+      (incf sum (aref a1 i)))
+    (/ sum (length a1))))
+
+
+#+nil
+(.mean (extract (.abs* *bla2*) :x (+ 33 193) :y (+ 33 -10) :w 66 :h 66))
+
+#+nil
+(let ((first (acquire-single-image *cam3* :use-dark nil)))
+  (destructuring-bind (h w) (array-dimensions first)
+    (let ((in (fftw:make-foreign-complex-array-as-double (list h w)))
+	  (out (fftw:make-foreign-complex-array-as-double (list h w))))
+      (defparameter *bla*
+       (loop for i from 600 upto 2000 by 10 collect
+	    (progn
+	      (sleep .02)
+	      (talk-arduino
+	       (format nil "(progn
+ (dac ~d 2047)
+ (delay 10)
+ (digital-write 11 1)
+ (digital-write 12 1) 
+ (digital-write 10 1) 
+ (delay 10) 
+ (digital-write 11 0)
+ (digital-write 12 0)
+ (digital-write 10 0))" i))
+	      (let ((im (acquire-single-image *cam3* :use-dark nil)))
+		(dotimes (i w)
+		  (dotimes (j h)
+		    (setf (aref in j i 0) (* 1d0 (aref im j i)))))
+		(fftw:ft in out)
+		(let ((v (.mean (extract (.abs* out) :x (+ 33 193) :y (+ 33 -10) :w 66 :h 66))))
+		  (format t "~a~%" (list i v))
+		  v)))))))
+  (format t "finished2"))
+
+
+
