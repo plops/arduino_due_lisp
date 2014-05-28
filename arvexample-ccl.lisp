@@ -1080,7 +1080,7 @@ fun. acquisition stops when fun returns non-t value."
 
 
 #+nil
-(defparameter *bla* (acquire-image-using-full-range *cam1* :use-dark nil))
+(defparameter *bla* (acquire-image-using-full-range *cam3* :use-dark nil))
 #+nil
 (destructuring-bind (h w) (array-dimensions *bla*)
  (let* (;; allocate a 1d array
@@ -1138,7 +1138,7 @@ fun. acquisition stops when fun returns non-t value."
     b))
 
 #+nil
-(defparameter *bla2-abs* (.abs* *bla2*))
+(defparameter *bla2-abs* (.log (.abs* *bla2*)))
 
 (defun .uint16 (a)
   (let* ((b (make-array (array-dimensions a) :element-type '(unsigned-byte 16)))
@@ -1155,9 +1155,13 @@ fun. acquisition stops when fun returns non-t value."
 (defparameter *blau* (.uint16 *bla2-abs*))
 #+nil
 (write-pgm "/dev/shm/o.pgm" *blau*)
-; first order is at 66x66+867+243 (measured in fiji)
+; cam1 first order is at 66x66+867+243 (measured in fiji)
+ ; (extract *blau* :x (+ 33 867) :y (+ 33 243) :w 66 :h 66)
+; cam2 first order is at 66x66+138+128 (measured in fiji)
+ ; (extract *blau* :x (+ 33 138) :y (+ 33 128) :w 66 :h 66)
+; cam3 first order is at 66x66+193-10 (measured in fiji)
 #+nil
-(write-pgm "/dev/shm/o.pgm" (extract *blau* :x (+ 33 867) :y (+ 33 243) :w 66 :h 66))
+(write-pgm "/dev/shm/o.pgm" (extract *blau* :x (+ 33 193) :y (+ 33 -10) :w 66 :h 66))
 
 #+nil
 (write-pgm "/dev/shm/o2.pgm" *bla*)
@@ -1176,14 +1180,15 @@ fun. acquisition stops when fun returns non-t value."
                         :displaced-to b1))
          (ox (- x (floor w 2)))
          (oy (- y (floor h 2))))
-    (assert (<= 0 ox))
-    (assert (<= 0 oy))
-    (assert (< (+ w ox) (array-dimension a 1)))
-    (assert (< (+ h oy) (array-dimension a 0)))
-    (dotimes (j h)
-      (dotimes (i w)
-        (setf (aref b j i)
-              (aref a (+ j oy) (+ i ox)))))
+    ;(assert (<= 0 ox))
+    ;(assert (<= 0 oy))
+    ;(assert (< (+ w ox) (array-dimension a 1)))
+    ;(assert (< (+ h oy) (array-dimension a 0)))
+    (destructuring-bind (hh ww) (array-dimensions a)
+     (dotimes (j h)
+       (dotimes (i w)
+	 (setf (aref b j i)
+	       (aref a (mod (+ j oy) hh) (mod (+ i ox) ww))))))
     b))
 
 (defun .rr (a)
