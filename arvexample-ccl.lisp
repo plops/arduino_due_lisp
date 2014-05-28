@@ -30,7 +30,7 @@
 (#_arv_get_n_interfaces)
 #+nil
 (char*-to-lisp
- (#_arv_get_interface_id 0))
+ (#_arv_get_interface_id 1))
 #+nil
 (char*-to-lisp
  (#_arv_get_device_id 0))
@@ -981,7 +981,7 @@ fun. acquisition stops when fun returns non-t value."
 	 (dark-max (if use-dark 
 		       (.max (dark-image c))
 		       0))
-~	 (goal-min (- 40000 dark-max))
+	 (goal-min (- 40000 dark-max))
 	 (goal-max (- 60000 dark-max)))
     (loop for i from 0 while (not (< goal-min ma goal-max)) do
 	 (let ((new-exp (* (cond ((< ma goal-min) 1.2)
@@ -1073,9 +1073,10 @@ fun. acquisition stops when fun returns non-t value."
 
  
 
+(eval-when (:execute :load-toplevel :compile-toplevel)
+ (setf asdf:*central-registry* '(*default-pathname-defaults* #p"/home/martin/stage/cl-cffi-fftw3/"))
+ (asdf:load-system "fftw"))
 
-(setf asdf:*central-registry* '(*default-pathname-defaults* #p"/home/martin/stage/cl-cffi-fftw3/"))
-(asdf:load-system "fftw")
 
 (fftw:prepare-threads)
 
@@ -1284,18 +1285,23 @@ fun. acquisition stops when fun returns non-t value."
 #+nil
 (.mean (extract (.abs* *bla2*) :x (+ 33 193) :y (+ 33 -10) :w 66 :h 66))
 
+;; fiber center first coordinate: 800 .. 1550 .. 2750
+
+#+nil
+(defparameter *bla3* (acquire-single-image *cam3* :use-dark nil))
+
 #+nil
 (let ((first (acquire-single-image *cam3* :use-dark nil)))
   (destructuring-bind (h w) (array-dimensions first)
     (let ((in (fftw:make-foreign-complex-array-as-double (list h w)))
 	  (out (fftw:make-foreign-complex-array-as-double (list h w))))
       (defparameter *bla*
-       (loop for i from 600 upto 2000 by 10 collect
+       (loop for i from 1500 upto 4000 by 50 collect
 	    (progn
 	      (sleep .02)
 	      (talk-arduino
 	       (format nil "(progn
- (dac ~d 2047)
+ (dac 1550 ~d)
  (delay 10)
  (digital-write 11 1)
  (digital-write 12 1) 
@@ -1311,8 +1317,10 @@ fun. acquisition stops when fun returns non-t value."
 		(fftw:ft in out)
 		(let ((v (.mean (extract (.abs* out) :x (+ 33 193) :y (+ 33 -10) :w 66 :h 66))))
 		  (format t "~a~%" (list i v))
-		  v)))))))
+		  (list i v))))))))
   (format t "finished2"))
 
-
-
+#+nil
+(with-open-file (f "/dev/shm/o.dat" :direction :output
+		   :if-exists :supersede :if-does-not-exist :create)
+  (loop for (i e) in *bla*  do (format f "~d ~d~%" i (floor e))))
