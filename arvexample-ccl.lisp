@@ -1186,3 +1186,78 @@ fun. acquisition stops when fun returns non-t value."
               (aref a (+ j oy) (+ i ox)))))
     b))
 
+(defun .rr (a)
+  (unless (or (arrayp a) (listp a))
+    (error ".rr argument must be dimension list or array."))
+  (let* ((dims (typecase a
+		 (array (array-dimensions a))
+		 (list a)))
+	 (rank (length dims))
+	 (b (make-array dims :element-type 'double-float)))
+    (unless (= rank 2)
+      (error "only rank 2 is supported for now"))
+    (destructuring-bind (h w) dims
+      (dotimes (j h)
+	(dotimes (i w)
+	  (setf (aref b j i) (sqrt (+ 0d0
+				      (expt (/ (- i (floor w 2)) w) 2)
+				      (expt (/ (- j (floor h 2)) h) 2)))))))
+    b))
+
+(defun .* (a b)
+  (let* ((c (make-array (array-dimensions a)
+			:element-type (array-element-type a)))
+	 (c1 (.linear c))
+	 (a1 (.linear a)))
+    (typecase b
+      (array (let ((b1 (.linear b)))
+	       (dotimes (i (length c1))
+		 (setf (aref c1 i) (* (aref a1 i) (aref b1 i))))))
+      (number (dotimes (i (length c1))
+		 (setf (aref c1 i) (* (aref a1 i) b)))))
+    c))
+
+(defun .+ (a b)
+  (let* ((c (make-array (array-dimensions a)
+			:element-type (array-element-type a)))
+	 (c1 (.linear c))
+	 (a1 (.linear a)))
+    (typecase b
+      (array (let ((b1 (.linear b)))
+	       (dotimes (i (length c1))
+		 (setf (aref c1 i) (+ (aref a1 i) (aref b1 i))))))
+      (number (dotimes (i (length c1))
+		 (setf (aref c1 i) (+ (aref a1 i) b)))))
+    c))
+
+
+(defun .phiphi (a)
+  (unless (or (arrayp a) (listp a))
+    (error ".phiphi argument must be dimension list or array."))
+  (let* ((dims (typecase a
+		 (array (array-dimensions a))
+		 (list a)))
+	 (rank (length dims))
+	 (b (make-array dims :element-type 'double-float)))
+    (unless (= rank 2)
+      (error "only rank 2 is supported for now"))
+    (destructuring-bind (h w) dims
+      (dotimes (j h)
+	(dotimes (i w)
+	  (setf (aref b j i) (atan (* 1d0 (- j (floor h 2)))
+				   (- i (floor w 2)))))))
+    b))
+
+(write-pgm "/dev/shm/r.pgm" (.uint16 (.rr '(128 128))))
+(write-pgm "/dev/shm/p.pgm" (.uint16 (.phiphi '(128 128))))
+
+;; use rr to create an array where the value in radial circles
+;; increases by at least 2pi in each step. add phiphi to this. then
+;; each pixel gets a unique id and they are sorted on concentric
+;; circles starting from the center
+
+(let* ((w 128)
+       (s (list w w))
+       (r (.* (.rr s) (* 4 pi w)))
+       (p (.phiphi s)))
+ (write-pgm "/dev/shm/i.pgm" (.uint16 (.+ r p))))
