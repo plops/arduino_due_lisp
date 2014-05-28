@@ -939,6 +939,8 @@ fun. acquisition stops when fun returns non-t value."
 
 (defun .max (a)
   (reduce #'max (.linear a)))
+(defun .min (a)
+  (reduce #'min (.linear a)))
 
 (defmethod average-images ((c camera) &key (number 100) (use-dark t))
   (let* ((a (acquire-single-image c))
@@ -978,7 +980,7 @@ fun. acquisition stops when fun returns non-t value."
 	 (dark-max (if use-dark 
 		       (.max (dark-image c))
 		       0))
-	 (goal-min (- 40000 dark-max))
+~	 (goal-min (- 40000 dark-max))
 	 (goal-max (- 60000 dark-max)))
     (loop for i from 0 while (not (< goal-min ma goal-max)) do
 	 (let ((new-exp (* (cond ((< ma goal-min) 1.2)
@@ -1072,32 +1074,34 @@ fun. acquisition stops when fun returns non-t value."
 
 
 (setf asdf:*central-registry* '(*default-pathname-defaults* #p"/home/martin/stage/cl-cffi-fftw3/"))
-#+nil
 (asdf:load-system "fftw")
 
 (fftw:prepare-threads)
 
 
+#+nil
 (defparameter *bla* (acquire-image-using-full-range *cam1* :use-dark nil))
-
+#+nil
 (destructuring-bind (h w) (array-dimensions *bla*)
  (let* (;; allocate a 1d array
 	(a1 (make-array (* w h) :element-type '(complex double-float)))
 	;; create a 2d array for access
-	(a (make-array (list h w) :element-type '(complex double-float)
-		       :displaced-to a1))
+	(a (fftw:make-foreign-complex-array-as-double (list h w))
+	  )
+	(b (fftw:make-foreign-complex-array-as-double (list h w)))
 	#+nil(b1 (make-array (array-total-size *bla*) :element-type (array-element-type *bla*)
 			:displaced-to *bla*)))
   
 
    (dotimes (i w)
      (dotimes (j h)
-       (setf (aref a j i) (complex (* 1d0 (aref *bla* j i))))))
+       (setf (aref a j i 0) (* 1d0 (aref *bla* j i)))))
 
    (format t "running FFT!~%")
    ;; call fftw
-   (time (defparameter *bla2* (fftw:ft a)))
+   (time (defparameter *bla2* (fftw:ft a b)))
    ;; takes 1.5s 75Mb allocated
+   ;; takes 0.05s 528bytes allocated
 
    ;; print out each element of the array. scale data to lie within 0..9
 #+nil   (progn
@@ -1107,3 +1111,78 @@ fun. acquisition stops when fun returns non-t value."
 	 (dotimes (i w)
 	   (format t "~1,'0d" (floor (abs (aref *bla* j i)) (/ (* h w) 9))))
 	 (terpri))))))
+
+(defun .abs (a)
+  (let* ((b (make-array (array-dimensions a) :element-type 'double-float))
+	 (b1 (.linear b))
+	 (a1 (.linear a)))
+    (dotimes (i (length a1))
+      (setf (aref b1 i) (abs (aref a1 i))))
+    b))
+
+(defun .abs* (a)
+  (let* ((b (make-array (butlast (array-dimensions a)) :element-type 'double-float))
+	 (b1 (.linear b))
+	 (a1 (.linear a)))
+    (dotimes (i (length b1))
+      (setf (aref b1 i) (abs (complex (aref a1 (* 2 i))
+				      (aref a1 (+ 1 (* 2 i)))))))
+    b))
+
+(defun .log (a)
+  (let* ((b (make-array (array-dimensions a) :element-type 'double-float))
+	 (b1 (.linear b))
+	 (a1 (.linear a)))
+    (dotimes (i (length a1))
+      (setf (aref b1 i) (log (aref a1 i))))
+    b))
+
+#+nil
+(defparameter *bla2-abs* (.abs* *bla2*))
+
+(defun .uint16 (a)
+  (let* ((b (make-array (array-dimensions a) :element-type '(unsigned-byte 16)))
+	 (b1 (.linear b))
+	 (a1 (.linear a))
+	 (ma (.max a))
+	 (mi (.min a))
+	 (s (/ 65535 (- ma mi))))
+    (dotimes (i (length a1))
+      (setf (aref b1 i) (floor (* s (- (aref a1 i) mi)))))
+    b))
+
+#+nil
+(defparameter *blau* (.uint16 *bla2-abs*))
+#+nil
+(write-pgm "/dev/shm/o.pgm" *blau*)
+; first order is at 66x66+867+243 (measured in fiji)
+#+nil
+(write-pgm "/dev/shm/o.pgm" (extract *blau* :x (+ 33 867) :y (+ 33 243) :w 66 :h 66))
+
+#+nil
+(write-pgm "/dev/shm/o2.pgm" *bla*)
+
+(defun extract (a &key
+                (x (floor (array-dimension a 1) 2))
+                (y (floor (array-dimension a 0) 2))
+                (w (next-power-of-two (min x y
+                                           (- (array-dimension a 1) x)
+                                           (- (array-dimension a 0) y))))
+                (h w))
+  (let* ((b1 (make-array (* h w) :element-type (array-element-type a)
+                         :initial-element 0))
+         (b (make-array (list h w)
+                        :element-type (array-element-type a)
+                        :displaced-to b1))
+         (ox (- x (floor w 2)))
+         (oy (- y (floor h 2))))
+    (assert (<= 0 ox))
+    (assert (<= 0 oy))
+    (assert (< (+ w ox) (array-dimension a 1)))
+    (assert (< (+ h oy) (array-dimension a 0)))
+    (dotimes (j h)
+      (dotimes (i w)
+        (setf (aref b j i)
+              (aref a (+ j oy) (+ i ox)))))
+    b))
+
