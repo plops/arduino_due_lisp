@@ -38,17 +38,54 @@
 		      ((string= "Basler" (arv-vendor-name cam))
 		       *basler-acquisition-modes*)))))
 
-(defmethod acquisition-code-mode ((cam camera) code)
-  (car (rassoc code (cond
-		      ((string= "Photonfocus AG" (arv-vendor-name cam))
-		       *photonfocus-acquisition-modes*)
-		      ((string= "Basler" (arv-vendor-name cam))
-		       *basler-acquisition-modes*)))))
 
 (defmethod set-acquisition-mode ((cam camera) mode)
   (#_arv_gc_enumeration_set_int_value 
    (gc-get-node cam "AcquisitionMode") (acquisition-mode-code cam mode)
    (cffi:null-pointer)))
+
+(defmethod push-buffer ((cam camera) &optional buffer)
+  (#_arv_stream_push_buffer 
+   (arv-stream cam)
+   (or buffer
+       (let ((b (#_arv_buffer_new (get-payload cam) (cffi:null-pointer))))
+	 (assert (not (cffi:null-pointer-p b)))
+	 b))))
+
+(defmethod pop-buffer-blocking ((cam camera))
+  (#_arv_stream_pop_buffer (arv-stream cam)))
+
+(defmethod timeout-pop-buffer-blocking ((cam camera) timeout-us)
+  (#_arv_stream_timeout_pop_buffer (arv-stream cam) timeout-us))
+
+(defmethod try-pop-buffer ((cam camera))
+  (#_arv_stream_try_pop_buffer (arv-stream cam)))
+
+#+nil
+(defparameter *bla* (try-pop-buffer *cam2*))
+
+#+nil
+(push-buffer *cam1*)
+
+
+(defmethod get-statistics ((cam camera))
+  (cffi:with-foreign-objects ((completed :uint64)
+			      (failures :uint64)
+			      (underruns :uint64))
+    (#_arv_stream_get_statistics (arv-stream cam) completed failures underruns)
+    `((completed . ,(cffi:mem-ref completed :uint64))
+      (failures . ,(cffi:mem-ref failures :uint64))
+      (underruns . ,(cffi:mem-ref underruns :uint64)))))
+
+#+nil
+(get-statistics *cam1*)
+
+#+nil
+(cdr (second (get-statistics *cam1*)))
+#+nil
+(get-statistics *cam2*)
+
+
 
 (defmethod pop-block-copy-push-buffer ((cam camera) &key out (use-dark t))
   (ensure-no-threads-waiting-for-buffer cam)

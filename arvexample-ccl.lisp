@@ -470,12 +470,6 @@
 
  
 
-(eval-when (:execute :load-toplevel :compile-toplevel)
- (setf asdf:*central-registry* '(*default-pathname-defaults* #p"/home/martin/stage/cl-cffi-fftw3/"))
- (asdf:load-system "fftw"))
-
-
-(fftw:prepare-threads)
 
 
 #+nil
