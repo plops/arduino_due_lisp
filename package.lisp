@@ -53,4 +53,19 @@
      #:set-exposure
      #:get-exposure
      #:get-acquisition-mode
-     #:set-region-centered))
+     #:set-region-centered
+     #:.linear
+     #:.max
+     #:.min
+     #:average-images
+     #:.abs
+     #:.abs*
+     #:.log
+     #:.uint16
+     #:extract
+     #:.rr
+     #:.*
+     #:.+
+     #:.phiphi
+     #:.mean
+     #:write-pgm))

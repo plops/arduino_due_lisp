@@ -16,7 +16,7 @@
 (defparameter *cam2* (make-instance 'camera :name "Basler-21433565"))
 (defparameter *cam3* (make-instance 'camera :name "Basler-21433566"))
 
-(get-statistics *cam1*)
+(get-statistics *cam3*)
 
 (progn
  (loop for c in (list *cam1* *cam2* *cam3*) do
@@ -32,7 +32,8 @@
 
 (push-buffer *cam3*)
 
-(defparameter *BLA3* (acquire-single-image *cam3* :use-dark nil))
+#+nil
+(defparameter *BLA3* (loop for i below 100 collect (acquire-single-image *cam3* :use-dark nil)))
 
 (let ((first (acquire-single-image *cam3* :use-dark nil)))
   (destructuring-bind (h w) (array-dimensions first)
@@ -41,18 +42,18 @@
       (defparameter *bla*
        (loop for i from 1500 upto 4000 by 200 collect
 	    (progn
-	      (sleep .02)
+	      (sleep .2)
 	      (talk-arduino
 	       (format nil "(progn
  (dac 1550 ~d)
- (delay 10)
- (digital-write 11 1)
- (digital-write 12 1) 
- (digital-write 10 1) 
- (delay 10) 
- (digital-write 11 0)
- (digital-write 12 0)
- (digital-write 10 0))" i))
+; (delay 10)
+; (digital-write 11 1)
+; (digital-write 12 1) 
+; (digital-write 10 1) 
+; (delay 10) 
+; (digital-write 11 0)
+; (digital-write 12 0)
+; (digital-write 10 0))" i))
 	      (let ((im (acquire-single-image *cam3* :use-dark nil)))
 		(dotimes (i w)
 		  (dotimes (j h)

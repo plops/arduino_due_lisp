@@ -1,7 +1,5 @@
 (in-package :arv)
 
-
-
 (defun .linear (a)
   (make-array (array-total-size a)
 	      :element-type (array-element-type a)
