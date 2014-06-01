@@ -557,35 +557,7 @@
 #+nil
 (defparameter *bla3* (acquire-single-image *cam3* :use-dark nil))
 
-#+nil
-(let ((first (acquire-single-image *cam3* :use-dark nil)))
-  (destructuring-bind (h w) (array-dimensions first)
-    (let ((in (fftw:make-foreign-complex-array-as-double (list h w)))
-	  (out (fftw:make-foreign-complex-array-as-double (list h w))))
-      (defparameter *bla*
-       (loop for i from 1500 upto 4000 by 50 collect
-	    (progn
-	      (sleep .02)
-	      (talk-arduino
-	       (format nil "(progn
- (dac 1550 ~d)
- (delay 10)
- (digital-write 11 1)
- (digital-write 12 1) 
- (digital-write 10 1) 
- (delay 10) 
- (digital-write 11 0)
- (digital-write 12 0)
- (digital-write 10 0))" i))
-	      (let ((im (acquire-single-image *cam3* :use-dark nil)))
-		(dotimes (i w)
-		  (dotimes (j h)
-		    (setf (aref in j i 0) (* 1d0 (aref im j i)))))
-		(fftw:ft in out)
-		(let ((v (.mean (extract (.abs* out) :x (+ 33 193) :y (+ 33 -10) :w 66 :h 66))))
-		  (format t "~a~%" (list i v))
-		  (list i v))))))))
-  (format t "finished2"))
+
 
 #+nil
 (with-open-file (f "/dev/shm/o.dat" :direction :output
