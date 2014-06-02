@@ -1,7 +1,8 @@
 (eval-when (:execute :load-toplevel :compile-toplevel)
   (setf asdf:*central-registry* '(*default-pathname-defaults*
 				  #p"/home/martin/stage/cl-cffi-fftw3/"
-				  #p"/home/martin/arduino_due_lisp/"))
+				  #p"/home/martin/arduino_due_lisp/"
+				  #p"/home/martin/arduino_due_lisp/arduino-serial-ccl/"))
   (asdf:load-system "fftw")
   (asdf:load-system "arv")
   (asdf:load-system "arduino"))
