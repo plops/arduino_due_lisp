@@ -69,6 +69,9 @@
       (setf (aref b1 i) (floor (* s (- (aref a1 i) mi)))))
     b))
 
+(defun next-power-of-two (n)
+  (expt 2 (ceiling (log n 2))))
+
 
 (defun extract (a &key
                 (x (floor (array-dimension a 1) 2))

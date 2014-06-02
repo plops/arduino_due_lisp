@@ -4,4 +4,5 @@
   (ccl:use-interface-dir :arv)) 
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (load-arv-libraries))
+  (load-arv-libraries)
+  (#_g_type_init))

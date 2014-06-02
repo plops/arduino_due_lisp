@@ -40,20 +40,20 @@
     (let ((in (fftw:make-foreign-complex-array-as-double (list h w)))
 	  (out (fftw:make-foreign-complex-array-as-double (list h w))))
       (defparameter *bla*
-       (loop for i from 1500 upto 4000 by 200 collect
+       (loop for i from 1500 upto 4000 by 20 collect
 	    (progn
-	      (sleep .2)
+	      (sleep .02)
 	      (talk-arduino
 	       (format nil "(progn
  (dac 1550 ~d)
-; (delay 10)
-; (digital-write 11 1)
-; (digital-write 12 1) 
-; (digital-write 10 1) 
-; (delay 10) 
-; (digital-write 11 0)
-; (digital-write 12 0)
-; (digital-write 10 0))" i))
+ (delay 10)
+ (digital-write 11 1)
+ (digital-write 12 1) 
+ (digital-write 10 1) 
+ (delay 10) 
+ (digital-write 11 0)
+ (digital-write 12 0)
+ (digital-write 10 0))" i))
 	      (let ((im (acquire-single-image *cam3* :use-dark nil)))
 		(dotimes (i w)
 		  (dotimes (j h)
