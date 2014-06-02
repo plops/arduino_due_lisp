@@ -115,7 +115,7 @@
 		    (and (not (cffi:null-pointer-p b))
 			 (not (pref b #>ArvBuffer.data))))
 	 for i from 0 below 1000 do
-	 (when (= 0 (mod i 10))
+	 (when (and (/= i 0) (= 0 (mod i 10)))
 	   (format t "popped buffer not satisfactory ~a~%" (list (and (not (cffi:null-pointer-p b))
 								      (pref b #>ArvBuffer.status))
 								 (get-statistics cam)

@@ -517,11 +517,6 @@
 (defparameter *blau* (.uint16 *bla2-abs*))
 #+nil
 (write-pgm "/dev/shm/o.pgm" *blau*)
-; cam1 first order is at 66x66+867+243 (measured in fiji)
- ; (extract *blau* :x (+ 33 867) :y (+ 33 243) :w 66 :h 66)
-; cam2 first order is at 66x66+138+128 (measured in fiji)
- ; (extract *blau* :x (+ 33 138) :y (+ 33 128) :w 66 :h 66)
-; cam3 first order is at 66x66+193-10 (measured in fiji)
 #+nil
 (write-pgm "/dev/shm/o.pgm" (extract *blau* :x (+ 33 193) :y (+ 33 -10) :w 66 :h 66))
 
@@ -549,17 +544,12 @@
 
 
 
-#+nil
-(.mean (extract (.abs* *bla2*) :x (+ 33 193) :y (+ 33 -10) :w 66 :h 66))
 
-;; fiber center first coordinate: 800 .. 1550 .. 2750
+
 
 #+nil
 (defparameter *bla3* (acquire-single-image *cam3* :use-dark nil))
 
 
 
-#+nil
-(with-open-file (f "/dev/shm/o.dat" :direction :output
-		   :if-exists :supersede :if-does-not-exist :create)
-  (loop for (i e) in *bla*  do (format f "~d ~d~%" i (floor e))))
+
