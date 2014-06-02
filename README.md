@@ -1,6 +1,8 @@
 This is code I use to control my holographic setup to image through
 multimode fibers.
 
+![Photography of the holographic multimode fiber imaging system.](/docs/multi-mode-imaging.jpg?raw=true "Multimode imaging system")
+
 A significant part is a wrapper for the Aravis library to read out
 multiple GigE Vision cameras.  The file dependencies are described in
 arv.asd. I chose to use Clozure Common Lisp for this library because
