@@ -24,6 +24,7 @@
      #:stop-acquisition
      #:all-possible-acquisition-modes
      #:acquisition-mode-code
+     #:acquisition-code-mode
      #:set-acquisition-mode
      #:push-buffer
      #:pop-buffer-blocking
