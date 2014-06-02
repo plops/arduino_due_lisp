@@ -150,3 +150,10 @@ charakterisieren.
         void setClockDivider(uint8_t _pin, uint8_t);
 #+END_EXAMPLE
   - cbi sbi
+
+* dependencies
+
+- you will need a new version of aravis:
+- git clone https://git.gnome.org/browse/aravis
+- if you want to have its documentation call:
+- ./autogen.sh --enable-gtk-doc

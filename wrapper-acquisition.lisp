@@ -39,6 +39,15 @@
 		       *basler-acquisition-modes*)))))
 
 
+
+(defmethod acquisition-code-mode ((cam camera) code)
+  (car (rassoc code (cond
+		      ((string= "Photonfocus AG" (arv-vendor-name cam))
+		       *photonfocus-acquisition-modes*)
+		      ((string= "Basler" (arv-vendor-name cam))
+		       *basler-acquisition-modes*)))))
+
+
 (defmethod set-acquisition-mode ((cam camera) mode)
   (#_arv_gc_enumeration_set_int_value 
    (gc-get-node cam "AcquisitionMode") (acquisition-mode-code cam mode)

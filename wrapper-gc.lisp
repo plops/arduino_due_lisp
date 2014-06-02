@@ -1,3 +1,4 @@
+;; functions to get and set genicam values
 (in-package :arv)
 (defmethod gc-get-node ((cam camera) str)
   (declare (type string str))
