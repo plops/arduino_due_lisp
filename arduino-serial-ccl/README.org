@@ -1,0 +1,2 @@
+This library allows to talk to an arduino due over the serial port (using USB connector).
+I use it to send Lisp instructions on an Arduino Due running femtolisp.
