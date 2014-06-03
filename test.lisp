@@ -83,11 +83,11 @@
   (progn
     (start-acquisition *cam3*)
     (prog1
-     (loop for i below 20 collect
+     (loop for i below 3 collect
 	  (progn
-	    (format t "waiting for image ~a" (get-universal-time))
-	    (pop-block-copy-push-buffer *cam3* :use-dark nil)
-	    (format t ".~%")
+	    (format t "waiting for image ~a" (get-universal-time-usec))
+	    (prog1 (pop-block-copy-push-buffer *cam3* :use-dark nil)
+	    (format t ".~%"))
 	    ))
       (stop-acquisition *cam3*))))
 
@@ -117,6 +117,7 @@
 
 (talk-arduino
  (format nil "(progn
+  (pin-mode 8 1)
   (pin-mode 11 1)
   (pin-mode 12 1)
   (pin-mode 10 1)
@@ -148,15 +149,14 @@
   (let ((w (arv::aoi-width *cam3*))
 	(h (arv::aoi-height *cam3*)))
     (let ((in (fftw:make-foreign-complex-array-as-double (list h w)))
-	  (out (fftw:make-foreign-complex-array-as-double (list h w))))
+	  (out (fftw:make-foreign-complex-array-as-double (list h w)))
+	  (start (get-universal-time-usec)))
       (start-acquisition *cam3*)
       (defparameter *bla*
 	(loop for i from 1500 upto 4000 by 20 collect
 	    (progn
 	      (bordeaux-threads:make-thread
 	       (lambda () 
-		 (sleep .02)
-		 (format t "sending trigger~%")
 		 (talk-arduino
 		  (format nil "(progn
  (dac 1550 ~d)
@@ -169,18 +169,21 @@
  (digital-write 12 0)
  (digital-write 10 0))" i)))
 	       :name "mythread")
-	      (format t "waiting for image .. ")
-	      (let ((im (pop-block-copy-push-buffer *cam3* :use-dark nil)))
-		(format t "image arrived~%")
-		(dotimes (i w)
+	      (let ((im (pop-block-copy-push-buffer *cam3* :use-dark nil))
+		    (atime (- (get-universal-time-usec) start)))
+		#+nil (dotimes (i w)
 		  (dotimes (j h)
 		    (setf (aref in j i 0) (* 1d0 (aref im j i)))))
-		(fftw:ft in out)
-		(let ((v (.mean (extract (.abs* out) :x (+ 33 193) :y (+ 33 -10) :w 66 :h 66))))
-		  (format t "~a~%" (list i v))
-		  (list i v))))))))
+		#+nil (fftw:ft in out)
+		(let ((v 0 #+nil (.mean (extract (.abs* out) :x (+ 33 193) :y (+ 33 -10) :w 66 :h 66))))
+		  (format t "~a~%" (list i v atime))
+		  (list i v atime))))))))
   (stop-acquisition *cam3*)
-  (format t "finished2"))
+  (format t "finished2~%"))
+
+(length *bla*)
+
+(/ 126 31.5)
 
 (with-open-file (f "/dev/shm/o.dat" :direction :output
 		   :if-exists :supersede :if-does-not-exist :create)
