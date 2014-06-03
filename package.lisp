@@ -70,4 +70,5 @@
      #:.phiphi
      #:.mean
      #:write-pgm
-     #:pop-block-copy-push-buffer-mono12p-cdf))
+     #:pop-block-copy-push-buffer-mono12p-cdf
+     #:extract-cdf*))
