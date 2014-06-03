@@ -247,13 +247,6 @@
 (talk-arduino "(+ 2000 2047)")
 #+nil
 (talk-arduino "(+ 2 2)")
-;; trigger
-#+nil
-(talk-arduino "(pin-mode 11 1)") ;; 40 cam1
-#+nil
-(talk-arduino "(pin-mode 12 1)") ;; 65 cam2
-#+nil
-(talk-arduino "(pin-mode 10 1)") ;; 66 cam3
 #+nil
 (progn
   (loop for i from 600 upto 2000 by 10 do
