@@ -69,4 +69,5 @@
      #:.+
      #:.phiphi
      #:.mean
-     #:write-pgm))
+     #:write-pgm
+     #:pop-block-copy-push-buffer-mono12p-cdf))

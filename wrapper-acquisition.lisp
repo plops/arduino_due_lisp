@@ -177,6 +177,65 @@
 	  a)
 	(push-buffer cam b))))
 
+
+(defmethod pop-block-copy-push-buffer-mono12p-cdf ((cam camera) out)
+  (declare (type (array double-float 3) out))
+  (ensure-no-threads-waiting-for-buffer cam)
+  (ensure-at-least-one-buffer-in-stream cam)
+  (let ((b (timeout-pop-buffer-blocking cam 10000)))
+    (loop while (or (cffi:null-pointer-p b)
+		    (and (not (cffi:null-pointer-p b))
+			 (/= #$ARV_BUFFER_STATUS_SUCCESS (pref b #>ArvBuffer.status)))
+		    (and (not (cffi:null-pointer-p b))
+			 (not (pref b #>ArvBuffer.data))))
+       for i from 0 below 1000 do
+	 (when (and (/= i 0) (= 0 (mod i 10)))
+	   (format t "popped buffer not satisfactory ~a~%" (list (and (not (cffi:null-pointer-p b))
+								      (pref b #>ArvBuffer.status))
+								 (get-statistics cam)
+								 (multiple-value-list
+								  (get-n-buffers cam))
+								 (temperatures cam))))
+	 (ensure-no-threads-waiting-for-buffer cam)
+	 (ensure-at-least-one-buffer-in-stream cam)
+	 (when (= i 999)
+	   (if (cffi:null-pointer-p b)
+	       (error "pop-buffer returned NULL.")
+	       (unless (= #$ARV_BUFFER_STATUS_SUCCESS (pref b #>ArvBuffer.status))
+		 (error "pop-buffer didnt succeed."))))
+	 (setf b (timeout-pop-buffer-blocking cam 10000)))
+    (assert (= (aoi-width cam) (array-dimension out 1)))
+    (assert (= (aoi-height cam) (array-dimension out 0)))
+    (assert (= 2 (array-dimension out 2))) ;; double-float array with
+					   ;; 2 dimensions in the fast
+					   ;; dimension
+    (assert (string= (pixel-format cam) "Mono12Packed"))
+    (prog1
+	(let* ((a out)
+	       (n (array-total-size out))
+	       (np (get-payload cam))
+	       (a1 (make-array n :element-type 'double-float
+			       :displaced-to out))
+	       (data (pref b #>ArvBuffer.data)))
+	  (declare
+	   (optimize (speed 3))
+	   (type (array double-float 3) a)
+	   (type (array double-float 1) a1))
+	  (loop for byte below np by 3
+	     and short from 0 below n by 2
+	     do
+	     ;; 3 bytes in the data stream correspond to two data
+	     ;; elements: AB CD EF -> ABD, EFC 
+	     ;; A is the most signifcant nibble
+	       (let ((ab (%get-unsigned-byte data byte))
+		     (c (ldb (byte 4 0) (%get-unsigned-byte data (+ 1 byte))))
+		     (d (ldb (byte 4 4) (%get-unsigned-byte data (+ 1 byte))))
+		     (ef (%get-unsigned-byte data (+ 2 byte))))
+		 (setf (aref a1 (* 2 short)) (* 1d0 (ash (+ (ash ab 4) d) 4))
+		       (aref a1 (* 2 (1+ short))) (* 1d0 (ash (+ (ash ef 4) c) 4)))))
+	  a)
+	(push-buffer cam b))))
+
 (defmethod get-n-buffers ((cam camera))
   (cffi:with-foreign-objects ((n-in :int)
 			      (n-out :int))

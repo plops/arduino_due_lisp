@@ -21,11 +21,10 @@
 
 ;; trigger
 #+nil
-(talk-arduino "(pin-mode 11 1)") ;; 40 cam1
-#+nil
-(talk-arduino "(pin-mode 12 1)") ;; 65 cam2
-#+nil
-(talk-arduino "(pin-mode 10 1)") ;; 66 cam3
+(progn
+  (talk-arduino "(pin-mode 11 1)") ;; 40 cam1
+  (talk-arduino "(pin-mode 12 1)") ;; 65 cam2
+  (talk-arduino "(pin-mode 10 1)")) ;; 66 cam3
 
 
 
@@ -63,8 +62,6 @@
 			      (acquire-single-image *cam3* :use-dark nil)
 			    )))
 
-#+nil
-(ccl:use-interface-dir :libc)
 
 (defun get-universal-time-usec () ;; why does this not work?
   "Return a single integer for the current time of
@@ -76,7 +73,23 @@
 #+nil
 (get-universal-time-usec)
 
+(defun trigger-all-cameras ()
+ (talk-arduino
+  "(progn
+ (pin-mode 10 1)
+ (pin-mode 11 1)
+ (pin-mode 12 1)
+ (delay 10)
+ (digital-write 11 1)
+ (digital-write 12 1) 
+ (digital-write 10 1) 
+ (delay 10) 
+ (digital-write 11 0)
+ (digital-write 12 0)
+ (digital-write 10 0))"))
 
+#+nil
+(trigger-all-cameras)
 
 #+nil
 (defparameter *BLA3* 
@@ -99,36 +112,6 @@
   (talk-arduino "(digital-write 8 1)"))
 
 
-(bordeaux-threads:make-thread 
- (lambda ()
-   (format t "sending trigger~%")
-   (talk-arduino
-    (format nil "(progn
- (delay 10)
- (digital-write 11 1)
- (digital-write 12 1) 
- (digital-write 10 1) 
- (delay 10) 
- (digital-write 11 0)
- (digital-write 12 0)
- (digital-write 10 0))"))))
-
-(talk-arduino "(dac 1550 2500)")
-
-(talk-arduino
- (format nil "(progn
-  (pin-mode 8 1)
-  (pin-mode 11 1)
-  (pin-mode 12 1)
-  (pin-mode 10 1)
-  (delay 10)
-  (digital-write 11 1)
-  (digital-write 12 1) 
-  (digital-write 10 1) 
-  (delay 100) 
-  (digital-write 11 0)
-  (digital-write 12 0)
-  (digital-write 10 0))"))
 
 ; cam1 first order is at 66x66+867+243 (measured in fiji)
  ; (extract *blau* :x (+ 33 867) :y (+ 33 243) :w 66 :h 66)
@@ -138,8 +121,8 @@
  ; (extract *blau* :x (+ 33 193) :y (+ 33 -10) :w 66 :h 66)
 
 
-;; fiber center first coordinate: 800 .. 1550 .. 2750
-;; fiber center second coordinate: 1800 .. 2500  .. 3580
+;; fiber center first coordinate:   800 .. 1550 .. 2750
+;; fiber center second coordinate: 1800 .. 2500 .. 3580
 
 (list (- 3580 1800)
       (- 2750 800)
@@ -169,22 +152,19 @@
  (digital-write 12 0)
  (digital-write 10 0))" i)))
 	       :name "mythread")
-	      (let ((im (pop-block-copy-push-buffer *cam3* :use-dark nil))
+	      (let ((im (pop-block-copy-push-buffer-mono12p-cdf *cam3* in))
 		    (atime (- (get-universal-time-usec) start)))
 		#+nil (dotimes (i w)
 		  (dotimes (j h)
 		    (setf (aref in j i 0) (* 1d0 (aref im j i)))))
-		#+nil (fftw:ft in out)
-		(let ((v 0 #+nil (.mean (extract (.abs* out) :x (+ 33 193) :y (+ 33 -10) :w 66 :h 66))))
+		(fftw:ft in out)
+		(let ((v (.mean (extract (.abs* out) :x (+ 33 193) :y (+ 33 -10) :w 66 :h 66))))
 		  (format t "~a~%" (list i v atime))
 		  (list i v atime))))))))
   (stop-acquisition *cam3*)
   (format t "finished2~%"))
 
 (length *bla*)
-
-(/ 126 31.5)
-
 (with-open-file (f "/dev/shm/o.dat" :direction :output
 		   :if-exists :supersede :if-does-not-exist :create)
   (loop for (i e) in *bla*  do (format f "~d ~d~%" i (floor e))))
