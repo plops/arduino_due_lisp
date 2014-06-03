@@ -91,6 +91,14 @@
 	    ))
       (stop-acquisition *cam3*))))
 
+(progn ;; shutter laser off
+  (talk-arduino "(pin-mode 8 1)")
+  (talk-arduino "(digital-write 8 0)"))
+(progn ;; shutter laser on
+  (talk-arduino "(pin-mode 8 1)")
+  (talk-arduino "(digital-write 8 1)"))
+
+
 (bordeaux-threads:make-thread 
  (lambda ()
    (format t "sending trigger~%")
@@ -105,17 +113,21 @@
  (digital-write 12 0)
  (digital-write 10 0))"))))
 
+(talk-arduino "(dac 1550 2500)")
 
 (talk-arduino
-	       (format nil "(progn
- (delay 10)
- (digital-write 11 1)
- (digital-write 12 1) 
- (digital-write 10 1) 
- (delay 10) 
- (digital-write 11 0)
- (digital-write 12 0)
- (digital-write 10 0))"))
+ (format nil "(progn
+  (pin-mode 11 1)
+  (pin-mode 12 1)
+  (pin-mode 10 1)
+  (delay 10)
+  (digital-write 11 1)
+  (digital-write 12 1) 
+  (digital-write 10 1) 
+  (delay 100) 
+  (digital-write 11 0)
+  (digital-write 12 0)
+  (digital-write 10 0))"))
 
 ; cam1 first order is at 66x66+867+243 (measured in fiji)
  ; (extract *blau* :x (+ 33 867) :y (+ 33 243) :w 66 :h 66)
