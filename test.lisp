@@ -163,7 +163,6 @@
 		  (list i v atime))))))))
   (stop-acquisition *cam3*)
   (format t "finished2~%"))
-
 (length *bla*)
 (with-open-file (f "/dev/shm/o.dat" :direction :output
 		   :if-exists :supersede :if-does-not-exist :create)
