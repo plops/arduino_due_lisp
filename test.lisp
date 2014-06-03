@@ -60,11 +60,43 @@
 
 
 #+nil
-(defparameter *BLA3* (loop for i below 100 collect
-			  (prog1
-			   (acquire-single-image *cam3* :use-dark nil)
-			  (talk-arduino
-	       (format nil "(progn
+(defparameter *BLA3* (loop for i below 1 collect
+			  (progn
+			      (format t "waiting for image~%")
+			      (acquire-single-image *cam3* :use-dark nil)
+			    )))
+
+#+nil
+(ccl:use-interface-dir :libc)
+#+nil
+(defun get-universal-time-usec () ;; why does this not work?
+  "Return a single integer for the current time of
+   day in universal time format in microseconds."
+  (rlet ((tv :timeval))
+    (gettimeofday tv)
+    (+ (pref tv :timeval.tv_usec)
+       (* 1000000 (pref tv :timeval.tv_sec) unix-to-universal-time))))
+#+nil
+(get-universal-time-usec)
+
+
+#+nil
+(defparameter *BLA3* 
+  (progn
+    (start-acquisition *cam3*)
+    (prog1
+     (loop for i below 3 collect
+	  (progn
+	    (format t "waiting for image ~a~%" (get-universal-time))
+	    (pop-block-copy-push-buffer *cam3* :use-dark nil)
+	    ))
+      (stop-acquisition *cam3*))))
+
+(bordeaux-threads:make-thread 
+ (lambda ()
+   (format t "sending trigger~%")
+   (talk-arduino
+    (format nil "(progn
  (delay 10)
  (digital-write 11 1)
  (digital-write 12 1) 
@@ -72,7 +104,7 @@
  (delay 10) 
  (digital-write 11 0)
  (digital-write 12 0)
- (digital-write 10 0))")))))
+ (digital-write 10 0))"))))
 
 
 (talk-arduino
@@ -101,34 +133,19 @@
       (- 2750 800)
       (* .5 (+ 3580 1800)))
 
-(let (#+nil (first (progn
-	       (bordeaux-threads:make-thread
-	       (lambda () 
-		 (sleep .02)
-		 (talk-arduino
-		  (format nil "(progn
- (delay 10)
- (digital-write 11 1)
- (digital-write 12 1) 
- (digital-write 10 1) 
- (delay 10) 
- (digital-write 11 0)
- (digital-write 12 0)
- (digital-write 10 0))")))
-	       :name "mythread")
-	       (acquire-single-image *cam3* :use-dark nil))))
+(progn
   (let ((w (arv::aoi-width *cam3*))
 	(h (arv::aoi-height *cam3*)))
-    ;destructuring-bind (h w) (array-dimensions first)
     (let ((in (fftw:make-foreign-complex-array-as-double (list h w)))
 	  (out (fftw:make-foreign-complex-array-as-double (list h w))))
       (start-acquisition *cam3*)
       (defparameter *bla*
-       (loop for i from 1500 upto 4000 by 20 collect
+	(loop for i from 1500 upto 4000 by 20 collect
 	    (progn
 	      (bordeaux-threads:make-thread
 	       (lambda () 
 		 (sleep .02)
+		 (format t "sending trigger~%")
 		 (talk-arduino
 		  (format nil "(progn
  (dac 1550 ~d)
@@ -141,8 +158,9 @@
  (digital-write 12 0)
  (digital-write 10 0))" i)))
 	       :name "mythread")
-	      
+	      (format t "waiting for image .. ")
 	      (let ((im (pop-block-copy-push-buffer *cam3* :use-dark nil)))
+		(format t "image arrived~%")
 		(dotimes (i w)
 		  (dotimes (j h)
 		    (setf (aref in j i 0) (* 1d0 (aref im j i)))))
@@ -165,4 +183,6 @@
 
 
 (loop for i in (list *cam1* *cam2* *cam3*) do
-     (gc-enumeration-set-int-value i "TriggerMode" 1))
+     (gc-enumeration-set-int-value i "TriggerMode" 0))
+
+(gc-enumeration-get-int-value *cam3* "AcquisitionMode")

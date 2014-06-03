@@ -11,7 +11,8 @@
        ;; files
   (require :parse-ffi)
   (ccl::parse-standard-ffi-files :arv)
-  (ccl::parse-standard-ffi-files :v4l2))
+  (ccl::parse-standard-ffi-files :v4l2)
+  (ccl::parse-standard-ffi-files :libc))
 
 #.(ccl:use-interface-dir :arv)
 (cffi:load-foreign-library "libaravis-0.4.so")
