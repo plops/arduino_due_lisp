@@ -8,9 +8,6 @@
   (asdf:load-system "arduino")
   (ql:quickload "bordeaux-threads"))
 
-
-
-
 (fftw:prepare-threads)
 
 
@@ -32,7 +29,7 @@
 
 
 
-(get-statistics *cam1*)
+(get-statistics *cam3*)
 
 (progn
  (loop for c in (list *cam1* *cam2* *cam3*) do
@@ -68,14 +65,14 @@
 
 #+nil
 (ccl:use-interface-dir :libc)
-#+nil
+
 (defun get-universal-time-usec () ;; why does this not work?
   "Return a single integer for the current time of
    day in universal time format in microseconds."
   (rlet ((tv :timeval))
-    (gettimeofday tv)
+    (ccl::gettimeofday tv)
     (+ (pref tv :timeval.tv_usec)
-       (* 1000000 (pref tv :timeval.tv_sec) unix-to-universal-time))))
+       (* 1000000 (pref tv :timeval.tv_sec) ccl::unix-to-universal-time))))
 #+nil
 (get-universal-time-usec)
 
@@ -85,10 +82,11 @@
   (progn
     (start-acquisition *cam3*)
     (prog1
-     (loop for i below 3 collect
+     (loop for i below 20 collect
 	  (progn
-	    (format t "waiting for image ~a~%" (get-universal-time))
+	    (format t "waiting for image ~a" (get-universal-time))
 	    (pop-block-copy-push-buffer *cam3* :use-dark nil)
+	    (format t ".~%")
 	    ))
       (stop-acquisition *cam3*))))
 
@@ -179,10 +177,11 @@
 (loop for i in (list *cam1* *cam2* *cam3*) do
      (destroy-stream i))
 
+(destroy-stream *cam3*)
 
 
 
 (loop for i in (list *cam1* *cam2* *cam3*) do
-     (gc-enumeration-set-int-value i "TriggerMode" 0))
+     (gc-enumeration-set-int-value i "TriggerMode" 1))
 
 (gc-enumeration-get-int-value *cam3* "AcquisitionMode")
