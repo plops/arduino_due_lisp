@@ -69,14 +69,13 @@
 (defun get-universal-time-usec () ;; why does this not work?
   "Return a single integer for the current time of
    day in universal time format in microseconds."
-  (rlet ((tv :timeval))
+  (ccl:rlet ((tv :timeval))
     (ccl::gettimeofday tv)
-    (+ (pref tv :timeval.tv_usec)
-       (* 1000000 (+ (pref tv :timeval.tv_sec) ccl::unix-to-universal-time)))))
+    (+ (ccl:pref tv :timeval.tv_usec)
+       (* 1000000 (+ (ccl:pref tv :timeval.tv_sec) ccl::unix-to-universal-time)))))
 #+nil
 (get-universal-time-usec)
 
-(loop for i below 100 do (format t "~a~%" (get-universal-time-usec)))
 
 
 #+nil
