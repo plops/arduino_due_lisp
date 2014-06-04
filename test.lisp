@@ -143,14 +143,14 @@
       (start-acquisition *cam2*)
       (start-acquisition *cam3*)
       (defparameter *bla*
-	(loop for i from 1500 upto 4000 by 20 collect
+	(loop for i from 0 upto 4000 by 40 collect
 	    (progn
 	      (bordeaux-threads:make-thread
 	       (lambda () 
 		 (talk-arduino
 		  (format nil "(progn
- (dac 1550 ~d)
- (delay 10)
+ (dac 1480 ~d)
+ (delay 30)
  (digital-write 11 1)
  (digital-write 12 1) 
  (digital-write 10 1) 
@@ -162,13 +162,13 @@
 	      (let ( (im1 (pop-block-copy-push-buffer-mono12p-cdf *cam1* in1))
 		     (im2 (pop-block-copy-push-buffer-mono12p-cdf *cam2* in2))
 		     (im3 (pop-block-copy-push-buffer-mono12p-cdf *cam3* in3))
-		    (atime (- (get-universal-time-usec) start)))
-		(time (fftw:ft in1 out1))
-		(time (fftw:ft in2 out2))
-		(time (fftw:ft in3 out3))
-		(let ((v1 (.mean (.abs (time (extract-cdf* out1 :x (+ 33 867) :y (+ 33 243) :w 66 :h 66)))))
-		      (v2 (.mean (.abs (time (extract-cdf* out2 :x (+ 33 138) :y (+ 33 128) :w 66 :h 66)))))
-		      (v3 (.mean (.abs (time (extract-cdf* out3 :x (+ 33 193) :y (+ 33 -10) :w 66 :h 66))))))
+		     (atime (- (get-universal-time-usec) start)))
+		(fftw:ft in1 out1)
+		(fftw:ft in2 out2)
+		(fftw:ft in3 out3)
+		(let ((v1 (.mean (.abs (extract-cdf* out1 :x (+ 33 867) :y (+ 33 243) :w 66 :h 66))))
+		      (v2 (.mean (.abs (extract-cdf* out2 :x (+ 33 138) :y (+ 33 128) :w 66 :h 66))))
+		      (v3 (.mean (.abs (extract-cdf* out3 :x (+ 33 193) :y (+ 33 -10) :w 66 :h 66)))))
 		  (format t "~a~%" (list i v1 v2 v3 atime))
 		  (list i v1 v2 v3 atime))))))))
   (stop-acquisition *cam1*)
@@ -181,8 +181,9 @@
 (/ 126 15.85)
 (with-open-file (f "/dev/shm/o.dat" :direction :output
 		   :if-exists :supersede :if-does-not-exist :create)
-  (loop for (i e) in *bla*  do (format f "~d ~d~%" i (floor e))))
+  (loop for (i e1 e2 e3 tim) in *bla*  do (format f "~d ~g ~g ~g~%" i e1 e2 e3)))
 
+(format nil "~g" 3.2d0)
 
 (loop for i in (list *cam1* *cam2* *cam3*) do
      (destroy-stream i))
