@@ -136,7 +136,9 @@
   (trigger-all-cameras)
   (sleep .2)
   (time (open-cameras))
-  (t) (init-cameras)
+  (sleep .2)
+  (time (init-cameras))
+  (sleep .2)
   (let ((s1 (list (arv::aoi-height *cam1*) (arv::aoi-width *cam1*)))
 	(s2 (list (arv::aoi-height *cam2*) (arv::aoi-width *cam2*)))
 	(s3 (list (arv::aoi-height *cam3*) (arv::aoi-width *cam3*))))
@@ -150,17 +152,18 @@
       (start-acquisition *cam1*)
       (start-acquisition *cam2*)
       (start-acquisition *cam3*)
+      (format t "acquisitions started~%")
       (defparameter *bla*
-	(loop for i from 0 upto 4000 by 40 collect
+	(loop for i from 0 upto 4000 by 100 collect
 	    (progn
 
 	      ;; wait for picture on all cameras
 	      (let ((t1 (bordeaux-threads:make-thread 
 			  (lambda () (pop-block-copy-push-buffer-mono12p-cdf *cam1* in1))))
 		     (t2 (bordeaux-threads:make-thread 
-			  (lambda () (pop-block-copy-push-buffer-mono22p-cdf *cam2* in2))))
+			  (lambda () (pop-block-copy-push-buffer-mono12p-cdf *cam2* in2))))
 		     (t3 (bordeaux-threads:make-thread 
-			  (lambda () (pop-block-copy-push-buffer-mono32p-cdf *cam3* in3)))))
+			  (lambda () (pop-block-copy-push-buffer-mono12p-cdf *cam3* in3)))))
 		;; send the trigger signal
 		(talk-arduino
 		 (format nil "(progn
