@@ -156,39 +156,38 @@
       (defparameter *bla*
 	(loop for i from 0 upto 4000 by 100 collect
 	    (progn
-
-	      ;; wait for picture on all cameras
+	      ;; move mirror
+	      (talk-arduino (format nil "(dac 1480 ~d)" i))
+	      ;; tell cameras to wait for trigger signal
 	      (let ((t1 (bordeaux-threads:make-thread 
-			  (lambda () (pop-block-copy-push-buffer-mono12p-cdf *cam1* in1))))
-		     (t2 (bordeaux-threads:make-thread 
-			  (lambda () (pop-block-copy-push-buffer-mono12p-cdf *cam2* in2))))
-		     (t3 (bordeaux-threads:make-thread 
-			  (lambda () (pop-block-copy-push-buffer-mono12p-cdf *cam3* in3)))))
+			 (lambda () (pop-block-copy-push-buffer-mono12p-cdf *cam1* in1))))
+		    (t2 (bordeaux-threads:make-thread 
+			 (lambda () (pop-block-copy-push-buffer-mono12p-cdf *cam2* in2))))
+		    (t3 (bordeaux-threads:make-thread 
+			 (lambda () (pop-block-copy-push-buffer-mono12p-cdf *cam3* in3)))))
 		;; send the trigger signal
-		(talk-arduino
-		 (format nil "(progn
- (dac 1480 ~d)
- (delay 50)
+		(talk-arduino "(progn
  (digital-write 11 1)
  (digital-write 12 1) 
  (digital-write 10 1) 
  (delay 10) 
  (digital-write 11 0)
  (digital-write 12 0)
- (digital-write 10 0))" i))
+ (digital-write 10 0))")
 		;; wait until all cameras have sent their data
 		(bordeaux-threads:join-thread t1)
 		(bordeaux-threads:join-thread t2)
 		(bordeaux-threads:join-thread t3)
-	       (let ((atime (- (get-universal-time-usec) start)))
-		 (fftw:ft in1 out1)
-		 (fftw:ft in2 out2)
-		 (fftw:ft in3 out3)
-		 (let ((v1 (.mean (.abs (extract-cdf* out1 :x (+ 33 867) :y (+ 33 243) :w 66 :h 66))))
-		       (v2 (.mean (.abs (extract-cdf* out2 :x (+ 33 138) :y (+ 33 128) :w 66 :h 66))))
-		       (v3 (.mean (.abs (extract-cdf* out3 :x (+ 33 193) :y (+ 33 -10) :w 66 :h 66)))))
-		   (format t "~a~%" (list i v1 v2 v3 atime))
-		   (list i v1 v2 v3 atime)))))))))
+		(time
+		 (let ((atime (- (get-universal-time-usec) start)))
+		   (fftw:ft in1 out1)
+		   (fftw:ft in2 out2)
+		   (fftw:ft in3 out3)
+		   (let ((v1 (.mean (.abs (extract-cdf* out1 :x (+ 33 867) :y (+ 33 243) :w 66 :h 66))))
+			 (v2 (.mean (.abs (extract-cdf* out2 :x (+ 33 138) :y (+ 33 128) :w 66 :h 66))))
+			 (v3 (.mean (.abs (extract-cdf* out3 :x (+ 33 193) :y (+ 33 -10) :w 66 :h 66)))))
+		     (format t "~a~%" (list i v1 v2 v3 atime))
+		     (list i v1 v2 v3 atime))))))))))
   (stop-acquisition *cam1*)
   (stop-acquisition *cam2*)
   (stop-acquisition *cam3*)

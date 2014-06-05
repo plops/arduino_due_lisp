@@ -1,5 +1,5 @@
 rmmod e1000e
-sleep 1
+sleep 3
 modprobe e1000e
 for i in {4..7};do ifconfig enp$i"s0" 192.168.$i.1 ;done
 for i in {4..7};do ifconfig enp$i"s0" mtu 9000;done
