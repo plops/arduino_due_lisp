@@ -21,8 +21,10 @@
 
 (defun all-possible-acquisition-modes ()
   (let ((res nil))
-    (loop for (mode . code) in (append *basler-acquisition-modes* *photonfocus-acquisition-modes*) do
-	 (setf res (adjoin mode res)))
+    (loop for e in (append *basler-acquisition-modes* *photonfocus-acquisition-modes*) do
+	 (destructuring-bind (mode . code) e
+	   (declare (ignore code))
+	   (setf res (adjoin mode res))))
     res))
 
 #+nil
@@ -281,7 +283,8 @@
       (pop-block-copy-push-buffer c :use-dark use-dark)
     (stop-acquisition c)))
 
-(defmethod acquire-continuous-images ((c camera) &key (use-dark t) (fun #'(lambda (x) nil)))
+(defmethod acquire-continuous-images ((c camera) &key (use-dark t) (fun #'(lambda (x)
+									    (declare (ignore x)) nil)))
   "continuously acquire image and pass each to the function
 fun. acquisition stops when fun returns non-t value."
   (start-acquisition c)

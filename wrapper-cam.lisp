@@ -2,7 +2,8 @@
 (defun char*-to-lisp (str-pointer &key (max-length 100))
   "Convert a foreign allocated null terminated string pointer into a lisp string."
   (when (cffi:null-pointer-p str-pointer)
-    (error "trying to access null pointer."))
+    (break "trying to access null pointer.")
+    (return-from char*-to-lisp ""))
   (let* ((name (loop for j from 0 below max-length
 		  and c = (ccl:%get-unsigned-byte str-pointer j) until (= c 0)
 		  collect (code-char c)))) ;; first char is collected twice
