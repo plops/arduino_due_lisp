@@ -15,17 +15,18 @@
   (:use :cl :arv :arduino))
 (in-package :test-arv)
 
-(defparameter *cam1* nil)
-(defparameter *cam2* nil)
-(defparameter *cam3* nil)
+(defvar *cam1* nil)
+(defvar *cam2* nil)
+(defvar *cam3* nil)
 
 (defun open-cameras ()
-  (sleep .1)
-  (defparameter *cam1* (make-instance 'camera :name "Basler-21433540"))
-  (sleep .1)
-  (defparameter *cam2* (make-instance 'camera :name "Basler-21433565"))
-  (sleep .1)
-  (defparameter *cam3* (make-instance 'camera :name "Basler-21433566")))
+  (unless *cam1*
+   (sleep .1)
+   (setf *cam1* (make-instance 'camera :name "Basler-21433540"))
+   (sleep .1)
+   (setf *cam2* (make-instance 'camera :name "Basler-21433565"))
+   (sleep .1)
+   (setf *cam3* (make-instance 'camera :name "Basler-21433566"))))
 
 ;; trigger
 #+nil
@@ -35,16 +36,21 @@
   (talk-arduino "(pin-mode 10 1)")) ;; 66 cam3
 
 
+(defvar *cameras-initialized*  nil)
 (defun init-cameras ()
- (loop for c in (list *cam1* *cam2* *cam3*) do
-      (sleep .1)
-      (set-acquisition-mode c 'continuous #+nil 'single-frame
-			    )
-      (gc-enumeration-set-int-value c "TriggerMode" 1)
-      (set-pixel-format c "Mono12Packed"))
- (set-region *cam2* :keep-old nil :h 1024 :w 1024 :x 452 :y 21)
- (set-region *cam1* :keep-old nil :h 1024 :w 1024 :x 135 :y 0)
- (set-region *cam3* :keep-old nil :h 600 :w 600 :x 520 :y 213))
+  (unless *cam1*
+    (open-cameras))
+  (unless *cameras-initialized*
+    (setf *cameras-initialized* t)
+    (loop for c in (list *cam1* *cam2* *cam3*) do
+	 (sleep .1)
+	 (set-acquisition-mode c 'continuous #+nil 'single-frame
+			       )
+	 (gc-enumeration-set-int-value c "TriggerMode" 1)
+	 (set-pixel-format c "Mono12Packed"))
+    (set-region *cam2* :keep-old nil :h 1024 :w 1024 :x 452 :y 21)
+    (set-region *cam1* :keep-old nil :h 1024 :w 1024 :x 135 :y 0)
+    (set-region *cam3* :keep-old nil :h 600 :w 600 :x 520 :y 213)))
 
 #+nil
 (progn
@@ -131,13 +137,11 @@
 (list (- 3580 1800)
       (- 2750 800)
       (* .5 (+ 3580 1800)))
+
 #+nil
 (progn
   (trigger-all-cameras)
-  (sleep .2)
-  (time (open-cameras))
-  (sleep .2)
-  (time (init-cameras))
+  (init-cameras)      
   (sleep .2)
   (let ((s1 (list (arv::aoi-height *cam1*) (arv::aoi-width *cam1*)))
 	(s2 (list (arv::aoi-height *cam2*) (arv::aoi-width *cam2*)))
@@ -149,6 +153,7 @@
 	  (in3 (fftw:make-foreign-complex-array-as-double s3))
 	  (out3 (fftw:make-foreign-complex-array-as-double s3))
 	  (start (get-universal-time-usec)))
+      (prepare-mosaic 1 (+ 1 (floor (- 4000 0) 100)) 66 66)
       (start-acquisition *cam1*)
       (start-acquisition *cam2*)
       (start-acquisition *cam3*)
@@ -183,15 +188,19 @@
 		   (fftw:ft in1 out1)
 		   (fftw:ft in2 out2)
 		   (fftw:ft in3 out3)
-		   (let ((v1 (.mean (.abs (extract-cdf* out1 :x (+ 33 867) :y (+ 33 243) :w 66 :h 66))))
-			 (v2 (.mean (.abs (extract-cdf* out2 :x (+ 33 138) :y (+ 33 128) :w 66 :h 66))))
-			 (v3 (.mean (.abs (extract-cdf* out3 :x (+ 33 193) :y (+ 33 -10) :w 66 :h 66)))))
+		   (let* ((q1 (.abs (extract-cdf* out1 :x (+ 33 867) :y (+ 33 243) :w 66 :h 66)))
+			  (v1 (.mean q1))
+			  (v2 (.mean (.abs (extract-cdf* out2 :x (+ 33 138) :y (+ 33 128) :w 66 :h 66))))
+			  (v3 (.mean (.abs (extract-cdf* out3 :x (+ 33 193) :y (+ 33 -10) :w 66 :h 66)))))
+		     (fill-mosaic 0 (floor i 100) q1)
 		     (format t "~a~%" (list i v1 v2 v3 atime))
-		     (list i v1 v2 v3 atime))))))))))
+		     (list i v1 v2 v3 atime))))))))
+      (defparameter *bla-mosaic* (get-mosaic))))
   (stop-acquisition *cam1*)
   (stop-acquisition *cam2*)
   (stop-acquisition *cam3*)
   (format t "finished2~%"))
+
 
 #+nil
 (with-open-file (f "/dev/shm/o.dat" :direction :output
@@ -201,8 +210,43 @@
 #+nil
 (loop for i in (list *cam1* *cam2* *cam3*) do
      (destroy-stream i))
-
+ 
 #+nil
 (loop for i in (list *cam1* *cam2* *cam3*) do
      (gc-enumeration-set-int-value i "TriggerMode" 1))
+
+#+nil 
+(set-exposure *cam1* 5000d0)
+#+nil
+(list (get-exposure *cam1*)
+      (get-exposure *cam2*)
+      (get-exposure *cam3*))
+#+nil
+(get-region *cam1*)
+#+nil
+(stop-acquisition *cam1*)
+#+nil
+(set-region *cam1* :keep-old nil :h 1024 :w 1024 :x 135 :y 0)
+#+nil
+(open-cameras)
+#+nil
+(init-cameras)
+
+(let ((mosaic nil))
+  (defun prepare-mosaic (h w hh ww)
+    (setf mosaic (make-array (list (* h hh) (* w ww))
+			     :element-type 'double-float)))
+  (defun fill-mosaic (jj ii a)
+    (destructuring-bind (h w) (array-dimensions mosaic)
+      (destructuring-bind (hh ww) (array-dimensions a)
+	(assert (<= 0 jj))
+	(assert (<= 0 ii))
+	(assert (<= ii (floor w ww)))
+	(assert (<= jj (floor h hh)))
+	(dotimes (j hh)
+	  (dotimes (i ww)
+	    (setf (aref mosaic (+ (* jj hh) j) (+ (* ii ww) i))
+		  (aref a j i)))))))
+  (defun get-mosaic ()
+    mosaic))
 

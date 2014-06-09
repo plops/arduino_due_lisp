@@ -285,8 +285,7 @@
 
 (defmethod acquire-continuous-images ((c camera) &key (use-dark t) (fun #'(lambda (x)
 									    (declare (ignore x)) nil)))
-  "continuously acquire image and pass each to the function
-fun. acquisition stops when fun returns non-t value."
+  "continuously acquire image and pass each to the function fun. acquisition stops when fun returns non-t value."
   (start-acquisition c)
   (let ((do-acquire-p t))
     (loop while do-acquire-p do

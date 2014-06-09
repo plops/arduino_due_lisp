@@ -515,6 +515,9 @@
 #+nil
 (write-pgm "/dev/shm/o.pgm" (extract *blau* :x (+ 33 193) :y (+ 33 -10) :w 66 :h 66))
 
+
+
+
 #+nil
 (write-pgm "/dev/shm/o2.pgm" *bla*)
 
