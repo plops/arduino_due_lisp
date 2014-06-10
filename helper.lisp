@@ -58,7 +58,10 @@
 	 (b1 (.linear b))
 	 (a1 (.linear a)))
     (dotimes (i (length a1))
-      (setf (aref b1 i) (log (aref a1 i))))
+      (let ((v (aref a1 i)))
+	(setf (aref b1 i) (if (= v 0d0)
+			      0d0
+			      (log v)))))
     b))
 
 (defun .uint16 (a)
@@ -67,9 +70,11 @@
 	 (a1 (.linear a))
 	 (ma (.max a))
 	 (mi (.min a))
-	 (s (/ 65535 (- ma mi))))
+	 (s (if (< (- ma mi) 1e-3)
+		1
+		(/ 65535 (- ma mi)))))
     (dotimes (i (length a1))
-      (setf (aref b1 i) (floor (* s (- (aref a1 i) mi)))))
+      (setf (aref b1 i) (min 65535 (max 0 (floor (* s (- (aref a1 i) mi)))))))
     b))
 
 (defun next-power-of-two (n)
