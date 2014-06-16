@@ -138,7 +138,7 @@
 ;; fiber center first coordinate:   800 .. 1550 .. 2750
 ;; fiber center second coordinate: 1800 .. 2500 .. 3580
 
-
+#+nil
 (talk-arduino
  "(dac 1550 2500)")
 
@@ -148,12 +148,13 @@
       (- 2750 800)
       (* .5 (+ 3580 1800)))
 
-(defparameter *use-aravis* nil)
+(defparameter *use-aravis* t)
 #+nil
 (progn
   (trigger-all-cameras)
   (when *use-aravis* (init-cameras))      
   (sleep .2)
+  (format t "cameras initialized~%")
   (let ((s1 (if *use-aravis*
 		(list (arv::aoi-height *cam1*) (arv::aoi-width *cam1*))
 		(list 10 10)))
@@ -172,6 +173,11 @@
 	  (start (get-universal-time-usec)))
       (prepare-mosaic 1 (+ 1 (floor (- 4000 0) 100)) 66 66)
       (when *use-aravis*
+	(dotimes (i 10)
+	  (push-buffer *cam1*)
+	  (push-buffer *cam2*)
+	  (push-buffer *cam3*))
+	(format t "20 buffers sent to each camera~%")
 	(start-acquisition *cam1*)
 	(start-acquisition *cam2*)
 	(start-acquisition *cam3*))
@@ -185,15 +191,18 @@
 	      (let ((t1 (bordeaux-threads:make-thread 
 			 (lambda ()
 			   (when *use-aravis*
-			     (pop-block-copy-push-buffer-mono12p-cdf *cam1* in1)))))
+			     (pop-block-copy-push-buffer-mono12p-cdf *cam1* in1)))
+			 :name "blocking_cam1"))
 		    (t2 (bordeaux-threads:make-thread 
 			 (lambda () 
 			   (when *use-aravis*
-			     (pop-block-copy-push-buffer-mono12p-cdf *cam2* in2)))))
+			     (pop-block-copy-push-buffer-mono12p-cdf *cam2* in2)))
+			 :name "blocking_cam2"))
 		    (t3 (bordeaux-threads:make-thread 
 			 (lambda ()
 			   (when *use-aravis* 
-			     (pop-block-copy-push-buffer-mono12p-cdf *cam3* in3))))))
+			     (pop-block-copy-push-buffer-mono12p-cdf *cam3* in3)))
+			 :name "blocking_cam3")))
 		;; send the trigger signal
 		(talk-arduino "(progn
  (digital-write 11 1)
@@ -207,10 +216,10 @@
 		(bordeaux-threads:join-thread t1)
 		(bordeaux-threads:join-thread t2)
 		(bordeaux-threads:join-thread t3)
-		(write-pgm (format nil "/dev/shm/o1_~4,'0d.pgm" i) (.uint16 (.abs* in1)))
-		(write-pgm (format nil "/dev/shm/o2_~4,'0d.pgm" i) (.uint16 (.abs* in2)))
-		(write-pgm (format nil "/dev/shm/o3_~4,'0d.pgm" i) (.uint16 (.abs* in3)))
-		(let ((atime (- (get-universal-time-usec) start)))
+		;; (write-pgm (format nil "/dev/shm/o1_~4,'0d.pgm" i) (.uint16 (.abs* in1)))
+		;; (write-pgm (format nil "/dev/shm/o2_~4,'0d.pgm" i) (.uint16 (.abs* in2)))
+		;; (write-pgm (format nil "/dev/shm/o3_~4,'0d.pgm" i) (.uint16 (.abs* in3)))
+ 		(let ((atime (- (get-universal-time-usec) start)))
 		  (fftw:ft in1 out1)
 		  (fftw:ft in2 out2)
 		  (fftw:ft in3 out3)
@@ -221,14 +230,14 @@
 			 (q3 (.abs (extract-cdf* out3 :x (+ 33 193) :y (+ 33 -10) :w 66 :h 66)))
 			 (v3 (.mean q3)))
 		    
-		    (write-pgm (format nil "/dev/shm/ko1_~4,'0d.pgm" i) (.uint16 (.log (.abs* out1))))
-		    (write-pgm (format nil "/dev/shm/ko2_~4,'0d.pgm" i) (.uint16 (.log (.abs* out2))))
-		    (write-pgm (format nil "/dev/shm/ko3_~4,'0d.pgm" i) (.uint16 (.log (.abs* out3))))
+		    ;; (write-pgm (format nil "/dev/shm/ko1_~4,'0d.pgm" i) (.uint16 (.log (.abs* out1))))
+		    ;; (write-pgm (format nil "/dev/shm/ko2_~4,'0d.pgm" i) (.uint16 (.log (.abs* out2))))
+		    ;; (write-pgm (format nil "/dev/shm/ko3_~4,'0d.pgm" i) (.uint16 (.log (.abs* out3))))
 
 
-		    (write-pgm (format nil "/dev/shm/sko1_~4,'0d.pgm" i) (.uint16 q1))
-		    (write-pgm (format nil "/dev/shm/sko2_~4,'0d.pgm" i) (.uint16 q2))
-		    (write-pgm (format nil "/dev/shm/sko3_~4,'0d.pgm" i) (.uint16 q3))
+		    ;; (write-pgm (format nil "/dev/shm/sko1_~4,'0d.pgm" i) (.uint16 q1))
+		    ;; (write-pgm (format nil "/dev/shm/sko2_~4,'0d.pgm" i) (.uint16 q2))
+		    ;; (write-pgm (format nil "/dev/shm/sko3_~4,'0d.pgm" i) (.uint16 q3))
 		    (fill-mosaic 0 (floor i 100) q3)
 		    (format t "~a~%" (list i v1 v2 v3 atime))
 		    (list i v1 v2 v3 atime)))))))

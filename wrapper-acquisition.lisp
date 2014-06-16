@@ -194,33 +194,23 @@
   (declare (type (array double-float 3) out))
   (ensure-no-threads-waiting-for-buffer cam)
   (ensure-at-least-one-buffer-in-stream cam)
-  (let ((b (timeout-pop-buffer-blocking cam 10000)))
-    (loop while (or (cffi:null-pointer-p b)
-		    (and (not (cffi:null-pointer-p b))
-			 (/= #$ARV_BUFFER_STATUS_SUCCESS (pref b #>ArvBuffer.status)))
-		    (and (not (cffi:null-pointer-p b))
-			 (not (pref b #>ArvBuffer.data))))
-       for i from 0 below 1000 do
-	 (when (and (/= i 0) (= 0 (mod i 10)))
-	   (format t "popped buffer not satisfactory ~a~%" (list (and (not (cffi:null-pointer-p b))
-								      (pref b #>ArvBuffer.status))
-								 (get-statistics cam)
-								 (multiple-value-list
-								  (get-n-buffers cam))
-								 (temperatures cam))))
-	 (ensure-no-threads-waiting-for-buffer cam)
-	 (ensure-at-least-one-buffer-in-stream cam)
-	 (when (= i 999)
-	   (if (cffi:null-pointer-p b)
-	       (error "pop-buffer returned NULL.")
-	       (unless (= #$ARV_BUFFER_STATUS_SUCCESS (pref b #>ArvBuffer.status))
-		 (error "pop-buffer didnt succeed."))))
-	 (setf b (timeout-pop-buffer-blocking cam 10000)))
+  
+
+  (let ((arv-buffer (cffi:null-pointer)))
+    (loop do
+	 (setf arv-buffer (timeout-pop-buffer-blocking cam 2000000))
+	 (when (and (not (cffi:null-pointer-p arv-buffer))
+		    (/= #$ARV_BUFFER_STATUS_SUCCESS (pref arv-buffer #>ArvBuffer.status)))
+	   (push-buffer cam arv-buffer))
+       while (and (not (cffi:null-pointer-p arv-buffer))
+		  (/= #$ARV_BUFFER_STATUS_SUCCESS (pref arv-buffer #>ArvBuffer.status))))
+    (when (cffi:null-pointer-p arv-buffer)
+      (break "flow error."))
     (assert (= (aoi-width cam) (array-dimension out 1)))
     (assert (= (aoi-height cam) (array-dimension out 0)))
     (assert (= 2 (array-dimension out 2))) ;; double-float array with
-					   ;; 2 dimensions in the fast
-					   ;; dimension
+    ;; 2 dimensions in the fast
+    ;; dimension
     (assert (string= (pixel-format cam) "Mono12Packed"))
     (prog1
 	(let* ((a out)
@@ -228,7 +218,7 @@
 	       (np (get-payload cam))
 	       (a1 (make-array n :element-type 'double-float
 			       :displaced-to out))
-	       (data (pref b #>ArvBuffer.data)))
+	       (data (pref arv-buffer #>ArvBuffer.data)))
 	  (declare
 	   (optimize (speed 3))
 	   (type (array double-float 3) a)
@@ -246,7 +236,7 @@
 		 (setf (aref a1 (* 2 short)) (* 1d0 (ash (+ (ash ab 4) d) 4))
 		       (aref a1 (* 2 (1+ short))) (* 1d0 (ash (+ (ash ef 4) c) 4)))))
 	  a)
-	(push-buffer cam b))))
+      (push-buffer cam arv-buffer))))
 
 (defmethod get-n-buffers ((cam camera))
   (cffi:with-foreign-objects ((n-in :int)
