@@ -1,0 +1,4 @@
+ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/pylon-3.2.1-x86_64/pylon3/genicam/bin/Linux64_x64
+
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/pylon-3.2.1-x86_64/pylon3/lib64
+export PYLON_CAMEMU=2   
