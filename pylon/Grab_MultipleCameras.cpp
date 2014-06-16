@@ -1,9 +1,5 @@
 // Grab_MultipleCameras.cpp
 /*
-   This sample illustrates how to grab and process images from multiple cameras
-   using the CInstantCameraArray class. The CInstantCameraArray class represents
-   an array of instant camera objects. It provides almost the same interface
-   as the instant camera for grabbing.
    The main purpose of the CInstantCameraArray is to simplify waiting for images and
    camera events of multiple cameras in one thread. This is done by providing a single
    RetrieveResult method for all cameras in the array.
@@ -11,36 +7,16 @@
    of all cameras in the CInstantCameraArray. The grabbed images can then be processed by one or more
    image event handlers. Please note that this is not shown in this example.
 */
-
-// Include files to use the PYLON API.
 #include <pylon/PylonIncludes.h>
-#ifdef PYLON_WIN_BUILD
-#    include <pylon/PylonGUI.h>
-#endif
 
-// Namespace for using pylon objects.
 using namespace Pylon;
-
-// Namespace for using cout.
 using namespace std;
 
-// Number of images to be grabbed.
 static const uint32_t c_countOfImagesToGrab = 10;
-
-// Limits the amount of cameras used for grabbing.
-// It is important to manage the available bandwidth when grabbing with multiple cameras.
-// This applies, for instance, if two GigE cameras are connected to the same network adapter via a switch.
-// To manage the bandwidth, the GevSCPD interpacket delay parameter and the GevSCFTD transmission delay
-// parameter can be set for each GigE camera device.
-// The "Controlling Packet Transmission Timing with the Interpacket and Frame Transmission Delays on Basler GigE Vision Cameras"
-// Application Notes (AW000649xx000)
-// provide more information about this topic.
-// The bandwidth used by a FireWire camera device can be limited by adjusting the packet size.
 static const size_t c_maxCamerasToUse = 2;
 
 int main(int argc, char* argv[])
 {
-    // The exit code of the sample application.
     int exitCode = 0;
 
     // Automagically call PylonInitialize and PylonTerminate to ensure the pylon runtime system.
@@ -94,11 +70,6 @@ int main(int argc, char* argv[])
             // to determine the camera that produced the grab result.
             intptr_t cameraContextValue = ptrGrabResult->GetCameraContext();
 
-#ifdef PYLON_WIN_BUILD
-            // Show the image acquired by each camera in the window related to each camera.
-            Pylon::DisplayImage(cameraContextValue, ptrGrabResult);
-#endif
-
             // Print the index and the model name of the camera.
             cout << "Camera " <<  cameraContextValue << ": " << cameras[ cameraContextValue ].GetDeviceInfo().GetModelName() << endl;
 
@@ -117,10 +88,6 @@ int main(int argc, char* argv[])
         << e.GetDescription() << endl;
         exitCode = 1;
     }
-
-    // Comment the following two lines to disable waiting on exit.
-    cerr << endl << "Press Enter to exit." << endl;
-    while( cin.get() != '\n');
 
     return exitCode;
 }
