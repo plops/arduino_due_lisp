@@ -36,6 +36,8 @@
   (talk-arduino "(pin-mode 10 1)")) ;; 66 cam3
 
 
+
+
 (defvar *cameras-initialized*  nil)
 (defun init-cameras ()
   (unless *cam1*
@@ -96,7 +98,10 @@
  (digital-write 10 0))"))
 
 #+nil
-(trigger-all-cameras)
+(loop for i below 100 do
+     (sleep .2)
+ (trigger-all-cameras))
+
 
 #+nil
 (defparameter *BLA3* 
@@ -132,6 +137,11 @@
 
 ;; fiber center first coordinate:   800 .. 1550 .. 2750
 ;; fiber center second coordinate: 1800 .. 2500 .. 3580
+
+
+(talk-arduino
+ "(dac 1550 2500)")
+
 
 #+nil
 (list (- 3580 1800)

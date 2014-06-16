@@ -59,7 +59,7 @@
   (#_arv_stream_push_buffer 
    (arv-stream cam)
    (or buffer
-       (let ((b (#_arv_buffer_new (get-payload cam) (cffi:null-pointer))))
+       (let ((b (#_arv_buffer_new_allocate (get-payload cam))))
 	 (assert (not (cffi:null-pointer-p b)))
 	 b))))
 
@@ -178,6 +178,16 @@
 	      (setf (aref a1 i) (min 65535 (max 0 (+ (aref a1 i)  (- (aref dark1 i)) 100))))))
 	  a)
 	(push-buffer cam b))))
+
+;; code for handling the buffers from the aravis gst plugin
+;; do {
+;;         arv_buffer = arv_stream_timeout_pop_buffer (gst_aravis->stream, gst_aravis->buffer_timeout_us);
+;;         if (arv_buffer != NULL && arv_buffer->status != ARV_BUFFER_STATUS_SUCCESS)
+;;                 arv_stream_push_buffer (gst_aravis->stream, arv_buffer);
+;; } while (arv_buffer != NULL && arv_buffer->status != ARV_BUFFER_STATUS_SUCCESS);
+
+;; if (arv_buffer == NULL)
+;;         return GST_FLOW_ERROR;
 
 
 (defmethod pop-block-copy-push-buffer-mono12p-cdf ((cam camera) out)
