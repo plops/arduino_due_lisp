@@ -14,7 +14,16 @@ using namespace std;
 
 static const uint32_t c_countOfImagesToGrab = 10;
 static const size_t c_maxCamerasToUse = 2;
-
+/*
+pylon-3.2.1-x86_64/doc/pylon_programmingguide.html
+PylonInitialize();
+PylonTerminate();
+You should guard pylon calls with exception handlers catching GenICam::GenericException like so:
+catch (GenICam::GenericException& e) {
+  throw RUNTIME_EXCEPTION( "Exception caught in OnOpened method msg=%hs", e.what()); }
+IPylonDevice* pDevice = CTlFactory::GetInstance().CreateFirstDevice();
+Before reading or writing parameters of a camera apply Open(), after use Close()
+*/
 int main(int argc, char* argv[])
 {
     int exitCode = 0;
@@ -32,7 +41,8 @@ int main(int argc, char* argv[])
         DeviceInfoList_t devices;
         if ( tlFactory.EnumerateDevices(devices) == 0 )
         {
-            throw RUNTIME_EXCEPTION( "No camera present.");
+	  //   throw RUNTIME_EXCEPTION( "No camera present.");
+	  printf("no cameras: %d\n",devices.size());
         }
 
         // Create an array of instant cameras for the found devices and avoid exceeding a maximum number of devices.
