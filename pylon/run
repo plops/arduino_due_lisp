@@ -1,4 +1,35 @@
- export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/pylon-3.2.1-x86_64/pylon3/genicam/bin/Linux64_x64
+#export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/pylon-3.2.1-x86_64/pylon3/genicam/bin/Linux64_x64
+#export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/pylon-3.2.1-x86_64/pylon3/lib64
+#export PYLON_CAMEMU=2   
 
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/pylon-3.2.1-x86_64/pylon3/lib64
-export PYLON_CAMEMU=2   
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/martin/pylon-3.2.0-x86_64/pylon3/genicam/bin/Linux64_x64/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/martin/pylon-3.2.0-x86_64/pylon3/lib64/
+export PYLON_ROOT=/home/martin/pylon-3.2.0-x86_64/pylon3
+export GENICAM_ROOT_V2_3=${PYLON_ROOT}/genicam
+
+# martin@localhost ~/pylon-3.2.0-x86_64/Samples/Grab_MultipleCameras $ ./Grab_MultipleCameras 
+# Using device acA1920-25gm
+# Using device acA1920-25gm
+# Camera 0: acA1920-25gm
+# GrabSucceeded: 1
+# SizeX: 1024
+# SizeY: 1024
+# Gray value of first pixel: 9
+
+# Camera 1: acA1920-25gm
+# GrabSucceeded: 1
+# SizeX: 600
+# SizeY: 600
+# Gray value of first pixel: 8
+
+# Camera 0: acA1920-25gm
+# GrabSucceeded: 1
+# SizeX: 1024
+# SizeY: 1024
+# Gray value of first pixel: 8
+
+# Camera 1: acA1920-25gm
+# GrabSucceeded: 1
+# SizeX: 600
+# SizeY: 600
+# Gray value of first pixel: 7
