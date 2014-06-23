@@ -3,9 +3,6 @@
 using namespace Pylon;
 using namespace std;
 
-static const uint32_t c_countOfImagesToGrab = 10;
-static const size_t c_maxCamerasToUse = 2;
-
 extern "C" {
   void pylon_wrapper_initialize()
   {
@@ -25,24 +22,56 @@ extern "C" {
       printf( "Exception caught in %s msg=%hs",__func__, e.what());
     }
   }
-  void pylon_wrapper_create()
+  void*pylon_wrapper_create(unsigned int maxCamerasToUse)
   {
     try{
       CTlFactory& tlFactory = CTlFactory::GetInstance();
-      
       // Get all attached devices
       DeviceInfoList_t devices;
       if ( tlFactory.EnumerateDevices(devices) == 0 )
-	printf("%s finds no cameras: %d\n",__func__,devices.size()); 
-
-      CInstantCameraArray cameras( min( devices.size(), c_maxCamerasToUse));
-
+	printf("%s finds no cameras: %d\n",__func__,devices.size());       
+      
+      CInstantCameraArray *cameras =
+	new CInstantCameraArray(min(size_t(maxCamerasToUse),devices.size()));
+      
       // Create and attach all Pylon Devices.
-      for ( size_t i = 0; i < cameras.GetSize(); ++i) {
-	cameras[ i ].Attach( tlFactory.CreateDevice( devices[ i ]));
-	
+      for ( size_t i = 0; i < cameras->GetSize(); ++i) {
+	(*cameras)[ i ].Attach( tlFactory.CreateDevice( devices[ i ]));
 	// Print the model name of the camera.
-	cout << "Using device " << cameras[ i ].GetDeviceInfo().GetModelName() << endl;
+	cout << "Using device " << (*cameras)[ i ].GetDeviceInfo().GetModelName() << endl;
+      }
+      return cameras;
+    }
+    catch (GenICam::GenericException& e) {
+      printf( "Exception caught in %s msg=%hs",__func__, e.what());
+      return NULL;
+    }
+  }
+  void pylon_wrapper_start_grabbing(void*cams)
+  {
+    try{
+      CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
+      cameras->StartGrabbing();
+    }
+    catch (GenICam::GenericException& e) {
+      printf( "Exception caught in %s msg=%hs",__func__, e.what());
+    }
+  }
+  void pylon_wrapper_grab(void*cams)
+  {
+    try{
+      CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
+      if(cameras->IsGrabbing()){
+	CGrabResultPtr ptrGrabResult;
+	cameras->RetrieveResult( 5000, ptrGrabResult, TimeoutHandling_ThrowException);
+	// context allows to determine which camera produced the grab result
+	intptr_t cameraContextValue = ptrGrabResult->GetCameraContext();
+	cout << "Camera " <<  cameraContextValue << ": " << (*cameras)[ cameraContextValue ].GetDeviceInfo().GetModelName() << endl;
+	cout << "GrabSucceeded: " << ptrGrabResult->GrabSucceeded() << endl;
+	cout << "SizeX: " << ptrGrabResult->GetWidth() << endl;
+	cout << "SizeY: " << ptrGrabResult->GetHeight() << endl;
+	const uint8_t *pImageBuffer = (uint8_t *) ptrGrabResult->GetBuffer();
+	cout << "Gray value of first pixel: " << (uint32_t) pImageBuffer[0] << endl << endl;
       }
     }
     catch (GenICam::GenericException& e) {

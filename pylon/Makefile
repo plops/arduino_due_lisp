@@ -13,7 +13,7 @@ CXX				?= g++
 LD				:= $(CXX)
 CPPFLAGS		:= -I$(GENICAM_ROOT)/library/CPP/include \
 				   -I$(PYLON_ROOT)/include -DUSE_GIGE
-CXXFLAGS		:= #e.g., CXXFLAGS=-g -O0 for debugging
+CXXFLAGS		:= -ggdb -O0 #e.g., CXXFLAGS=-g -O0 for debugging
 LDFLAGS			:= -L$(PYLON_ROOT)/lib64 \
 				   -L$(GENICAM_ROOT)/bin/Linux64_x64 \
 				   -L$(GENICAM_ROOT)/bin/Linux64_x64/GenApi/Generic \
@@ -37,3 +37,4 @@ test_pylon_wrapper: test_pylon_wrapper.o libpylon_wrapper.so
 
 clean			:
 	$(RM) $(NAME).o $(NAME)
+	$(RM) libpylon_wrapper.so test_pylon_wrapper.o test_pylon_wrapper

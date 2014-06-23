@@ -3,6 +3,8 @@
 int main()
 {
   pylon_wrapper_initialize();
-  pylon_wrapper_create();
+  void*c=pylon_wrapper_create(2);
+  pylon_wrapper_start_grabbing(c);
+  pylon_wrapper_grab(c);
   pylon_wrapper_terminate();
 }
