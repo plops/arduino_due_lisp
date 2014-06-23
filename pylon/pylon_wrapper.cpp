@@ -63,7 +63,7 @@ extern "C" {
   // success_p .. !=0 if grab was successful
   // w .. returns image width
   // h .. returns image height
-  void pylon_wrapper_grab(void*cams,int ww,int hh,unsigned char * buf, int*succeess_p,int*w,int*h)
+  void pylon_wrapper_grab(void*cams,int ww,int hh,unsigned char * buf,int*camera,int*success_p,int*w,int*h)
   {
     try{
       CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
@@ -72,8 +72,10 @@ extern "C" {
 	cameras->RetrieveResult( 5000, ptrGrabResult, TimeoutHandling_ThrowException);
 	// context allows to determine which camera produced the grab result
 	intptr_t cameraContextValue = ptrGrabResult->GetCameraContext();
+	*camera = cameraContextValue;
 	cout << "Camera " <<  cameraContextValue << ": " << (*cameras)[ cameraContextValue ].GetDeviceInfo().GetModelName() << endl;
 	cout << "GrabSucceeded: " << ptrGrabResult->GrabSucceeded() << endl;
+	*success_p = ptrGrabResult->GrabSucceeded();
 	if(!ptrGrabResult->GrabSucceeded()){
 	  std::cout << "Error: " << ptrGrabResult->GetErrorCode() << " " << ptrGrabResult->GetErrorDescription();
 	  return;

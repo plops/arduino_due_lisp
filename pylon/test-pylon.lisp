@@ -10,17 +10,33 @@
 
 (in-package :pylon-test)
 
-(pylon:initialize)
-(defparameter *cams* (pylon:create 2))
-(pylon:start-grabbing *cams*)
+(progn
+  (pylon:initialize)
+  (defparameter *cams* (pylon:create 2))
+  (pylon:start-grabbing *cams*)
 
-(defparameter *buf*
-  (foreign-alloc :unsigned-char :count (* 1040 1040)))
-(with-foreign-objects ((success-p :int)
-		       (w :int)
-		       (h :int))
-  (pylon:grab *cams* 1040 1040 *buf*
-	      success-p w h)
-  (format nil "~a~%" (list (mem-ref success-p :int)
-			   (mem-ref w :int)
-			   (mem-ref h :int))))
+  (defparameter *buf*
+    (foreign-alloc :unsigned-char :count (* 1040 1040)))
+  (with-foreign-objects ((cam :int)
+			 (success-p :int)
+			 (w :int)
+			 (h :int))
+    (pylon:grab *cams* 1040 1040 *buf*
+		cam success-p w h)
+    (format nil "~a~%" (list (mem-ref cam :int)
+			     (mem-ref success-p :int)
+			     (mem-ref w :int)
+			     (mem-ref h :int)))))
+
+#+nil
+(with-foreign-objects ((cam :int)
+			 (success-p :int)
+			 (w :int)
+			 (h :int))
+    (pylon:grab *cams* 1040 1040 *buf*
+		cam success-p w h)
+    (format nil "~a~%" (list (mem-ref cam :int)
+			     (mem-ref success-p :int)
+			     (mem-ref w :int)
+			     (mem-ref h :int))))
+

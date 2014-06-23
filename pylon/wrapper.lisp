@@ -13,6 +13,7 @@
   (ww :int)
   (hh :int)
   (buf (:pointer :unsigned-char))
+  (camera (:pointer :int))
   (success-p (:pointer :int))
   (w (:pointer :int))
   (h (:pointer :int)))

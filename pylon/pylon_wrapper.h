@@ -8,4 +8,4 @@ void pylon_wrapper_start_grabbing(void*cams);
 // success_p .. !=0 if grab was successful
 // w .. returns image width
 // h .. returns image height
-void pylon_wrapper_grab(void*cams,int ww,int hh,unsigned char * buf, int*succeess_p,int*w,int*h);
+void pylon_wrapper_grab(void*cams,int ww,int hh,unsigned char * buf, int *camera,int*success_p,int*w,int*h);
