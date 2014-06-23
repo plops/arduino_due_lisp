@@ -113,7 +113,7 @@ extern "C" {
     try{
       CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
       INodeMap &control = (*cameras)[cam].GetNodeMap();
-      const CIntegerPtr nod=control.GetNode(node);
+      const CEnumerationPtr nod=control.GetNode(node);
       StringList_t symb;
       nod->GetSymbolics(symb);
       int i;
@@ -130,8 +130,32 @@ extern "C" {
     try{
       CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
       INodeMap &control = (*cameras)[cam].GetNodeMap();
-      const CIntegerPtr nod=control.GetNode(node);
+      const CEnumerationPtr nod=control.GetNode(node);
       nod->SetIntValue(value);
+    }
+    catch (GenICam::GenericException& e) {
+      printf( "Exception caught in %s msg=%s",__func__, e.what());
+    }
+  }
+  int pylon_wrapper_get_value_e(void*cams,int cam,const char*node)
+  {
+    try{
+      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      INodeMap &control = (*cameras)[cam].GetNodeMap();
+      const CEnumerationPtr nod=control.GetNode(node);
+      return nod->GetIntValue();
+    }
+    catch (GenICam::GenericException& e) {
+      printf( "Exception caught in %s msg=%s",__func__, e.what());
+    }
+  }
+  void pylon_wrapper_to_string_e(void*cams,int cam,const char*node)
+  {
+    try{
+      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      INodeMap &control = (*cameras)[cam].GetNodeMap();
+      const CEnumerationPtr nod=control.GetNode(node);
+      cout << nod->ToString() << endl;
     }
     catch (GenICam::GenericException& e) {
       printf( "Exception caught in %s msg=%s",__func__, e.what());
