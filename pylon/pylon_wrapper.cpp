@@ -161,32 +161,18 @@ extern "C" {
       printf( "Exception caught in %s msg=%s",__func__, e.what());
     }
   }
-  // void pylon_wrapper_get(void*cams,int cam,int ox,int oy,int w,int h)
-  // {
-  //   try{
-  //     CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
-  //     INodeMap &control = (*camera)[cam].GetNodeMap();
-  //     // Get the parameters for setting the image area of interest (Image AOI).
-  //     const CIntegerPtr width = control.GetNode("Width");
-  //     const CIntegerPtr height = control.GetNode("Height");
-  //     const CIntegerPtr offsetX = control.GetNode("OffsetX");
-  //     const CIntegerPtr offsetY = control.GetNode("OffsetY");
-  //     // Maximize the Image AOI.
-  //     if (IsWritable(offsetX)){
-  // 	  offsetX->SetValue(ox);
-  //     }
-  //     if (IsWritable(offsetY)){
-  // 	offsetY->SetValue(oy);
-  //     }
-  //   width->SetValue(width->GetMax());
-  //   height->SetValue(height->GetMax());
-  //   // Set the pixel data format.
-  //   CEnumerationPtr(control.GetNode("PixelFormat"))->FromString("Mono12Packed");
-  //   }
-  //   catch (GenICam::GenericException& e) {
-  //     printf( "Exception caught in %s msg=%s",__func__, e.what());
-  //   }
-  // }
+  void pylon_wrapper_from_string_e(void*cams,int cam,const char*node,char*value)
+  {
+    try{
+      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      INodeMap &control = (*cameras)[cam].GetNodeMap();
+      const CEnumerationPtr nod=control.GetNode(node);
+      nod->FromString(value);
+    }
+    catch (GenICam::GenericException& e) {
+      printf( "Exception caught in %s msg=%s",__func__, e.what());
+    }
+  }
   void pylon_wrapper_start_grabbing(void*cams)
   {
     try{

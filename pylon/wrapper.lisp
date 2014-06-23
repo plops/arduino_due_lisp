@@ -70,5 +70,11 @@
   (cam :int)
   (node :string))
 
+(cffi:defcfun ("pylon_wrapper_from_string_e" from-string-e) :void
+  (cams :pointer)
+  (cam :int)
+  (node :string)
+  (value :string))
+
 
 

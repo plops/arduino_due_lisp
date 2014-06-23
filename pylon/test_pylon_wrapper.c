@@ -10,5 +10,12 @@ int main()
   pylon_wrapper_grab(c,2000,2000,buf,&cam,&success_p,&w,&h);
   printf("%d\n", pylon_wrapper_get_max_i(c,0,"Width"));
 
+  printf("%d\n", pylon_wrapper_get_min_i(c,0,"Width"));
+  printf("%d\n", pylon_wrapper_get_inc_i(c,0,"Width"));
+
+  printf("%d\n", pylon_wrapper_get_value_e(c,0,"PixelFormat"));
+  pylon_wrapper_get_symbolics_e(c,0,"PixelFormat");
+  pylon_wrapper_to_string_e(c,0,"PixelFormat");
+  
   pylon_wrapper_terminate();
 }

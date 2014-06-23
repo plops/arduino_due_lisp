@@ -14,4 +14,5 @@
      #:get-symbolics-e
      #:set-value-e
      #:get-value-e
-     #:to-string-e))
+     #:to-string-e
+     #:from-string-e))
