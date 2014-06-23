@@ -54,6 +54,7 @@ extern "C" {
       CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
       INodeMap &control = (*cameras)[cam].GetNodeMap();
       const CIntegerPtr nod=control.GetNode(node);
+      cout << "max(" << node << ")=" << nod->GetMax() << endl;
       return nod->GetMax();
     }
     catch (GenICam::GenericException& e) {
@@ -66,6 +67,7 @@ extern "C" {
       CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
       INodeMap &control = (*cameras)[cam].GetNodeMap();
       const CIntegerPtr nod=control.GetNode(node);
+      cout << "min(" << node << ")=" << nod->GetMin() << endl;
       return nod->GetMin();
     }
     catch (GenICam::GenericException& e) {
@@ -78,6 +80,7 @@ extern "C" {
       CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
       INodeMap &control = (*cameras)[cam].GetNodeMap();
       const CIntegerPtr nod=control.GetNode(node);
+      cout << "inc(" << node << ")=" << nod->GetInc() << endl;
       return nod->GetInc();
     }
     catch (GenICam::GenericException& e) {

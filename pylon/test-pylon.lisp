@@ -11,11 +11,10 @@
 (in-package :pylon-test)
 
 (pylon:initialize)
-(defparameter *cams* (pylon:create 2))
-
+(defparameter *cams* (pylon:create 1))
+(pylon:get-max-i *cams* 0 "OffsetX")
+(pylon:get-max-i *cams* 0 "Width")
 (pylon:terminate)
-(pylon:get-max-i *cams* 0 "Height")
-(pylon:get-max-i *cams* 1 "Width")
 
 (loop for e in '("Width" "Height" "OffsetX" "OffsetY") collect
  (pylon:get-value-i *cams* 0 e t nil))
