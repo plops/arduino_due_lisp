@@ -1,3 +1,8 @@
 (defpackage #:pylon
     (:use #:cl)
-    (:export))
+    (:export
+     #:initialize
+     #:terminate
+     #:create
+     #:start-grabbing
+     #:grab))

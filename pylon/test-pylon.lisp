@@ -4,3 +4,23 @@
   (setf asdf:*central-registry* '(*default-pathname-defaults*
                                   #p"/home/martin/arduino_due_lisp/pylon/"))
   (asdf:load-system "pylon"))
+
+(defpackage :pylon-test
+  (:use :cl :cffi))
+
+(in-package :pylon-test)
+
+(pylon:initialize)
+(defparameter *cams* (pylon:create 2))
+(pylon:start-grabbing *cams*)
+
+(defparameter *buf*
+  (foreign-alloc :unsigned-char :count (* 1040 1040)))
+(with-foreign-objects ((success-p :int)
+		       (w :int)
+		       (h :int))
+  (pylon:grab *cams* 1040 1040 *buf*
+	      success-p w h)
+  (format nil "~a~%" (list (mem-ref success-p :int)
+			   (mem-ref w :int)
+			   (mem-ref h :int))))
