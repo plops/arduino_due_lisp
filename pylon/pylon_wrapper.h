@@ -9,3 +9,4 @@ void pylon_wrapper_start_grabbing(void*cams);
 // w .. returns image width
 // h .. returns image height
 void pylon_wrapper_grab(void*cams,int ww,int hh,unsigned char * buf, int *camera,int*success_p,int*w,int*h);
+int pylon_wrapper_get_max_i(void*cams,int cam,const char*node);
