@@ -1,6 +1,7 @@
 #include <pylon/PylonIncludes.h>
 
 using namespace Pylon;
+using namespace GenApi;
 using namespace std;
 
 extern "C" {
@@ -45,6 +46,32 @@ extern "C" {
     catch (GenICam::GenericException& e) {
       printf( "Exception caught in %s msg=%hs",__func__, e.what());
       return NULL;
+    }
+  }
+  void pylon_wrapper_set(void*cams,int cam,int ox,int oy,int w,int h)
+  {
+    try{
+      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      INodeMap &control = (*camera)[cam].GetNodeMap();
+      // Get the parameters for setting the image area of interest (Image AOI).
+      const CIntegerPtr width = control.GetNode("Width");
+      const CIntegerPtr height = control.GetNode("Height");
+      const CIntegerPtr offsetX = control.GetNode("OffsetX");
+      const CIntegerPtr offsetY = control.GetNode("OffsetY");
+      // Maximize the Image AOI.
+      if (IsWritable(offsetX)){
+	  offsetX->SetValue(offsetX->GetMin());
+      }
+      if (IsWritable(offsetY)){
+	offsetY->SetValue(offsetY->GetMin());
+      }
+    width->SetValue(width->GetMax());
+    height->SetValue(height->GetMax());
+    // Set the pixel data format.
+    CEnumerationPtr(control.GetNode("PixelFormat"))->FromString("Mono12Packed");
+    }
+    catch (GenICam::GenericException& e) {
+      printf( "Exception caught in %s msg=%hs",__func__, e.what());
     }
   }
   void pylon_wrapper_start_grabbing(void*cams)
