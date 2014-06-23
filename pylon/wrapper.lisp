@@ -17,3 +17,58 @@
   (success-p (:pointer :int))
   (w (:pointer :int))
   (h (:pointer :int)))
+
+(cffi:defcfun ("pylon_wrapper_get_max_i" get-max-i) :int
+  (cams :pointer)
+  (cam :int)
+  (node :string))
+
+(cffi:defcfun ("pylon_wrapper_get_min_i" get-min-i) :int
+  (cams :pointer)
+  (cam :int)
+  (node :string))
+
+(cffi:defcfun ("pylon_wrapper_get_inc_i" get-inc-i) :int
+  (cams :pointer)
+  (cam :int)
+  (node :string))
+
+(cffi:defcfun ("pylon_wrapper_get_value_i" %get-value-i) :int
+  (cams :pointer)
+  (cam :int)
+  (node :string)
+  (verify :int)
+  (ignore-cache :int))
+
+(defun get-value-i (cams cam node &optional (verify nil) (ignore-cache nil))
+  (%get-value-i cams cam node (if verify 1 0) (if ignore-cache 1 0)))
+
+(cffi:defcfun ("pylon_wrapper_set_value_i" set-value-i) :void
+  (cams :pointer)
+  (cam :int)
+  (node :string)
+  (value :int))
+
+(cffi:defcfun ("pylon_wrapper_get_symbolics_e" get-symbolics-e) :int
+  (cams :pointer)
+  (cam :int)
+  (node :string))
+
+(cffi:defcfun ("pylon_wrapper_set_value_e" set-value-e) :void
+  (cams :pointer)
+  (cam :int)
+  (node :string)
+  (value :int))
+
+(cffi:defcfun ("pylon_wrapper_get_value_i" get-value-e) :int
+  (cams :pointer)
+  (cam :int)
+  (node :string))
+
+(cffi:defcfun ("pylon_wrapper_to_string_e" to-string-e) :void
+  (cams :pointer)
+  (cam :int)
+  (node :string))
+
+
+

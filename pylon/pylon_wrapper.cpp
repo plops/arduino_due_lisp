@@ -161,8 +161,6 @@ extern "C" {
       printf( "Exception caught in %s msg=%s",__func__, e.what());
     }
   }
-  // Width Height OffsetX OffsetY
-  // PixelFormat
   // void pylon_wrapper_get(void*cams,int cam,int ox,int oy,int w,int h)
   // {
   //   try{

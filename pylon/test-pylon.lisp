@@ -10,6 +10,19 @@
 
 (in-package :pylon-test)
 
+(pylon:initialize)
+(defparameter *cams* (pylon:create 2))
+
+(pylon:terminate)
+(pylon:get-max-i *cams* 0 "Height")
+(pylon:get-max-i *cams* 1 "Width")
+(pylon:get-value-i *cams* 1 "Width")
+(pylon:get-min-i *cams* 1 "Width")
+;  // Width Height OffsetX OffsetY
+;  // PixelFormat
+(pylon:get-value-e *cams* 1 "PixelFormat")
+(pylon:get-symbolics-e *cams* 0 "PixelFormat)"
+(pylon:get-value-e *cams* 0 "PixelFormat")
 (progn
   (pylon:initialize)
   (defparameter *cams* (pylon:create 2))

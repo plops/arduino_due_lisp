@@ -5,4 +5,13 @@
      #:terminate
      #:create
      #:start-grabbing
-     #:grab))
+     #:grab
+     #:get-max-i
+     #:get-min-i
+     #:get-inc-i
+     #:get-value-i
+     #:set-value-i
+     #:get-symbolics-e
+     #:set-value-e
+     #:get-value-e
+     #:to-string-e))
