@@ -21,13 +21,16 @@ LDFLAGS			:= -L$(PYLON_ROOT)/lib64 \
 LIBS			:= -lpylonbase -lGenApi_gcc40_v2_3 -lGCBase_gcc40_v2_3 -lLog_gcc40_v2_3 -lMathParser_gcc40_v2_3 -lXerces-C_gcc40_v2_7 -llog4cpp_gcc40_v2_3
 
 # Rules for building
-all				: $(NAME)
+all				: $(NAME) libpylon_wrapper.so
 
 $(NAME)			: $(NAME).o
 	$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 $(NAME).o: $(NAME).cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
+
+libpylon_wrapper.so: pylon_wrapper.cpp
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(LIBS) -fPIC -o libpylon_wrapper.so -shared pylon_wrapper.cpp 
 
 clean			:
 	$(RM) $(NAME).o $(NAME)
