@@ -57,7 +57,13 @@ extern "C" {
       printf( "Exception caught in %s msg=%hs",__func__, e.what());
     }
   }
-  void pylon_wrapper_grab(void*cams)
+  // cams .. pointer handle as returned by create
+  // buf .. pointer to foreign allocated array
+  // ww, hh .. size of buf
+  // success_p .. !=0 if grab was successful
+  // w .. returns image width
+  // h .. returns image height
+  void pylon_wrapper_grab(void*cams,int ww,int hh,unsigned char * buf, int*succeess_p,int*w,int*h)
   {
     try{
       CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
@@ -68,10 +74,26 @@ extern "C" {
 	intptr_t cameraContextValue = ptrGrabResult->GetCameraContext();
 	cout << "Camera " <<  cameraContextValue << ": " << (*cameras)[ cameraContextValue ].GetDeviceInfo().GetModelName() << endl;
 	cout << "GrabSucceeded: " << ptrGrabResult->GrabSucceeded() << endl;
+	if(!ptrGrabResult->GrabSucceeded()){
+	  std::cout << "Error: " << ptrGrabResult->GetErrorCode() << " " << ptrGrabResult->GetErrorDescription();
+	  return;
+	}
 	cout << "SizeX: " << ptrGrabResult->GetWidth() << endl;
 	cout << "SizeY: " << ptrGrabResult->GetHeight() << endl;
 	const uint8_t *pImageBuffer = (uint8_t *) ptrGrabResult->GetBuffer();
 	cout << "Gray value of first pixel: " << (uint32_t) pImageBuffer[0] << endl << endl;
+
+	*w = ptrGrabResult->GetWidth();
+	*h = ptrGrabResult->GetHeight();
+	if (ww<*w)
+	  printf("width of input array not sufficient");
+	if (hh<*h)
+	  printf("height of input array not sufficient");
+
+	int i,j;
+	for(j=0;j< (*h);j++)
+	  for(i=0;i< (*w);i++)
+	    buf[i+ (*w) * j] = pImageBuffer[i+(*w)*j];
       }
     }
     catch (GenICam::GenericException& e) {
