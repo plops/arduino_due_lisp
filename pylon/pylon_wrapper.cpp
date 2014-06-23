@@ -60,6 +60,83 @@ extern "C" {
       printf( "Exception caught in %s msg=%s",__func__, e.what());
     }
   }
+  int pylon_wrapper_get_min_i(void*cams,int cam,const char*node)
+  {
+    try{
+      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      INodeMap &control = (*cameras)[cam].GetNodeMap();
+      const CIntegerPtr nod=control.GetNode(node);
+      return nod->GetMin();
+    }
+    catch (GenICam::GenericException& e) {
+      printf( "Exception caught in %s msg=%s",__func__, e.what());
+    }
+  }
+  int pylon_wrapper_get_inc_i(void*cams,int cam,const char*node)
+  {
+    try{
+      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      INodeMap &control = (*cameras)[cam].GetNodeMap();
+      const CIntegerPtr nod=control.GetNode(node);
+      return nod->GetInc();
+    }
+    catch (GenICam::GenericException& e) {
+      printf( "Exception caught in %s msg=%s",__func__, e.what());
+    }
+  }
+  int pylon_wrapper_get_value_i(void*cams,int cam,const char*node,int verify, int ignore_cache)
+  {
+    try{
+      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      INodeMap &control = (*cameras)[cam].GetNodeMap();
+      const CIntegerPtr nod=control.GetNode(node);
+      return nod->GetValue(verify,ignore_cache);
+    }
+    catch (GenICam::GenericException& e) {
+      printf( "Exception caught in %s msg=%s",__func__, e.what());
+    }
+  }
+  void pylon_wrapper_set_value_i(void*cams,int cam,const char*node,int value)
+  {
+    try{
+      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      INodeMap &control = (*cameras)[cam].GetNodeMap();
+      const CIntegerPtr nod=control.GetNode(node);
+      nod->SetValue(value);
+    }
+    catch (GenICam::GenericException& e) {
+      printf( "Exception caught in %s msg=%s",__func__, e.what());
+    }
+  }
+  void pylon_wrapper_get_symbolics_e(void*cams,int cam,const char*node)
+  {
+    try{
+      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      INodeMap &control = (*cameras)[cam].GetNodeMap();
+      const CIntegerPtr nod=control.GetNode(node);
+      StringList_t symb;
+      nod->GetSymbolics(symb);
+      int i;
+      for(i=0;i<symb.size();i++)
+	std::cout << i << " " << symb[i] << endl;
+      // FIXME i can't decide how to return it, therefore, i just print the values
+    }
+    catch (GenICam::GenericException& e) {
+      printf( "Exception caught in %s msg=%s",__func__, e.what());
+    }
+  }
+  void pylon_wrapper_set_value_e(void*cams,int cam,const char*node,int value)
+  {
+    try{
+      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      INodeMap &control = (*cameras)[cam].GetNodeMap();
+      const CIntegerPtr nod=control.GetNode(node);
+      nod->SetIntValue(value);
+    }
+    catch (GenICam::GenericException& e) {
+      printf( "Exception caught in %s msg=%s",__func__, e.what());
+    }
+  }
   // Width Height OffsetX OffsetY
   // PixelFormat
   // void pylon_wrapper_get(void*cams,int cam,int ox,int oy,int w,int h)
