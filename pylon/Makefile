@@ -30,10 +30,10 @@ $(NAME).o: $(NAME).cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 libpylon_wrapper.so: pylon_wrapper.cpp
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(LIBS) -fPIC -o libpylon_wrapper.so -shared pylon_wrapper.cpp 
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(LIBS) -fPIC  -o libpylon_wrapper.so -shared pylon_wrapper.cpp 
 
 test_pylon_wrapper: test_pylon_wrapper.o libpylon_wrapper.so
-	$(LD) -L. -lpylon_wrapper -o $@ $^ 
+	$(LD) -L. $(LDFLAGS) $(LIBS) -lpylon_wrapper -o $@ $^ 
 
 clean			:
 	$(RM) $(NAME).o $(NAME)

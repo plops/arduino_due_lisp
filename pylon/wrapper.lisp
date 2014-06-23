@@ -60,7 +60,7 @@
   (node :string)
   (value :int))
 
-(cffi:defcfun ("pylon_wrapper_get_value_i" get-value-e) :int
+(cffi:defcfun ("pylon_wrapper_get_value_e" get-value-e) :int
   (cams :pointer)
   (cam :int)
   (node :string))

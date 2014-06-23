@@ -44,7 +44,7 @@ extern "C" {
       return cameras;
     }
     catch (GenICam::GenericException& e) {
-      printf( "Exception caught in %s msg=%s",__func__, e.what());
+      printf( "Exception caught in %s msg=%s\n",__func__, e.what());
       return NULL;
     }
   }
@@ -58,7 +58,7 @@ extern "C" {
       return nod->GetMax();
     }
     catch (GenICam::GenericException& e) {
-      printf( "Exception caught in %s msg=%s",__func__, e.what());
+      printf( "Exception caught in %s msg=%s\n",__func__, e.what());
     }
   }
   int pylon_wrapper_get_min_i(void*cams,int cam,const char*node)
@@ -71,7 +71,7 @@ extern "C" {
       return nod->GetMin();
     }
     catch (GenICam::GenericException& e) {
-      printf( "Exception caught in %s msg=%s",__func__, e.what());
+      printf( "Exception caught in %s msg=%s\n",__func__, e.what());
     }
   }
   int pylon_wrapper_get_inc_i(void*cams,int cam,const char*node)
@@ -84,7 +84,7 @@ extern "C" {
       return nod->GetInc();
     }
     catch (GenICam::GenericException& e) {
-      printf( "Exception caught in %s msg=%s",__func__, e.what());
+      printf( "Exception caught in %s msg=%s\n",__func__, e.what());
     }
   }
   int pylon_wrapper_get_value_i(void*cams,int cam,const char*node,int verify, int ignore_cache)
@@ -96,7 +96,7 @@ extern "C" {
       return nod->GetValue(verify,ignore_cache);
     }
     catch (GenICam::GenericException& e) {
-      printf( "Exception caught in %s msg=%s",__func__, e.what());
+      printf( "Exception caught in %s msg=%s\n",__func__, e.what());
     }
   }
   void pylon_wrapper_set_value_i(void*cams,int cam,const char*node,int value)
@@ -108,7 +108,7 @@ extern "C" {
       nod->SetValue(value);
     }
     catch (GenICam::GenericException& e) {
-      printf( "Exception caught in %s msg=%s",__func__, e.what());
+      printf( "Exception caught in %s msg=%s\n",__func__, e.what());
     }
   }
   void pylon_wrapper_get_symbolics_e(void*cams,int cam,const char*node)
@@ -125,7 +125,7 @@ extern "C" {
       // FIXME i can't decide how to return it, therefore, i just print the values
     }
     catch (GenICam::GenericException& e) {
-      printf( "Exception caught in %s msg=%s",__func__, e.what());
+      printf( "Exception caught in %s msg=%s\n",__func__, e.what());
     }
   }
   void pylon_wrapper_set_value_e(void*cams,int cam,const char*node,int value)
@@ -137,7 +137,7 @@ extern "C" {
       nod->SetIntValue(value);
     }
     catch (GenICam::GenericException& e) {
-      printf( "Exception caught in %s msg=%s",__func__, e.what());
+      printf( "Exception caught in %s msg=%s\n",__func__, e.what());
     }
   }
   int pylon_wrapper_get_value_e(void*cams,int cam,const char*node)
@@ -149,7 +149,7 @@ extern "C" {
       return nod->GetIntValue();
     }
     catch (GenICam::GenericException& e) {
-      printf( "Exception caught in %s msg=%s",__func__, e.what());
+      printf( "Exception caught in %s msg=%s\n",__func__, e.what());
     }
   }
   void pylon_wrapper_to_string_e(void*cams,int cam,const char*node)
@@ -161,7 +161,7 @@ extern "C" {
       cout << nod->ToString() << endl;
     }
     catch (GenICam::GenericException& e) {
-      printf( "Exception caught in %s msg=%s",__func__, e.what());
+      printf( "Exception caught in %s msg=%s\n",__func__, e.what());
     }
   }
   void pylon_wrapper_from_string_e(void*cams,int cam,const char*node,char*value)
@@ -173,7 +173,7 @@ extern "C" {
       nod->FromString(value);
     }
     catch (GenICam::GenericException& e) {
-      printf( "Exception caught in %s msg=%s",__func__, e.what());
+      printf( "Exception caught in %s msg=%s\n",__func__, e.what());
     }
   }
   void pylon_wrapper_start_grabbing(void*cams)
@@ -183,7 +183,7 @@ extern "C" {
       cameras->StartGrabbing();
     }
     catch (GenICam::GenericException& e) {
-      printf( "Exception caught in %s msg=%s",__func__, e.what());
+      printf( "Exception caught in %s msg=%s\n",__func__, e.what());
     }
   }
   // cams .. pointer handle as returned by create
@@ -228,7 +228,7 @@ extern "C" {
       }
     }
     catch (GenICam::GenericException& e) {
-      printf( "Exception caught in %s msg=%s",__func__, e.what());
+      printf( "Exception caught in %s msg=%s\n",__func__, e.what());
     }
   }
 }
