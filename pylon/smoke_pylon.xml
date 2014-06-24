@@ -1,0 +1,20 @@
+<config>
+    <moduleName>pylon</moduleName>
+ 
+    <!-- how many source files should the generator create? -->
+    <parts>1</parts>
+ 
+   
+   
+    <!-- regexps for signatures of top-level functions we want to have included -->
+    <functions>
+        <!-- include functions starting with 'myapp' -->
+        <name>.*</name>
+ 
+        <!-- and operators -->
+        <name>.*operator.*</name>
+    </functions>
+    <classList>
+        <class>Pylon::CInstantCameraArray</class>
+    </classlist>
+</config>

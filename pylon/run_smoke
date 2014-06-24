@@ -1,0 +1,1 @@
+smokegen -config smoke_pylon.xml -I/home/martin/pylon-3.2.1-x86_64/pylon3/include -g dump -- /home/martin/pylon-3.2.1-x86_64/pylon3/include/pylon/PylonIncludes.h 
