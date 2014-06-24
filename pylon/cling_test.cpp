@@ -48,3 +48,7 @@ INodeMap &control0 = cameras[0].GetNodeMap();
 const CIntegerPtr width=control0.GetNode("Width");
 width->GetMax();
 .L GenApi/Pointer.h
+
+control0.GetNode("Width")->GetPollingTime();
+cout << control0.GetNode("PixelFormat").ToString() << endl;
+const CEnumerationPtr nod=control0.GetNode("PixelFormat");
