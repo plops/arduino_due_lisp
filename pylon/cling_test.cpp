@@ -19,8 +19,26 @@ using namespace Pylon;
 using namespace std;
 
 PylonInitialize()
+// don't forget this before closing cling:
+// PylonTerminate();
 
 CTlFactory &tlFactory = CTlFactory::GetInstance()
 DeviceInfoList_t devices;
 tlFactory.EnumerateDevices(devices)
 CInstantCameraArray cameras(3);
+for ( size_t i = 0; i < cameras.GetSize(); ++i) cameras[ i ].Attach( tlFactory.CreateDevice( devices[ i ]));
+
+CGrabResultPtr ptrGrabResult
+cameras.StartGrabbing()
+cameras.IsGrabbing()
+cameras.RetrieveResult( 5000, ptrGrabResult, TimeoutHandling_ThrowException)
+intptr_t cameraContextValue = ptrGrabResult->GetCameraContext()
+
+
+  
+cout << "Camera " <<  cameraContextValue << ": " << cameras[ cameraContextValue ].GetDeviceInfo().GetModelName() << endl;
+cout << "GrabSucceeded: " << ptrGrabResult->GrabSucceeded() << endl;
+cout << "SizeX: " << ptrGrabResult->GetWidth() << endl;
+cout << "SizeY: " << ptrGrabResult->GetHeight() << endl;
+const uint8_t *pImageBuffer = (uint8_t *) ptrGrabResult->GetBuffer();
+cout << "Gray value of first pixel: " << (uint32_t) pImageBuffer[0] << endl << endl;
