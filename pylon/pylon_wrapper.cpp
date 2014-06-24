@@ -14,7 +14,7 @@ extern "C" {
       printf( "Exception caught in %s msg=%s",__func__, e.what());
     }
   }
-  void pylon_wrapper_terminate(void*cams)
+  void pylon_wrapper_terminate(void*cams,void*factory)
   {
     try{
       CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
@@ -25,11 +25,17 @@ extern "C" {
       printf( "Exception caught in %s msg=%s",__func__, e.what());
     }
   }
-  void*pylon_wrapper_create(unsigned int maxCamerasToUse)
+  void*pylon_wrapper_factory()
+  {
+    cout << "creating factory" << endl;
+    CTlFactory *tlFactory = CTlFactory::GetInstance();
+    return (void*) tlFactory;
+  }
+  void*pylon_wrapper_create(void*factory,unsigned int maxCamerasToUse)
   {
     try{
-      cout << "creating factory" << endl;
-      CTlFactory& tlFactory = CTlFactory::GetInstance();
+      CTlFactory &tlFactory = (CTlFactory&) (*((CTlFactory*)factory));
+      
       // Get all attached devices
       DeviceInfoList_t devices;
       cout << "finding devices" << endl;
