@@ -4,6 +4,7 @@
      #:initialize
      #:terminate
      #:create
+     #:factory
      #:start-grabbing
      #:grab
      #:get-max-i

@@ -37,7 +37,7 @@
 
 ;; (pylon:get-value-e *cams* 0 "PixelFormat")
 
-#+nil (pylon:terminate)
+(pylon:terminate *cams* *fact*)
 
 
 ;  // Width Height OffsetX OffsetY
