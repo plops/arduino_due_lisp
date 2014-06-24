@@ -17,6 +17,7 @@ export GENICAM_ROOT_V2_3=$PYLON_ROOT/genicam
 
 using namespace Pylon;
 using namespace std;
+using namespace GenApi;
 
 PylonInitialize()
 // don't forget this before closing cling:
@@ -42,3 +43,8 @@ cout << "SizeX: " << ptrGrabResult->GetWidth() << endl;
 cout << "SizeY: " << ptrGrabResult->GetHeight() << endl;
 const uint8_t *pImageBuffer = (uint8_t *) ptrGrabResult->GetBuffer();
 cout << "Gray value of first pixel: " << (uint32_t) pImageBuffer[0] << endl << endl;
+
+INodeMap &control0 = cameras[0].GetNodeMap();
+const CIntegerPtr width=control0.GetNode("Width");
+width->GetMax();
+.L GenApi/Pointer.h
