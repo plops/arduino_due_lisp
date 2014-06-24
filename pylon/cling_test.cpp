@@ -52,3 +52,4 @@ width->GetMax();
 control0.GetNode("Width")->GetPollingTime();
 cout << control0.GetNode("PixelFormat").ToString() << endl;
 const CEnumerationPtr nod=control0.GetNode("PixelFormat");
+const CIntegerPtr width=control0.GetNode("Width");
