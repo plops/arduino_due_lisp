@@ -14,9 +14,11 @@ extern "C" {
       printf( "Exception caught in %s msg=%s",__func__, e.what());
     }
   }
-  void pylon_wrapper_terminate()
+  void pylon_wrapper_terminate(void*cams)
   {
     try{
+      CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
+      delete cameras;
       PylonTerminate();
     }
     catch (GenICam::GenericException& e) {
@@ -51,7 +53,11 @@ extern "C" {
   int pylon_wrapper_get_max_i(void*cams,int cam,const char*node)
   {
     try{
-      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
+      if(cam>=cameras->GetSize())
+	cout << "there are not as many cameras available as requested: "
+	     << cam << ">=" << cameras->GetSize() << endl;
+
       INodeMap &control = (*cameras)[cam].GetNodeMap();
       const CIntegerPtr nod=control.GetNode(node);
       cout << "max(" << node << ")=" << nod->GetMax() << endl;
@@ -65,6 +71,10 @@ extern "C" {
   {
     try{
       CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      if(cam>=cameras->GetSize())
+	cout << "there are not as many cameras available as requested: "
+	     << cam << ">=" << cameras->GetSize() << endl;
+
       INodeMap &control = (*cameras)[cam].GetNodeMap();
       const CIntegerPtr nod=control.GetNode(node);
       cout << "min(" << node << ")=" << nod->GetMin() << endl;
@@ -78,6 +88,10 @@ extern "C" {
   {
     try{
       CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      if(cam>=cameras->GetSize())
+	cout << "there are not as many cameras available as requested: "
+	     << cam << ">=" << cameras->GetSize() << endl;
+
       INodeMap &control = (*cameras)[cam].GetNodeMap();
       const CIntegerPtr nod=control.GetNode(node);
       cout << "inc(" << node << ")=" << nod->GetInc() << endl;
@@ -91,6 +105,10 @@ extern "C" {
   {
     try{
       CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      if(cam>=cameras->GetSize())
+	cout << "there are not as many cameras available as requested: "
+	     << cam << ">=" << cameras->GetSize() << endl;
+
       INodeMap &control = (*cameras)[cam].GetNodeMap();
       const CIntegerPtr nod=control.GetNode(node);
       return nod->GetValue(verify,ignore_cache);
@@ -103,6 +121,10 @@ extern "C" {
   {
     try{
       CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      if(cam>=cameras->GetSize())
+	cout << "there are not as many cameras available as requested: "
+	     << cam << ">=" << cameras->GetSize() << endl;
+
       INodeMap &control = (*cameras)[cam].GetNodeMap();
       const CIntegerPtr nod=control.GetNode(node);
       nod->SetValue(value);
@@ -115,6 +137,11 @@ extern "C" {
   {
     try{
       CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      if(cam>=cameras->GetSize())
+	cout << "there are not as many cameras available as requested: "
+	     << cam << ">=" << cameras->GetSize() << endl;
+
+
       INodeMap &control = (*cameras)[cam].GetNodeMap();
       const CEnumerationPtr nod=control.GetNode(node);
       StringList_t symb;
@@ -132,6 +159,11 @@ extern "C" {
   {
     try{
       CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      if(cam>=cameras->GetSize())
+	cout << "there are not as many cameras available as requested: "
+	     << cam << ">=" << cameras->GetSize() << endl;
+
+
       INodeMap &control = (*cameras)[cam].GetNodeMap();
       const CEnumerationPtr nod=control.GetNode(node);
       nod->SetIntValue(value);
@@ -144,6 +176,10 @@ extern "C" {
   {
     try{
       CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      if(cam>=cameras->GetSize())
+	cout << "there are not as many cameras available as requested: "
+	     << cam << ">=" << cameras->GetSize() << endl;
+
       INodeMap &control = (*cameras)[cam].GetNodeMap();
       const CEnumerationPtr nod=control.GetNode(node);
       return nod->GetIntValue();
@@ -156,6 +192,10 @@ extern "C" {
   {
     try{
       CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      if(cam>=cameras->GetSize())
+	cout << "there are not as many cameras available as requested: "
+	     << cam << ">=" << cameras->GetSize() << endl;
+
       INodeMap &control = (*cameras)[cam].GetNodeMap();
       const CEnumerationPtr nod=control.GetNode(node);
       cout << nod->ToString() << endl;
@@ -168,6 +208,10 @@ extern "C" {
   {
     try{
       CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      if(cam>=cameras->GetSize())
+	cout << "there are not as many cameras available as requested: "
+	     << cam << ">=" << cameras->GetSize() << endl;
+
       INodeMap &control = (*cameras)[cam].GetNodeMap();
       const CEnumerationPtr nod=control.GetNode(node);
       nod->FromString(value);

@@ -7,8 +7,9 @@
 ;; export PYLON_CAMEMU=2
 
 
-(load "~/quicklisp/setup.lisp")
+#-sbcl (load "~/quicklisp/setup.lisp")
 
+(declaim (optimize (debug 3)))
 (eval-when (:execute :load-toplevel :compile-toplevel)
   (setf asdf:*central-registry* '(*default-pathname-defaults*
                                   #p"/home/martin/arduino_due_lisp/pylon/"))
@@ -20,7 +21,7 @@
 (in-package :pylon-test)
 
 (pylon:initialize)
-(defparameter *cams* (pylon:create 2))
+(defparameter *cams* (pylon:create 1))
 (pylon:get-max-i *cams* 0 "OffsetX")
 (pylon:get-max-i *cams* 0 "Width")
 (loop for e in '("Width" "Height" "OffsetX" "OffsetY") collect
@@ -35,7 +36,7 @@
 
 (pylon:get-value-e *cams* 0 "PixelFormat")
 
-(pylon:terminate)
+#+nil (pylon:terminate)
 
 
 ;  // Width Height OffsetX OffsetY
