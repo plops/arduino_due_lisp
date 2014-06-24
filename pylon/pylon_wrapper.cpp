@@ -28,17 +28,21 @@ extern "C" {
   void*pylon_wrapper_create(unsigned int maxCamerasToUse)
   {
     try{
+      cout << "creating factory" << endl;
       CTlFactory& tlFactory = CTlFactory::GetInstance();
       // Get all attached devices
       DeviceInfoList_t devices;
+      cout << "finding devices" << endl;
       if ( tlFactory.EnumerateDevices(devices) == 0 )
 	printf("%s finds no cameras: %d\n",__func__,(int)devices.size());       
-      
+
+      cout << "preparing camera array" << endl;
       CInstantCameraArray *cameras =
 	new CInstantCameraArray(min(size_t(maxCamerasToUse),devices.size()));
-      
+      cout << "attaching cameras" << endl;
       // Create and attach all Pylon Devices.
       for ( size_t i = 0; i < cameras->GetSize(); ++i) {
+	cout << "camera " << i << endl;
 	(*cameras)[ i ].Attach( tlFactory.CreateDevice( devices[ i ]));
 	// Print the model name of the camera.
 	cout << "Using device " << (*cameras)[ i ].GetDeviceInfo().GetModelName() << endl;
