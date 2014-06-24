@@ -20,6 +20,9 @@
 
 (in-package :pylon-test)
 
+(defun bla ()
+ (sqrt sb-ext:double-float-positive-infinity))
+
 (pylon:initialize)
 (defparameter *fact* (pylon::factory))
 (defparameter *cams* (pylon:create *fact* 1))
