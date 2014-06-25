@@ -32,8 +32,7 @@
     (defparameter *cams* (pylon:create *fact* 1)))
   #-sbcl
   (defparameter *cams* (pylon:create *fact* 1)))
-(FLOATING-POINT-INVALID-OPERATION
- nil)
+
 
 (pylon:get-max-i *cams* 0 "OffsetX")
 (pylon:get-max-i *cams* 0 "Width")
@@ -48,6 +47,24 @@
 ;; (pylon:get-symbolics-e *cams* 0 "TriggerMode")
 
 ;; (pylon:get-value-e *cams* 0 "PixelFormat")
+
+(pylon:start-grabbing *cams*)
+
+(defparameter *buf*
+    (foreign-alloc :unsigned-char :count (* 1040 1040)))
+
+(mem-aref *buf* :unsigned-char 256)
+
+(with-foreign-objects ((cam :int)
+			 (success-p :int)
+			 (w :int)
+			 (h :int))
+    (pylon:grab *cams* 1040 1040 *buf*
+		cam success-p w h)
+    (format nil "~a~%" (list (mem-ref cam :int)
+			     (mem-ref success-p :int)
+			     (mem-ref w :int)
+			     (mem-ref h :int))))
 
 (pylon:terminate *cams* *fact*)
 
