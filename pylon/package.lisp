@@ -16,4 +16,7 @@
      #:set-value-e
      #:get-value-e
      #:to-string-e
-     #:from-string-e))
+     #:from-string-e
+     #:stop-grabbing
+     #:cam-open
+     #:cam-close))

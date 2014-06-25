@@ -21,9 +21,6 @@
 
 (in-package :pylon-test)
 
-(defun bla ()
- (sqrt sb-ext:double-float-positive-infinity))
-
 (pylon:initialize)
 (defparameter *fact* (pylon::factory))
 (progn
@@ -33,6 +30,7 @@
   #-sbcl
   (defparameter *cams* (pylon:create *fact* 1)))
 
+(pylon:cam-open *cams* 0)
 
 (pylon:get-max-i *cams* 0 "OffsetX")
 (pylon:get-max-i *cams* 0 "Width")

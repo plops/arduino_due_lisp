@@ -78,5 +78,15 @@
   (node :string)
   (value :string))
 
+(cffi:defcfun ("pylon_wrapper_stop_grabbing" stop-grabbing) :void
+  (cams :pointer))
+
+(cffi:defcfun ("pylon_wrapper_open" cam-open) :void
+  (cams :pointer)
+  (cam :int))
+
+(cffi:defcfun ("pylon_wrapper_close" cam-close) :void
+  (cams :pointer)
+  (cam :int))
 
 

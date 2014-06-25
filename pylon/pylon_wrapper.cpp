@@ -245,6 +245,70 @@ extern "C" {
       printf( "Exception caught in %s msg=%s\n",__func__, e.what());
     }
   }
+  void pylon_wrapper_stop_grabbing(void*cams)
+  {
+    try{
+      CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
+      cameras->StopGrabbing();
+    }
+    catch (GenICam::GenericException& e) {
+      printf( "Exception caught in %s msg=%s\n",__func__, e.what());
+    }
+  }
+
+  // void*pylon_wrapper_get_lock(void*cams,int cam)
+  // {
+  //   try{
+  //     CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
+  //     if(cam>=cameras->GetSize())
+  // 	cout << "there are not as many cameras available as requested: "
+  // 	     << cam << ">=" << cameras->GetSize() << endl;
+  //     CInstantCamera &current = cameras[cam];
+  //     return (void*) &(CInstantCamera::GetLock(current));
+  //   }
+  //   catch (GenICam::GenericException& e) {
+  //     printf( "Exception caught in %s msg=%s\n",__func__, e.what());
+  //     return NULL;
+  //   }
+  // }
+  // int pylon_wrapper_release_lock(void*lock)
+  // {
+  //   try{
+  //     GenApi::CLock *clock = (GenApi::CLock*)lock;
+  //     delete clock;
+  //     return 1;
+  //   }
+  //   catch (GenICam::GenericException& e) {
+  //     printf( "Exception caught in %s msg=%s\n",__func__, e.what());
+  //     return -1;
+  //   }
+  // }
+  void pylon_wrapper_open(void*cams,int cam)
+  {
+    try{
+      CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
+      if(cam>=cameras->GetSize())
+	cout << "there are not as many cameras available as requested: "
+	     << cam << ">=" << cameras->GetSize() << endl;
+      cameras[cam].Open();
+    }
+    catch (GenICam::GenericException& e) {
+      printf( "Exception caught in %s msg=%s\n",__func__, e.what());
+    }
+  }
+  void pylon_wrapper_close(void*cams,int cam)
+  {
+    try{
+      CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
+      if(cam>=cameras->GetSize())
+	cout << "there are not as many cameras available as requested: "
+	     << cam << ">=" << cameras->GetSize() << endl;
+      cameras[cam].Close();
+    }
+    catch (GenICam::GenericException& e) {
+      printf( "Exception caught in %s msg=%s\n",__func__, e.what());
+    }
+  }
   // cams .. pointer handle as returned by create
   // buf .. pointer to foreign allocated array
   // ww, hh .. size of buf
