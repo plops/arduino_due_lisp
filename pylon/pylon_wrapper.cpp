@@ -75,6 +75,7 @@ extern "C" {
     }
     catch (GenICam::GenericException& e) {
       printf( "Exception caught in %s msg=%s\n",__func__, e.what());
+      return -1;
     }
   }
   int pylon_wrapper_get_min_i(void*cams,int cam,const char*node)
@@ -92,6 +93,7 @@ extern "C" {
     }
     catch (GenICam::GenericException& e) {
       printf( "Exception caught in %s msg=%s\n",__func__, e.what());
+      return -1;
     }
   }
   int pylon_wrapper_get_inc_i(void*cams,int cam,const char*node)
@@ -109,6 +111,7 @@ extern "C" {
     }
     catch (GenICam::GenericException& e) {
       printf( "Exception caught in %s msg=%s\n",__func__, e.what());
+      return -1;
     }
   }
   int pylon_wrapper_get_value_i(void*cams,int cam,const char*node,int verify, int ignore_cache)
@@ -125,6 +128,7 @@ extern "C" {
     }
     catch (GenICam::GenericException& e) {
       printf( "Exception caught in %s msg=%s\n",__func__, e.what());
+      return -1;
     }
   }
   void pylon_wrapper_set_value_i(void*cams,int cam,const char*node,int value)
@@ -196,6 +200,7 @@ extern "C" {
     }
     catch (GenICam::GenericException& e) {
       printf( "Exception caught in %s msg=%s\n",__func__, e.what());
+      return -1;
     }
   }
   void pylon_wrapper_to_string_e(void*cams,int cam,const char*node)
