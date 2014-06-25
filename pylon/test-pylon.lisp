@@ -30,7 +30,7 @@
   #-sbcl
   (defparameter *cams* (pylon:create *fact* 1)))
 
-(pylon:cam-open *cams* 0)
+(pylon:cams-open *cams*)
 
 (pylon:get-max-i *cams* 0 "OffsetX")
 (pylon:get-max-i *cams* 0 "Width")

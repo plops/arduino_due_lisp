@@ -81,11 +81,17 @@
 (cffi:defcfun ("pylon_wrapper_stop_grabbing" stop-grabbing) :void
   (cams :pointer))
 
-(cffi:defcfun ("pylon_wrapper_open" cam-open) :void
+(cffi:defcfun ("pylon_wrapper_cams_open" cams-open) :void
+  (cams :pointer))
+
+(cffi:defcfun ("pylon_wrapper_cams_close" cams-close) :void
+  (cams :pointer))
+
+(cffi:defcfun ("pylon_wrapper_cam_open" cam-open) :void
   (cams :pointer)
   (cam :int))
 
-(cffi:defcfun ("pylon_wrapper_close" cam-close) :void
+(cffi:defcfun ("pylon_wrapper_cam_close" cam-close) :void
   (cams :pointer)
   (cam :int))
 

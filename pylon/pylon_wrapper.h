@@ -4,10 +4,10 @@ void*pylon_wrapper_factory();
 void*pylon_wrapper_create(void*factory,unsigned int maxCamerasToUse);
 void pylon_wrapper_start_grabbing(void*cams);
 void pylon_wrapper_stop_grabbing(void*cams);
-void pylon_wrapper_open(void*cams,int cam);
-void pylon_wrapper_close(void*cams,int cam);
-void*pylon_wrapper_get_lock(void*cams,int cam);
-int pylon_wrapper_release_lock(void*lock);
+void pylon_wrapper_cams_open(void*cams);
+void pylon_wrapper_cams_close(void*cams);
+void pylon_wrapper_cam_open(void*cams,int cam);
+void pylon_wrapper_cam_close(void*cams,int cam);
 // cams .. pointer handle as returned by create
 // buf .. pointer to foreign allocated array
 // ww, hh .. size of buf

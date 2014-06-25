@@ -18,5 +18,7 @@
      #:to-string-e
      #:from-string-e
      #:stop-grabbing
+     #:cams-open
+     #:cams-close
      #:cam-open
      #:cam-close))
