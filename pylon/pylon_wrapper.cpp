@@ -28,13 +28,13 @@ extern "C" {
   void*pylon_wrapper_factory()
   {
     cout << "creating factory" << endl;
-    CTlFactory *tlFactory = CTlFactory::GetInstance();
-    return (void*) tlFactory;
+    CTlFactory &tlFactory = CTlFactory::GetInstance();
+    return (void*) &tlFactory;
   }
   void*pylon_wrapper_create(void*factory,unsigned int maxCamerasToUse)
   {
     try{
-      CTlFactory &tlFactory = (CTlFactory&) (*((CTlFactory*)factory));
+      CTlFactory &tlFactory = (CTlFactory&) ((CTlFactory*)factory)[0];
       
       // Get all attached devices
       DeviceInfoList_t devices;

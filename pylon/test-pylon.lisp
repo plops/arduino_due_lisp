@@ -44,16 +44,16 @@
 (pylon:to-string-e *cams* 0 "PixelFormat")
 (pylon:from-string-e *cams* 0 "PixelFormat" "Mono16")
 
-;; (pylon:get-symbolics-e *cams* 0 "TriggerMode")
+(pylon:get-symbolics-e *cams* 0 "TriggerMode")
 
-;; (pylon:get-value-e *cams* 0 "PixelFormat")
+(pylon:get-value-e *cams* 0 "PixelFormat")
 
 (pylon:start-grabbing *cams*)
 
 (defparameter *buf*
     (foreign-alloc :unsigned-char :count (* 1040 1040)))
 
-(mem-aref *buf* :unsigned-char 256)
+(mem-aref *buf* :unsigned-char 1)
 
 (with-foreign-objects ((cam :int)
 			 (success-p :int)
