@@ -114,7 +114,7 @@
   (write-sequence data tty-stream)
   (finish-output tty-stream))
 
-
+#+nil
 (defparameter *ard8* (multiple-value-list
 		      (open-serial (first (directory "/dev/ttyACM0")) :element-type '(unsigned-byte 8))))
 #+nil
@@ -386,10 +386,12 @@
     (ensure-response-buffer-clear fd s)
     (talk-arduino fd s "(set 'setq (macro (name val) (list set (list quote name) val)))")))
 
+#+nil
 (defparameter *system*
  (with-open-file (s "system.lsp")
    (loop for l = (read s nil nil) while l collect l)))
 
+#+nil
 (defparameter *system-lines*
  (with-open-file (s "system.lsp")
    (loop for l = (read-line s nil nil) while l collect l)))

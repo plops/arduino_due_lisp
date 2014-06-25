@@ -6,6 +6,30 @@
 ;; export GENICAM_ROOT_V2_3=${PYLON_ROOT}/genicam
 ;; export PYLON_CAMEMU=2
 
+#+nil
+(load "../arduion-serial-sbcl/arduino-serial.lisp")
+#+nil
+(defparameter *ard* (multiple-value-list
+		      (serial::open-serial (first (directory "/dev/ttyACM0")))))
+#+nil
+(defun trigger-all-cameras ()
+  (serial::talk-arduino
+   (second *ard*) 
+   (first *ard*)
+   "(progn
+ (pin-mode 10 1)
+ (pin-mode 11 1)
+ (pin-mode 12 1)
+ (delay 10)
+ (digital-write 11 1)
+ (digital-write 12 1) 
+ (digital-write 10 1) 
+ (delay 10) 
+ (digital-write 11 0)
+ (digital-write 12 0)
+ (digital-write 10 0))"))
+#+nil
+(trigger-all-cameras)
 
 #-sbcl
 (load "~/quicklisp/setup.lisp")
@@ -45,6 +69,8 @@
 (pylon:get-symbolics-e *cams* 0 "TriggerMode")
 
 (pylon:get-value-e *cams* 0 "PixelFormat")
+(pylon:get-value-e *cams* 2 "TriggerMode")
+(pylon:set-value-e *cams* 2 "TriggerMode" 1)
 
 (pylon:start-grabbing *cams*)
 
@@ -53,16 +79,26 @@
 
 (mem-aref *buf* :unsigned-char 1)
 
-(with-foreign-objects ((cam :int)
-			 (success-p :int)
-			 (w :int)
-			 (h :int))
-    (pylon:grab *cams* 1040 1040 *buf*
-		cam success-p w h)
-    (format nil "~a~%" (list (mem-ref cam :int)
-			     (mem-ref success-p :int)
-			     (mem-ref w :int)
-			     (mem-ref h :int))))
+#+nil
+(trigger-all-cameras)
+
+;; 10 images in .9s
+;; 100 images in 10.5s
+(time
+ (loop for i below 100 collect
+      (progn
+	(trigger-all-cameras)
+	(loop for i below 3 collect
+	     (with-foreign-objects ((cam :int)
+				    (success-p :int)
+				    (w :int)
+				    (h :int))
+	       (pylon:grab *cams* 1040 1040 *buf*
+			   cam success-p w h)
+	       (format nil "~a~%" (list (mem-ref cam :int)
+					(mem-ref success-p :int)
+					(mem-ref w :int)
+					(mem-ref h :int))))))))
 
 (pylon:terminate *cams* *fact*)
 
