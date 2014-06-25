@@ -7,7 +7,8 @@
 ;; export PYLON_CAMEMU=2
 
 
-#-sbcl (load "~/quicklisp/setup.lisp")
+#-sbcl
+(load "~/quicklisp/setup.lisp")
 
 (declaim (optimize (debug 3)))
 (eval-when (:execute :load-toplevel :compile-toplevel)
@@ -25,16 +26,24 @@
 
 (pylon:initialize)
 (defparameter *fact* (pylon::factory))
-(defparameter *cams* (pylon:create *fact* 1))
-;; (pylon:get-max-i *cams* 0 "OffsetX")
-;; (pylon:get-max-i *cams* 0 "Width")
-;; (loop for e in '("Width" "Height" "OffsetX" "OffsetY") collect
-;;  (pylon:get-value-i *cams* 0 e t nil))
+(progn
+  #+sbcl
+  (sb-int:with-float-traps-masked (:invalid)
+    (defparameter *cams* (pylon:create *fact* 1)))
+  #-sbcl
+  (defparameter *cams* (pylon:create *fact* 1)))
+(FLOATING-POINT-INVALID-OPERATION
+ nil)
+
+(pylon:get-max-i *cams* 0 "OffsetX")
+(pylon:get-max-i *cams* 0 "Width")
+(loop for e in '("Width" "Height" "OffsetX" "OffsetY") collect
+  (pylon:get-value-i *cams* 0 e t nil))
 ;; (pylon:get-min-i *cams* 1 "Width")
 ;; (pylon:get-value-e *cams* 1 "PixelFormat")
-;; (pylon:get-symbolics-e *cams* 0 "PixelFormat")
-;; (pylon:to-string-e *cams* 0 "PixelFormat")
-;; (pylon:from-string-e *cams* 0 "PixelFormat" "Mono16")
+(pylon:get-symbolics-e *cams* 0 "PixelFormat")
+(pylon:to-string-e *cams* 0 "PixelFormat")
+(pylon:from-string-e *cams* 0 "PixelFormat" "Mono16")
 
 ;; (pylon:get-symbolics-e *cams* 0 "TriggerMode")
 
