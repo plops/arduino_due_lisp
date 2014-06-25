@@ -1,4 +1,4 @@
-(defpackage :serial
+(defpackage :arduino-serial-sbcl
   (:shadowing-import-from :cl close open ftruncate truncate time abort
 			  read write)
   (:use :cl :sb-posix)
@@ -8,7 +8,7 @@
 	   #:serial-recv-length
 	   #:read-response))
 
-(in-package :serial)
+(in-package :arduino-serial-sbcl)
  
 (defconstant FIONREAD #x541B)
 (defconstant IXANY #o4000)
