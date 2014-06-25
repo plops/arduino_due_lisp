@@ -26,7 +26,7 @@
 (progn
   #+sbcl
   (sb-int:with-float-traps-masked (:invalid)
-    (defparameter *cams* (pylon:create *fact* 1)))
+    (defparameter *cams* (pylon:create *fact* 3)))
   #-sbcl
   (defparameter *cams* (pylon:create *fact* 1)))
 
@@ -35,7 +35,7 @@
 (pylon:get-max-i *cams* 0 "OffsetX")
 (pylon:get-max-i *cams* 0 "Width")
 (loop for e in '("Width" "Height" "OffsetX" "OffsetY") collect
-  (pylon:get-value-i *cams* 0 e t nil))
+  (pylon:get-value-i *cams* 2 e t nil))
 ;; (pylon:get-min-i *cams* 1 "Width")
 ;; (pylon:get-value-e *cams* 1 "PixelFormat")
 (pylon:get-symbolics-e *cams* 0 "PixelFormat")

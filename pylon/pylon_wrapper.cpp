@@ -51,7 +51,7 @@ extern "C" {
 	cout << "camera " << i << endl;
 	(*cameras)[ i ].Attach( tlFactory.CreateDevice( devices[ i ]));
 	// Print the model name of the camera.
-	cout << "Using device " << (*cameras)[ i ].GetDeviceInfo().GetModelName() << endl;
+	cout << "Using device " << (*cameras)[ i ].GetDeviceInfo().GetFullName() << endl;
       }
       return cameras;
     }
@@ -317,7 +317,7 @@ extern "C" {
 	// context allows to determine which camera produced the grab result
 	intptr_t cameraContextValue = ptrGrabResult->GetCameraContext();
 	*camera = cameraContextValue;
-	cout << "Camera " <<  cameraContextValue << ": " << (*cameras)[ cameraContextValue ].GetDeviceInfo().GetModelName() << endl;
+	cout << "Camera " <<  cameraContextValue << ": " << (*cameras)[ cameraContextValue ].GetDeviceInfo().GetFullName() << endl;
 	cout << "GrabSucceeded: " << ptrGrabResult->GrabSucceeded() << endl;
 	*success_p = ptrGrabResult->GrabSucceeded();
 	if(!ptrGrabResult->GrabSucceeded()){
