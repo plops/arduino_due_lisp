@@ -1,6 +1,9 @@
 # Makefile for Basler Pylon sample program
 .PHONY			: all clean
 
+# The program to build
+NAME			:= Grab_MultipleCameras
+
 # Installation directories for GenICam and Pylon
 PYLON_ROOT		?= /home/martin/pylon-3.2.1-x86_64/pylon3
 GENICAM_ROOT	?= $(PYLON_ROOT)/genicam
@@ -18,13 +21,15 @@ LDFLAGS			:= -L$(PYLON_ROOT)/lib64 \
 LIBS			:= -lpylonbase -lGenApi_gcc40_v2_3 -lGCBase_gcc40_v2_3 -lLog_gcc40_v2_3 -lMathParser_gcc40_v2_3 -lXerces-C_gcc40_v2_7 -llog4cpp_gcc40_v2_3
 
 # Rules for building
-all				: libpylon_wrapper.so test_pylon_wrapper
+all				: $(NAME) 
 
-libpylon_wrapper.so: pylon_wrapper.cpp
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(LIBS) -fPIC  -o libpylon_wrapper.so -shared pylon_wrapper.cpp 
+$(NAME)			: $(NAME).o
+	$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-test_pylon_wrapper: test_pylon_wrapper.o libpylon_wrapper.so
-	$(LD) -L. $(LDFLAGS) $(LIBS) -lpylon_wrapper -o $@ $^ 
+$(NAME).o: $(NAME).cpp
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
+
 
 clean			:
-	$(RM) libpylon_wrapper.so test_pylon_wrapper.o test_pylon_wrapper
+	$(RM) $(NAME).o $(NAME)
+
