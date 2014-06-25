@@ -288,6 +288,10 @@ extern "C" {
     }
     catch (GenICam::GenericException& e) {
       printf( "Exception caught in %s msg=%s\n",__func__, e.what());
+      *camera = -1;
+      *w = -1;
+      *h = -1;
+      *success_p = -1;
     }
   }
 }
