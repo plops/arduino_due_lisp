@@ -6,7 +6,8 @@
 	   #:close-serial
 	   #:fd-type
 	   #:serial-recv-length
-	   #:read-response))
+	   #:read-response
+	   #:talk-arduino))
 
 (in-package :arduino-serial-sbcl)
  
@@ -117,6 +118,7 @@
 #+nil
 (defparameter *ard8* (multiple-value-list
 		      (open-serial (first (directory "/dev/ttyACM0")) :element-type '(unsigned-byte 8))))
+
 #+nil
 (defparameter *ard8-2* (multiple-value-list
 		      (open-serial (car (last (directory "/dev/ttyACM*"))) :element-type '(unsigned-byte 8))))
