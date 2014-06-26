@@ -1,3 +1,7 @@
+# pylon Common Lisp binding
+
+## introduction
+
 I ran into problems when I tried to read out the three Gig-E cameras
 simultaneously using the free software aravis. 
 
@@ -19,3 +23,59 @@ command line interface it is quite easy to test the
 library. Unfortunately, Cling is not very well integrated with emacs
 and I didn't learn enough about it to understand how to do
 introspection. Therefore, I still prefer Common Lisp.
+
+## usage:
+
+``` initialize ```
+
+``` factory => factory ```
+
+``` create factory n => handle ```
+
+``` terminate handle factory ```
+
+
+```
+cams-open handle 
+cams-close 
+```
+
+```
+cam-open handle cam 
+cam-close 
+```
+
+
+
+``` 
+ get-max-i   handle cam node 
+ get-min-i   handle cam node 
+ get-inc-i   handle cam node 
+ get-value-i handle cam  
+```
+
+example: 
+```common-lisp
+(pylon:get-max-i *cams* 0 "Width")
+(loop for e in '("Width" "Height" "OffsetX" "OffsetY") collect
+  (pylon:get-value-i *cams* 2 e t nil))
+```
+
+```
+ get-symbolics-e
+ get-value-e
+ to-string-e
+ set-value-e
+ from-string-e
+```
+
+```
+start-grabbing
+stop-grabbing
+```
+
+```
+grab
+grab-cdf
+```
+
