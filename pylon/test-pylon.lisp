@@ -6,20 +6,28 @@
 ;; export GENICAM_ROOT_V2_3=${PYLON_ROOT}/genicam
 ;; export PYLON_CAMEMU=2
 
+#-sbcl
+(load "~/quicklisp/setup.lisp")
+
+
 (eval-when (:execute :load-toplevel :compile-toplevel)
   (setf asdf:*central-registry*
 	'(*default-pathname-defaults*
 	  #p"/home/martin/arduino_due_lisp/arduino-serial-sbcl/"
-	  #p"/home/martin/stage/cl-cffi-fftw3/"))
+	  #p"/home/martin/stage/cl-cffi-fftw3/"
+	  #p"/home/martin/arduino_due_lisp/pylon/"))
   (asdf:load-system "fftw")
+  (asdf:load-system "pylon")
   (asdf:load-system "arduino-serial-sbcl"))
 
 #+nil
-(defparameter *ard* (multiple-value-list
-		      (serial::open-serial (first (directory "/dev/ttyACM0")))))
+(defparameter *ard* 
+  (multiple-value-list
+   (arduino-serial-sbcl:open-serial 
+    (first (directory "/dev/ttyACM0")))))
 #+nil
 (defun trigger-all-cameras ()
-  (serial::talk-arduino
+  (arduino-serial-sbcl:talk-arduino
    (second *ard*) 
    (first *ard*)
    "(progn
@@ -37,19 +45,13 @@
 #+nil
 (trigger-all-cameras)
 
-#-sbcl
-(load "~/quicklisp/setup.lisp")
-
-(declaim (optimize (debug 3)))
-(eval-when (:execute :load-toplevel :compile-toplevel)
-  (setf asdf:*central-registry* '(*default-pathname-defaults*
-                                  #p"/home/martin/arduino_due_lisp/pylon/"))
-  (asdf:load-system "pylon"))
 
 (defpackage :pylon-test
   (:use :cl :cffi))
 
 (in-package :pylon-test)
+
+(fftw:prepare-threads)
 
 (pylon:initialize)
 (defparameter *fact* (pylon::factory))

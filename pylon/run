@@ -3,6 +3,9 @@ export PYLON_ROOT=${HOME}/pylon-3.2.1-x86_64/pylon3
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PYLON_ROOT}/genicam/bin/Linux64_x64
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PYLON_ROOT}/lib64
 export GENICAM_ROOT_V2_3=${PYLON_ROOT}/genicam
+export GENICAM_CACHE_V2_3=${HOME}/genicam_xml_cache
+export LANG=C
+sudo sh ../reset-cams.sh
 export PYLON_CAMEMU=2
 
 
