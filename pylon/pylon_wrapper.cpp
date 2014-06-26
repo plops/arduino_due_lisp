@@ -350,4 +350,48 @@ extern "C" {
       *success_p = -1;
     }
   }
+  // buf is complex double float, fill only real part
+  void pylon_wrapper_grab_cdf(void*cams,int ww,int hh,double * buf,int*camera,int*success_p,int*w,int*h)
+  {
+    try{
+      CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
+      if(cameras->IsGrabbing()){
+	CGrabResultPtr ptrGrabResult;
+	cameras->RetrieveResult( 5000, ptrGrabResult, TimeoutHandling_ThrowException);
+	// context allows to determine which camera produced the grab result
+	intptr_t cameraContextValue = ptrGrabResult->GetCameraContext();
+	*camera = cameraContextValue;
+	cout << "Camera " <<  cameraContextValue << ": " << (*cameras)[ cameraContextValue ].GetDeviceInfo().GetFullName() << endl;
+	cout << "GrabSucceeded: " << ptrGrabResult->GrabSucceeded() << endl;
+	*success_p = ptrGrabResult->GrabSucceeded();
+	if(!ptrGrabResult->GrabSucceeded()){
+	  std::cout << "Error: " << ptrGrabResult->GetErrorCode() << " " << ptrGrabResult->GetErrorDescription();
+	  return;
+	}
+	cout << "SizeX: " << ptrGrabResult->GetWidth() << endl;
+	cout << "SizeY: " << ptrGrabResult->GetHeight() << endl;
+	const uint8_t *pImageBuffer = (uint8_t *) ptrGrabResult->GetBuffer();
+	cout << "Gray value of first pixel: " << (uint32_t) pImageBuffer[0] << endl << endl;
+
+	*w = ptrGrabResult->GetWidth();
+	*h = ptrGrabResult->GetHeight();
+	if (ww<*w)
+	  printf("width of input array not sufficient");
+	if (hh<*h)
+	  printf("height of input array not sufficient");
+
+	int i,j;
+	for(j=0;j< (*h);j++)
+	  for(i=0;i< (*w);i++)
+	    buf[2*(i+ (*w) * j)] = 1.0*pImageBuffer[i+(*w)*j];
+      }
+    }
+    catch (GenICam::GenericException& e) {
+      printf( "Exception caught in %s msg=%s\n",__func__, e.what());
+      *camera = -1;
+      *w = -1;
+      *h = -1;
+      *success_p = -1;
+    }
+  }
 }

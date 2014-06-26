@@ -20,6 +20,16 @@
   (w (:pointer :int))
   (h (:pointer :int)))
 
+(cffi:defcfun ("pylon_wrapper_grab_cdf" grab-cdf) :void
+  (cams :pointer)
+  (ww :int)
+  (hh :int)
+  (buf (:pointer :double))
+  (camera (:pointer :int))
+  (success-p (:pointer :int))
+  (w (:pointer :int))
+  (h (:pointer :int)))
+
 (cffi:defcfun ("pylon_wrapper_get_max_i" get-max-i) :int
   (cams :pointer)
   (cam :int)

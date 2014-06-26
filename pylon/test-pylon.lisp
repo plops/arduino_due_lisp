@@ -6,8 +6,14 @@
 ;; export GENICAM_ROOT_V2_3=${PYLON_ROOT}/genicam
 ;; export PYLON_CAMEMU=2
 
-#+nil
-(load "../arduion-serial-sbcl/arduino-serial.lisp")
+(eval-when (:execute :load-toplevel :compile-toplevel)
+  (setf asdf:*central-registry*
+	'(*default-pathname-defaults*
+	  #p"/home/martin/arduino_due_lisp/arduino-serial-sbcl/"
+	  #p"/home/martin/stage/cl-cffi-fftw3/"))
+  (asdf:load-system "fftw")
+  (asdf:load-system "arduino-serial-sbcl"))
+
 #+nil
 (defparameter *ard* (multiple-value-list
 		      (serial::open-serial (first (directory "/dev/ttyACM0")))))

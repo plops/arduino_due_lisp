@@ -7,6 +7,7 @@
      #:factory
      #:start-grabbing
      #:grab
+     #:grab-cdf
      #:get-max-i
      #:get-min-i
      #:get-inc-i
