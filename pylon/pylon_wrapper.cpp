@@ -20,7 +20,7 @@ extern "C" {
       CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
       delete cameras;
       CTlFactory *tlFactory = (CTlFactory*)factory;
-      delete factory;
+      delete tlFactory;
       PylonTerminate();
     }
     catch (GenICam::GenericException& e) {
