@@ -108,7 +108,7 @@
 					(mem-ref w :int)
 					(mem-ref h :int))))))))
 
-(pylon:terminate *cams* *fact*)
+(pylon:terminate *cams*)
 
 
 ;  // Width Height OffsetX OffsetY

@@ -14,13 +14,11 @@ extern "C" {
       printf( "Exception caught in %s msg=%s",__func__, e.what());
     }
   }
-  void pylon_wrapper_terminate(void*cams,void*factory)
+  void pylon_wrapper_terminate(void*cams)
   {
     try{
       CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
       delete cameras;
-      CTlFactory *tlFactory = (CTlFactory*)factory;
-      delete tlFactory;
       PylonTerminate();
     }
     catch (GenICam::GenericException& e) {

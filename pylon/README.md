@@ -35,8 +35,7 @@ session. Otherwise cameras may need to be power cycled.
 ``` factory => factory ```
 
 Return a transport level factory. Its return value is treated as an
-opaque pointer and only necessary as the first argument of `create`
-and the second of `terminate`.
+opaque pointer and only necessary as the first argument of `create`.
 
 
 ``` create factory n => handle ```
@@ -46,12 +45,11 @@ the full names of the cameras are printed on stdout.  Returns an
 opaque pointer to a CInstantCameraArray which needs to be given as a
 handle to all other functions that access the cameras in some way.
 
-``` terminate handle factory ```
+``` terminate handle ```
 
-Deletes the opaque pointers to the CInstantCameraArray and the
-transport level factory. Also terminates the Pylon runtime and should
-close the cameras properly, so that they can be opened by another
-Gig-e client program.
+Deletes the opaque pointer to the CInstantCameraArray. Also terminates
+the Pylon runtime and should close the cameras properly, so that they
+can be opened by another Gig-e client program.
 
 
 ```
