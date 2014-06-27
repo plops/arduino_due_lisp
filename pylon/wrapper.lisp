@@ -10,7 +10,7 @@
 (cffi:defcfun ("pylon_wrapper_start_grabbing" start-grabbing) :void
   (cams :pointer))
 
-(cffi:defcfun ("pylon_wrapper_grab" grab) :void
+(cffi:defcfun ("pylon_wrapper_grab" %grab) :void
   (cams :pointer)
   (ww :int)
   (hh :int)
@@ -20,7 +20,21 @@
   (w (:pointer :int))
   (h (:pointer :int)))
 
-(cffi:defcfun ("pylon_wrapper_grab_cdf" grab-cdf) :void
+(defun grab (cams w h buf)
+  (declare (type (array (unsigned-byte 8) *) buf))
+  (cffi:with-pointer-to-vector-data (bufp buf)
+    (cffi:with-foreign-objects ((cam :int)
+			   (success-p :int)
+			   (wout :int)
+			   (hout :int))
+      (%grab cams w h bufp
+	     cam success-p wout hout)
+      (values (cffi:mem-ref cam :int)
+	      (cffi:mem-ref success-p :int)
+	      (cffi:mem-ref w :int)
+	      (cffi:mem-ref h :int)))))
+
+(cffi:defcfun ("pylon_wrapper_grab_cdf" %grab-cdf) :void
   (cams :pointer)
   (ww :int)
   (hh :int)
@@ -29,6 +43,20 @@
   (success-p (:pointer :int))
   (w (:pointer :int))
   (h (:pointer :int)))
+
+(defun grab-cdf (cams w h buf)
+  (declare (type (array (complex double-float) *) buf))
+  (cffi:with-pointer-to-vector-data (bufp buf)
+    (cffi:with-foreign-objects ((cam :int)
+				(success-p :int)
+				(wout :int)
+				(hout :int))
+      (%grab-cdf cams w h bufp
+		 cam success-p wout hout)
+      (values (cffi:mem-ref cam :int)
+	      (cffi:mem-ref success-p :int)
+	      (cffi:mem-ref w :int)
+	      (cffi:mem-ref h :int)))))
 
 (cffi:defcfun ("pylon_wrapper_get_max_i" get-max-i) :int
   (cams :pointer)

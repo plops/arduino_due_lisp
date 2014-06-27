@@ -353,6 +353,11 @@ extern "C" {
 	*success_p = ptrGrabResult->GrabSucceeded();
 	if(!ptrGrabResult->GrabSucceeded()){
 	  std::cout << "Error: " << ptrGrabResult->GetErrorCode() << " " << ptrGrabResult->GetErrorDescription();
+	  *camera = -1;
+	  *w = -1;
+	  *h = -1;
+	  *success_p = -1;
+
 	  return;
 	}
 	cout << "SizeX: " << ptrGrabResult->GetWidth() << endl;
@@ -397,6 +402,11 @@ extern "C" {
 	*success_p = ptrGrabResult->GrabSucceeded();
 	if(!ptrGrabResult->GrabSucceeded()){
 	  std::cout << "Error: " << ptrGrabResult->GetErrorCode() << " " << ptrGrabResult->GetErrorDescription();
+	  *camera = -1;
+	  *w = -1;
+	  *h = -1;
+	  *success_p = -1;
+	  
 	  return;
 	}
 	cout << "SizeX: " << ptrGrabResult->GetWidth() << endl;

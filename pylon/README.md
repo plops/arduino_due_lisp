@@ -127,9 +127,23 @@ Start acquisition on all cameras of the handle.
 
 
 ```
-grab     cams ww hh buf camera success-p
-grab-cdf
+grab     cams w h buf => (values cam success-p w h)
+grab-cdf cams w h buf => (values cam success-p w h)
 ```
+
+`grab` copies one acquired image into an array `buf` of (unsigned-byte
+8). The length of the array buf must be at least `w*h`. The image data
+originates from one of the cameras in the handle `cams` as indicated
+by the camera index `cam` of the return values. The returned values
+`w` and `h` indicate the dimensions of the returned image data in
+`buf`.
+
+In case of an error, all four return values are -1.
+
+`grab-cdf` converts the data into (complex double-float) to simplify
+further processing with fftw.
+
+
 
 ##  return values and errors:
 
