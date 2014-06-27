@@ -20,6 +20,6 @@ int main()
     printf("%d\n", pylon_wrapper_get_value_e(c,0,"PixelFormat"));
     pylon_wrapper_get_symbolics_e(c,0,"PixelFormat");
     pylon_wrapper_to_string_e(c,0,"PixelFormat");
-    pylon_wrapper_terminate(c);
+    pylon_wrapper_terminate(c,f);
   }
 }
