@@ -419,10 +419,32 @@ extern "C" {
 	if (hh<*h)
 	  printf("height of input array not sufficient");
 
+              // (loop for byte below (get-payload cam) by 3
+	      // 	and short from 0 below n by 2
+	      // 	do
+	      // 	;; 3 bytes in the data stream correspond to two data
+	      // 	;; elements: AB CD EF -> ABD, EFC 
+	      // 	;; A is the most signifcant nibble
+	      // 	  (let ((ab (%get-unsigned-byte data byte))
+	      // 		(c (ldb (byte 4 0) (%get-unsigned-byte data (+ 1 byte))))
+	      // 		(d (ldb (byte 4 4) (%get-unsigned-byte data (+ 1 byte))))
+	      // 		(ef (%get-unsigned-byte data (+ 2 byte))))
+	      // 	    (setf (aref a1 short) (ash (+ (ash ab 4) d) 4)
+	      // 		  (aref a1 (1+ short)) (ash (+ (ash ef 4) c) 4))))
+
 	int i,j;
-	for(j=0;j< (*h);j++)
-	  for(i=0;i< (*w);i++)
-	    buf[2*(i+ (*w) * j)] = 1.0*pImageBuffer[i+(*w)*j];
+	// convert mono12p into real part of complex double float
+	// i .. index for byte
+	// j .. index for 12bit
+	for(i=0,j=0;i< (*w)*(*h);i+=3,j+=2) {
+	  unsigned char 
+	    ab = pImageBuffer[i],
+	    c = pImageBuffer[i+1] & 0x0f,
+	    d = (pImageBuffer[i+1] & 0xf0)>>4,
+	    ef = pImageBuffer[i+2];
+	  buf[2*((j%(*w))+ (*w) * (j/(*w)))] = 1.0*((ab<<4)+d);
+	  buf[2*(((j+1)%(*w))+ (*w) * ((j+1)/(*w)))] = 1.0*((ef<<4)+c);
+	}
       }
     }
     catch (GenICam::GenericException& e) {
