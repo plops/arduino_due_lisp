@@ -147,7 +147,56 @@ further processing with fftw.
 
 Pylon uses C++ exceptions to notify the user of its error
 conditions. Each C wrapper function catches the exceptions and prints
-the error on stdout. In Clozure Common Lisp these notifications are
-visible in emacs' `*inferior-lisp*` buffer. In SBCL they are not shown
-in Emacs. In case of an error functions that should return a pointer
-will return `NULL`. Functions that should return `int` will return -1.
+the error on stdout. In Emacs these notifications are shown in the
+`*inferior-lisp*` buffer. In case of an error functions that should
+return a pointer will return `NULL`. Functions that should return
+`int` will return -1.
+
+Here is an example of the *inferior-lisp* buffer in SBCL:
+
+```
+(progn (load "/home/martin/quicklisp/dists/quicklisp/software/slime-2.7/swank-loader.lisp" :verbose t) 
+       (funcall (read-from-string "swank-loader:init")) (funcall (read-from-string "swank:start-server") "/tmp/slime.28966"))
+
+This is SBCL 1.2.0.129-c06b8c1, an implementation of ANSI Common Lisp.
+More information about SBCL is available at <http://www.sbcl.org/>.
+
+SBCL is free software, provided as is, with absolutely no warranty.
+It is mostly in the public domain; some portions are provided under
+BSD-style licenses.  See the CREDITS and COPYING files in the
+distribution for more information.
+*
+; loading #P"/home/martin/quicklisp/dists/quicklisp/software/slime-2.7/swank-loader.lisp"
+STYLE-WARNING: redefining EMACS-INSPECT (#<BUILT-IN-CLASS T>) in DEFMETHOD
+STYLE-WARNING:
+   Implicitly creating new generic function
+   SWANK-BACKEND::STREAM-READ-CHAR-WILL-HANG-P.
+WARNING: These Swank interfaces are unimplemented:
+ (DISASSEMBLE-FRAME SLDB-BREAK-AT-START SLDB-BREAK-ON-RETURN)
+;; Swank started at port: 33794.
+33794
+* STYLE-WARNING:
+   redefining THREAD-FOR-EVALUATION (#<STRUCTURE-CLASS
+                                       MULTITHREADED-CONNECTION>
+                                     #<SB-MOP:EQL-SPECIALIZER
+                                       {100584C683}>) in DEFMETHOD
+creating factory
+finding devices
+preparing camera array
+attaching cameras
+camera 0
+Using device Basler acA1920-25gm#00305315DFDD#192.168.4.100:3956
+camera 1
+Using device Basler acA1920-25gm#00305315DFDE#192.168.5.102:3956
+camera 2
+Using device Basler acA1920-25gm#00305315DFC4#192.168.6.101:3956
+max(OffsetX)=896
+max(Width)=1468
+0 Mono8
+1 Mono12
+2 Mono12Packed
+3 YUV422Packed
+4 YUV422_YUYV_Packed
+
+-=--:**--F1  *inferior-lisp*   All L42    (Comint:run) ----------------------------
+```
