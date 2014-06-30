@@ -93,20 +93,30 @@
 ;; 10 images in .9s
 ;; 100 images in 10.5s
 (time
- (loop for i below 100 collect
+ (loop for i below 10 collect
       (progn
-	(trigger-all-cameras)
+	;(trigger-all-cameras)
 	(loop for i below 3 collect
-	     (with-foreign-objects ((cam :int)
-				    (success-p :int)
-				    (w :int)
-				    (h :int))
-	       (pylon:grab *cams* 1040 1040 *buf*
-			   cam success-p w h)
-	       (format nil "~a~%" (list (mem-ref cam :int)
-					(mem-ref success-p :int)
-					(mem-ref w :int)
-					(mem-ref h :int))))))))
+	     (format nil "~a~%" (multiple-value-list (pylon:grab *cams* 1040 1040 *buf*))))))))
+
+
+(defun write-pgm (filename img w h)
+  (with-open-file (s filename
+		     :direction :output
+		     :if-exists :supersede
+		     :if-does-not-exist :create)
+    (declare (stream s))
+    (format s "P5~%~D ~D~%255~%~%" w h))
+  (with-open-file (s filename 
+		     :element-type '(unsigned-byte 8)
+		     :direction :output
+		     :if-exists :append) ;; FIXME: i think this append doesn't work as expected and sometimes eats one of the new lines
+    (let ((data-1d (make-array 
+		    (* h w)
+		    :element-type '(unsigned-byte 8)
+		    :displaced-to img)))
+      (write-sequence data-1d s)))
+  nil)
 
 (pylon:terminate *cams*)
 
