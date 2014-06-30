@@ -20,8 +20,8 @@
   (w (:pointer :int))
   (h (:pointer :int)))
 
-(defun grab (cams w h buf)
-  ;(declare (type (array (unsigned-byte 8) *) buf))
+(defun grabp (cams w h buf)
+  ;; buf is returned by foreign-alloc
   (cffi:with-foreign-objects ((cam :int)
 			      (success-p :int)
 			      (wout :int)
@@ -32,6 +32,25 @@
 	    (cffi:mem-ref success-p :int)
 	    (cffi:mem-ref wout :int)
 	    (cffi:mem-ref hout :int))))
+
+(defun grab (cams buf)
+  (declare (type (simple-array (unsigned-byte 8) 2) buf))
+  ;; buf must be displaced to a 1d simple-array
+  (destructuring-bind (h w) (array-dimensions buf)
+    (sb-sys:with-pinned-objects (buf)
+      (let ((bufp (sb-sys:vector-sap 
+		   (sb-ext:array-storage-vector
+		    buf))))
+	(cffi:with-foreign-objects ((cam :int)
+				    (success-p :int)
+				    (wout :int)
+				    (hout :int))
+	  (%grab cams w h bufp
+		 cam success-p wout hout)
+	  (values (cffi:mem-ref cam :int)
+		  (cffi:mem-ref success-p :int)
+		  (cffi:mem-ref wout :int)
+		  (cffi:mem-ref hout :int)))))))
 
 (cffi:defcfun ("pylon_wrapper_grab_cdf" %grab-cdf) :void
   (cams :pointer)

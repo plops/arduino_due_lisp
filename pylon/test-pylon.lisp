@@ -83,7 +83,14 @@
 (pylon:start-grabbing *cams*)
 
 (defparameter *buf*
-    (foreign-alloc :unsigned-char :count (* 1040 1040)))
+    (foreign-allloc :unsigned-char :count (* 1040 1040)))
+
+(defparameter *buf-8-1* (make-array (* 1024 1024) :element-type '(unsigned-byte 8)))
+(defparameter *buf-8* (make-array (list 1024 1024) :element-type '(unsigned-byte 8)
+				  ;:displaced-to *buf-8-1*
+				  ))
+
+(array-displacement *buf-8*)
 
 (mem-aref *buf* :unsigned-char 1)
 
@@ -92,13 +99,13 @@
 
 ;; 10 images in .9s
 ;; 100 images in 10.5s
-(time
- (loop for i below 10 collect
-      (progn
-	;(trigger-all-cameras)
-	(loop for i below 3 collect
-	     (format nil "~a~%" (multiple-value-list (pylon:grab *cams* 1040 1040 *buf*))))))))
+(loop for i below 1 collect
+     (progn
+					;(trigger-all-cameras)
+       (loop for i below 3 collect
+	    (format nil "~a~%" (multiple-value-list (pylon:grab *cams* *buf-8*)))))))
 
+(write-pgm "/dev/shm/o.pgm" *buf-8* 1024 1024)
 
 (defun write-pgm (filename img w h)
   (with-open-file (s filename
