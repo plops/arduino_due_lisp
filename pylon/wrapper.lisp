@@ -3,9 +3,16 @@
 (cffi:defcfun ("pylon_wrapper_initialize" initialize) :void)
 (cffi:defcfun ("pylon_wrapper_terminate" terminate) :void (cams :pointer))
 (cffi:defcfun ("pylon_wrapper_factory" factory) (:pointer :void))
-(cffi:defcfun ("pylon_wrapper_create" create) (:pointer :void)
+(cffi:defcfun ("pylon_wrapper_create" %create) (:pointer :void)
   (factory :pointer)
   (max-cameras :unsigned-int))
+
+(defun create (factory max-cameras)
+  #+sbcl
+  (sb-int:with-float-traps-masked (:invalid)
+    (%create factory max-camers))
+  #-sbcl
+  (%create factory max-camers))
 
 (cffi:defcfun ("pylon_wrapper_start_grabbing" start-grabbing) :void
   (cams :pointer))

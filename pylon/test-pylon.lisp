@@ -15,10 +15,12 @@
 	'(*default-pathname-defaults*
 	  #p"/home/martin/arduino_due_lisp/arduino-serial-sbcl/"
 	  #p"/home/martin/stage/cl-cffi-fftw3/"
-	  #p"/home/martin/arduino_due_lisp/pylon/"))
+	  #p"/home/martin/arduino_due_lisp/pylon/"
+	  #p"/home/martin/arduino_due_lisp/image-processing/"))
   (asdf:load-system "fftw")
   (asdf:load-system "pylon")
-  (asdf:load-system "arduino-serial-sbcl"))
+  (asdf:load-system "arduino-serial-sbcl")
+  (asdf:load-system "image-processing"))
 
 #+nil
 (defparameter *ard* 
@@ -55,19 +57,33 @@
 
 (pylon:initialize)
 (defparameter *fact* (pylon::factory))
-(progn
-  #+sbcl
-  (sb-int:with-float-traps-masked (:invalid)
-    (defparameter *cams* (pylon:create *fact* 3)))
-  #-sbcl
-  (defparameter *cams* (pylon:create *fact* 1)))
+(defparameter *cams* (pylon:create *fact* 3))
+
+;; camera 0 Using device Basler acA1920-25gm#00305315DFDD#192.168.4.100:3956
+;; camera 1 Using device Basler acA1920-25gm#00305315DFDE#192.168.5.102:3956
+;; camera 2 Using device Basler acA1920-25gm#00305315DFC4#192.168.6.101:3956
+
+;; correspondence between aravis and pylon cameras:
+;; (set-region *cam2* :keep-old nil :h 1024 :w 1024 :x 452 :y 21) ;; pylon cam 0
+;; (set-region *cam1* :keep-old nil :h 1024 :w 1024 :x 135 :y 0)  ;; pylon cam 2
+;; (set-region *cam3* :keep-old nil :h 600 :w 600 :x 520 :y 213)  ;; pylon cam 1
+
+;; 65 1024x1024+452+21
+;; 40 1024x1024+135+0
+;; 66 600x600+520+213
+
+
+#+nil
+((q1 (extract out1 :x (+ 33 867) :y (+ 33 243) :w 66 :h 66))
+ (q2 (extract out2 :x (+ 33 138) :y (+ 33 128) :w 66 :h 66))
+ (q3 (extract out3 :x (+ 33 193) :y (+ 33 -10) :w 66 :h 66)))
 
 (pylon:cams-open *cams*)
 
 (pylon:get-max-i *cams* 0 "OffsetX")
 (pylon:get-max-i *cams* 0 "Width")
 (loop for e in '("Width" "Height" "OffsetX" "OffsetY") collect
-  (pylon:get-value-i *cams* 2 e t nil))
+  (pylon:get-value-i *cams* 1 e t nil))
 ;; (pylon:get-min-i *cams* 1 "Width")
 ;; (pylon:get-value-e *cams* 1 "PixelFormat")
 (pylon:get-symbolics-e *cams* 0 "PixelFormat")
@@ -85,14 +101,8 @@
 (defparameter *buf*
     (foreign-allloc :unsigned-char :count (* 1040 1040)))
 
-(defparameter *buf-8-1* (make-array (* 1024 1024) :element-type '(unsigned-byte 8)))
-(defparameter *buf-8* (make-array (list 1024 1024) :element-type '(unsigned-byte 8)
-				  ;:displaced-to *buf-8-1*
-				  ))
 
-(defparameter *buf-c-1* (make-array (* 1024 1024) :element-type '(complex double-float)))
-(defparameter *buf-c* (make-array (list 1024 1024) :element-type '(complex double-float)				  ;:displaced-to *buf-8-1*
-				  ))
+(defparameter *buf-c* (make-array (list 1024 1024) :element-type '(complex double-float)))
 
 (array-displacement *buf-8*)
 
@@ -107,7 +117,7 @@
      (progn
 					;(trigger-all-cameras)
        (loop for i below 3 collect
-	    (format nil "~a~%" (multiple-value-list (pylon:grab-cdf *cams* *buf-c*)))))))
+	    (format nil "~a~%" (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))))))
 
 (pylon:terminate *cams*)
 
