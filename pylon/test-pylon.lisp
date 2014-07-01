@@ -139,7 +139,10 @@
 #+nil
 (image-processing:write-pgm8 "/dev/shm/o.pgm"
 			     (image-processing:.uint8 
-			      (image-processing:.log (image-processing:.abs *out-c*))))
+			      (image-processing:.log (image-processing:.abs
+						      (make-array (list 600 600)
+								  :element-type '(complex double-float)
+								  :displaced-to *out-c*)))))
 
 (mem-aref *buf* :unsigned-char 1)
 
@@ -151,7 +154,7 @@
 (loop for i below 1 collect
      (progn
 					;(trigger-all-cameras)
-       (loop for i below 3 collect
+       (loop for i below 1 collect
 	    (format nil "~a~%" (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))))))
 
 (pylon:terminate *cams*)
