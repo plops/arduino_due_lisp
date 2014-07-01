@@ -10,9 +10,9 @@
 (defun create (factory max-cameras)
   #+sbcl
   (sb-int:with-float-traps-masked (:invalid)
-    (%create factory max-camers))
+    (%create factory max-cameras))
   #-sbcl
-  (%create factory max-camers))
+  (%create factory max-cameras))
 
 (cffi:defcfun ("pylon_wrapper_start_grabbing" start-grabbing) :void
   (cams :pointer))
@@ -70,13 +70,17 @@
   (h (:pointer :int)))
 
 (defun grab-cdf (cams buf)
-  (declare (type (simple-array (complex double-float) 2) buf))
-  ;; buf must be displaced to a 1d simple-array
+  (declare (type (or (array (complex double-float) 2)
+		     (simple-array (complex double-float) 2)) buf))
+  ;; buf must be displaced to a 1d simple-array or a simple
+  ;; multi-dimensional array
   (destructuring-bind (h w) (array-dimensions buf)
     (sb-sys:with-pinned-objects (buf)
       (let ((bufp (sb-sys:vector-sap 
-		   (sb-ext:array-storage-vector
-		    buf))))
+		   (handler-case
+		       (sb-ext:array-storage-vector buf)
+		     (simple-error ()
+		       (array-displacement buf))))))
 	(cffi:with-foreign-objects ((cam :int)
 				    (success-p :int)
 				    (wout :int)

@@ -74,9 +74,13 @@
 
 
 #+nil
-((q1 (extract out1 :x (+ 33 867) :y (+ 33 243) :w 66 :h 66))
- (q2 (extract out2 :x (+ 33 138) :y (+ 33 128) :w 66 :h 66))
- (q3 (extract out3 :x (+ 33 193) :y (+ 33 -10) :w 66 :h 66)))
+((q1 (extract out1 :x (+ 33 867) :y (+ 33 243) :w 66 :h 66)) ; pylon2
+ (q2 (extract out2 :x (+ 33 138) :y (+ 33 128) :w 66 :h 66)) ; pylon0
+ (q3 (extract out3 :x (+ 33 193) :y (+ 33 -10) :w 66 :h 66))) ; pylon1
+
+(defparameter *first-orders* `((,(+ 33 138) ,(+ 33 128))
+			       (,(+ 33 193) ,(+ 33 -10))
+			       (,(+ 33 867) ,(+ 33 243))))
 
 (pylon:cams-open *cams*)
 
@@ -98,13 +102,44 @@
 
 (pylon:start-grabbing *cams*)
 
-(defparameter *buf*
-    (foreign-allloc :unsigned-char :count (* 1040 1040)))
 
 
-(defparameter *buf-c* (make-array (list 1024 1024) :element-type '(complex double-float)))
+(let ((w 1024)
+      (h 1024))
+  (defparameter *buf-c1* (make-array (* 1024 1024) :element-type '(complex double-float)))
+  (defparameter *out-c1* (make-array (* 1024 1024) :element-type '(complex double-float)))
+  (defparameter *buf-c* (make-array (list 1024 1024) :element-type '(complex double-float)
+				    :displaced-to *buf-c1*))
+  (defparameter *out-c* (make-array (list 1024 1024) :element-type '(complex double-float)
+				    :displaced-to *out-c1*))
+  )
 
-(array-displacement *buf-8*)
+#+nil
+(type-of *buf-c*)
+#+nil
+(sb-impl::array-header-p *buf-c*)
+#+nil
+(progn
+  (handler-case
+      (sb-ext:array-storage-vector *buf-c*)
+    (simple-error ()
+	(array-displacement *buf-c*)))
+  nil)
+#+nil
+(defparameter *plan*
+  (fftw::plan *buf-c* *out-c*))
+
+#+nil
+(fftw::%fftw_execute *plan*)
+
+#+nil
+(defparameter *bla*
+ (fftw:ft *buf-c* :out-arg *out-c* :w 600 :h 600))
+
+#+nil
+(image-processing:write-pgm8 "/dev/shm/o.pgm"
+			     (image-processing:.uint8 
+			      (image-processing:.log (image-processing:.abs *out-c*))))
 
 (mem-aref *buf* :unsigned-char 1)
 
