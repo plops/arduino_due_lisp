@@ -90,6 +90,10 @@
 				  ;:displaced-to *buf-8-1*
 				  ))
 
+(defparameter *buf-c-1* (make-array (* 1024 1024) :element-type '(complex double-float)))
+(defparameter *buf-c* (make-array (list 1024 1024) :element-type '(complex double-float)				  ;:displaced-to *buf-8-1*
+				  ))
+
 (array-displacement *buf-8*)
 
 (mem-aref *buf* :unsigned-char 1)
@@ -103,9 +107,66 @@
      (progn
 					;(trigger-all-cameras)
        (loop for i below 3 collect
-	    (format nil "~a~%" (multiple-value-list (pylon:grab *cams* *buf-8*)))))))
+	    (format nil "~a~%" (multiple-value-list (pylon:grab-cdf *cams* *buf-c*)))))))
 
 (write-pgm "/dev/shm/o.pgm" *buf-8* 1024 1024)
+
+(defun .uint8 (a)
+  (let* ((b (make-array (array-dimensions a) :element-type '(unsigned-byte 8)))
+	 (b1 (.linear b))
+	 (a1 (.linear a))
+	 (ma (.max a))
+	 (mi (.min a))
+	 (s (if (< (- ma mi) 1e-3)
+		1
+		(/ 255 (- ma mi)))))
+    (dotimes (i (length a1))
+      (setf (aref b1 i) (min 255 (max 0 (floor (* s (- (aref a1 i) mi)))))))
+    b))
+
+(defun .linear (a)
+  (make-array (array-total-size a)
+	      :element-type (array-element-type a)
+	      :displaced-to a))
+
+(defun .max (a)
+  (reduce #'max (.linear a)))
+(defun .min (a)
+  (reduce #'min (.linear a)))
+
+(defun .abs (a)
+   (let* ((b (make-array (array-dimensions a) :element-type 'double-float))
+	 (b1 (.linear b))
+	 (a1 (.linear a)))
+    (dotimes (i (length a1))
+      (setf (aref b1 i) (abs (aref a1 i))))
+    b))
+
+
+(defun write-pgm8 (filename img)
+  (declare (type simple-string filename)
+           ((array (unsigned-byte 8) 2) img)
+           #+sbcl (values null &optional))
+  (destructuring-bind (h w) (array-dimensions img)
+    (declare (type fixnum w h))
+    (with-open-file (s filename
+                       :direction :output
+                       :if-exists :supersede
+                       :if-does-not-exist :create)
+      (declare (stream s))
+      (format s "P5~%~D ~D~%255~%~%" w h))
+    (with-open-file (s filename 
+                       :element-type '(unsigned-byte 8)
+                       :direction :output
+                       :if-exists :append) ;; FIXME: i think this append doesn't work as expected and sometimes eats one of the new lines
+      (let ((data-1d (make-array 
+                      (* h w)
+                      :element-type '(unsigned-byte 8)
+                      :displaced-to img)))
+        (write-sequence data-1d s)))
+    nil))
+
+(write-pgm8 "/dev/shm/o.pgm" (.uint8 (.abs *buf-c*)))
 
 (defun write-pgm (filename img w h)
   (with-open-file (s filename

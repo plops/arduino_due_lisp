@@ -436,7 +436,7 @@ extern "C" {
 	// convert mono12p into real part of complex double float
 	// i .. index for byte
 	// j .. index for 12bit
-	for(i=0,j=0;i< (*w)*(*h);i+=3,j+=2) {
+	for(i=0,j=0;j< (*w)*(*h);i+=3,j+=2) {
 	  unsigned char 
 	    ab = pImageBuffer[i],
 	    c = pImageBuffer[i+1] & 0x0f,

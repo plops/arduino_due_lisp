@@ -62,19 +62,25 @@
   (w (:pointer :int))
   (h (:pointer :int)))
 
-(defun grab-cdf (cams w h buf)
-  (declare (type (array (complex double-float) *) buf))
-  (cffi:with-pointer-to-vector-data (bufp buf)
-    (cffi:with-foreign-objects ((cam :int)
-				(success-p :int)
-				(wout :int)
-				(hout :int))
-      (%grab-cdf cams w h bufp
+(defun grab-cdf (cams buf)
+  (declare (type (simple-array (complex double-float) 2) buf))
+  ;; buf must be displaced to a 1d simple-array
+  (destructuring-bind (h w) (array-dimensions buf)
+    (sb-sys:with-pinned-objects (buf)
+      (let ((bufp (sb-sys:vector-sap 
+		   (sb-ext:array-storage-vector
+		    buf))))
+	(cffi:with-foreign-objects ((cam :int)
+				    (success-p :int)
+				    (wout :int)
+				    (hout :int))
+	  (%grab-cdf cams w h bufp
 		 cam success-p wout hout)
-      (values (cffi:mem-ref cam :int)
-	      (cffi:mem-ref success-p :int)
-	      (cffi:mem-ref wout :int)
-	      (cffi:mem-ref hout :int)))))
+	  (values (cffi:mem-ref cam :int)
+		  (cffi:mem-ref success-p :int)
+		  (cffi:mem-ref wout :int)
+		  (cffi:mem-ref hout :int)))))))
+
 
 (cffi:defcfun ("pylon_wrapper_get_max_i" get-max-i) :int
   (cams :pointer)
