@@ -22,21 +22,37 @@
   (asdf:load-system "arduino-serial-sbcl")
   (asdf:load-system "image-processing"))
 
+(defpackage :pylon-test
+  (:use :cl :cffi :image-processing))
+
+(in-package :pylon-test)
+
+
+
 #+nil
 (defparameter *ard* 
   (multiple-value-list
    (arduino-serial-sbcl:open-serial 
     (first (directory "/dev/ttyACM0")))))
-#+nil
-(defun trigger-all-cameras ()
+
+(defun initialize-trigger-outputs ()
   (arduino-serial-sbcl:talk-arduino
    (second *ard*) 
    (first *ard*)
    "(progn
  (pin-mode 10 1)
  (pin-mode 11 1)
- (pin-mode 12 1)
- (delay 10)
+ (pin-mode 12 1)"))
+
+#+nil
+(initialize-trigger-outputs)
+
+#+nil
+(defun trigger-all-cameras ()
+  (arduino-serial-sbcl:talk-arduino
+   (second *ard*) 
+   (first *ard*)
+   "(progn
  (digital-write 11 1)
  (digital-write 12 1) 
  (digital-write 10 1) 
@@ -47,11 +63,24 @@
 #+nil
 (trigger-all-cameras)
 
+;; fiber center first coordinate:   800 .. 1550 .. 2750
+;; fiber center second coordinate: 1800 .. 2500 .. 3580
 
-(defpackage :pylon-test
-  (:use :cl :cffi :image-processing))
-
-(in-package :pylon-test)
+(defun tilt-mirror-and-trigger-all-cameras (x y)
+  (arduino-serial-sbcl:talk-arduino
+   (second *ard*) 
+   (first *ard*)
+;; delay waits ms
+   (format nil "(progn
+ (dac ~a ~a)
+ (delay 1000)
+ (digital-write 11 1)
+ (digital-write 12 1) 
+ (digital-write 10 1) 
+ (delay 10) 
+ (digital-write 11 0)
+ (digital-write 12 0)
+ (digital-write 10 0))" x y)))
 
 (fftw:prepare-threads)
 
@@ -102,6 +131,11 @@
 (pylon:get-value-e *cams* 0 "PixelFormat")
 (pylon:get-value-e *cams* 2 "TriggerMode")
 (pylon:set-value-e *cams* 2 "TriggerMode" 1)
+(dotimes (i 3)
+ (pylon:set-value-e *cams* i "TriggerMode" 1))
+
+(dotimes (i 3)
+ (pylon:set-value-e *cams* i "TriggerMode" 0))
 
 (pylon:start-grabbing *cams*)
 
@@ -156,29 +190,40 @@
 
 (/ 100 18.5)
 
+(tilt-mirror-and-trigger-all-cameras 1550 2500)
+
 ;; 10 images in .9s    1.9s
 ;; 100 images in 10.5s 18.5s
-(time 
- (loop for i below 100 collect
+(defparameter *bla*
+ (loop for j from 800 below 2750 by 50 collect
       (progn
-					;(trigger-all-cameras)
+	(tilt-mirror-and-trigger-all-cameras j 2500)
 	(loop for i below 3 collect
-	     (destructuring-bind (cam success-p w h) (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
-	      
+	     (destructuring-bind (cam success-p w h) 
+		 (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
 	       (when success-p
 		 (destructuring-bind (x y) (elt *first-orders* cam)
-		   (destructuring-bind (h w) (elt *cam-sizes* cam)
+		   (destructuring-bind (hh ww) (elt *cam-sizes* cam)
+		     (assert (= ww w))
+		     (assert (= hh h))
 		     (fftw:ft *buf-c* :out-arg *out-c* :w w :h h)
-		     (image-processing:write-pgm8 "/dev/shm/o.pgm"
-						  (image-processing:.uint8 
-						   (image-processing:.log
-						    (image-processing:.abs
-						     (extract 
-						      (make-array (list h w)
-								  :element-type '(complex double-float)
-								  :displaced-to *out-c*)
-						      :x x :y y :w 66 :h 66)))))
-		     (list cam h w)))))))))
+		     (let* ((q (.abs
+				(extract 
+				 (make-array (list h w)
+					     :element-type '(complex double-float)
+					     :displaced-to *out-c*)
+				 :x x :y y :w 66 :h 66)))
+			    (v (.mean q)))
+		       (write-pgm8 (format nil "/dev/shm/o~d.pgm" cam)
+				   (.uint8 (.abs (extract (make-array (list h w)
+								      :element-type '(complex double-float)
+								      :displaced-to *out-c*)
+							  :x x :y y :w 66 :h 66))))
+		       (format t "~a~%" (list cam j v))
+		      (list cam h w j v))))
+		 (format t "acquisition not successful ~%")))))))
+
+*bla*
 
 (pylon:terminate *cams*)
 
