@@ -19,7 +19,9 @@
       (setf (aref b1 i) (abs (aref a1 i))))
     b))
 
-(defun .abs* (a)
+(defun .abs* (a) ;; this is an ugly hack because clozure common lisp
+		 ;; doesn't support foreign complex double-float
+		 ;; arrays
   (declare (type (array double-float 3) a))
   (let* ((b (make-array (butlast (array-dimensions a)) :element-type 'double-float))
 	 (b1 (.linear b))
