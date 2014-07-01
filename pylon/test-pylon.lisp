@@ -49,7 +49,7 @@
 
 
 (defpackage :pylon-test
-  (:use :cl :cffi))
+  (:use :cl :cffi :image-processing))
 
 (in-package :pylon-test)
 
@@ -81,6 +81,9 @@
 (defparameter *first-orders* `((,(+ 33 138) ,(+ 33 128))
 			       (,(+ 33 193) ,(+ 33 -10))
 			       (,(+ 33 867) ,(+ 33 243))))
+(defparameter *cam-sizes* `((1024 1024)
+			    (600 600)
+			    (1024 1024)))
 
 (pylon:cams-open *cams*)
 
@@ -134,7 +137,9 @@
 
 #+nil
 (defparameter *bla*
- (fftw:ft *buf-c* :out-arg *out-c* :w 600 :h 600))
+ (fftw:ft (make-array (list 600 600)
+		      :element-type '(complex double-float)
+		      :displaced-to *buf-c*) :out-arg *out-c*))
 
 #+nil
 (image-processing:write-pgm8 "/dev/shm/o.pgm"
@@ -149,13 +154,31 @@
 #+nil
 (trigger-all-cameras)
 
-;; 10 images in .9s
-;; 100 images in 10.5s
-(loop for i below 1 collect
-     (progn
+(/ 100 18.5)
+
+;; 10 images in .9s    1.9s
+;; 100 images in 10.5s 18.5s
+(time 
+ (loop for i below 100 collect
+      (progn
 					;(trigger-all-cameras)
-       (loop for i below 1 collect
-	    (format nil "~a~%" (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))))))
+	(loop for i below 3 collect
+	     (destructuring-bind (cam success-p w h) (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
+	      
+	       (when success-p
+		 (destructuring-bind (x y) (elt *first-orders* cam)
+		   (destructuring-bind (h w) (elt *cam-sizes* cam)
+		     (fftw:ft *buf-c* :out-arg *out-c* :w w :h h)
+		     (image-processing:write-pgm8 "/dev/shm/o.pgm"
+						  (image-processing:.uint8 
+						   (image-processing:.log
+						    (image-processing:.abs
+						     (extract 
+						      (make-array (list h w)
+								  :element-type '(complex double-float)
+								  :displaced-to *out-c*)
+						      :x x :y y :w 66 :h 66)))))
+		     (list cam h w)))))))))
 
 (pylon:terminate *cams*)
 

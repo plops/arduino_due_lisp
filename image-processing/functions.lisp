@@ -83,7 +83,7 @@
                                            (- (array-dimension a 0) y))))
                 (h w))
   (let* ((b1 (make-array (* h w) :element-type (array-element-type a)
-                         :initial-element 0))
+                         :initial-element (coerce 0 (array-element-type a))))
          (b (make-array (list h w)
                         :element-type (array-element-type a)
                         :displaced-to b1))

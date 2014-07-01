@@ -55,7 +55,7 @@
 	  (%grab cams w h bufp
 		 cam success-p wout hout)
 	  (values (cffi:mem-ref cam :int)
-		  (cffi:mem-ref success-p :int)
+		  (if (= (cffi:mem-ref success-p :int) 1) t nil)
 		  (cffi:mem-ref wout :int)
 		  (cffi:mem-ref hout :int)))))))
 
@@ -88,7 +88,7 @@
 	  (%grab-cdf cams w h bufp
 		 cam success-p wout hout)
 	  (values (cffi:mem-ref cam :int)
-		  (cffi:mem-ref success-p :int)
+		  (if (= (cffi:mem-ref success-p :int) 1) t nil)
 		  (cffi:mem-ref wout :int)
 		  (cffi:mem-ref hout :int)))))))
 
