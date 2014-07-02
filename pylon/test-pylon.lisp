@@ -41,7 +41,7 @@
    "(progn
  (pin-mode 10 1)
  (pin-mode 11 1)
- (pin-mode 12 1)")
+ (pin-mode 12 1))")
   (setf *trigger-outputs-initialized* t))
 
 #+nil
@@ -149,7 +149,7 @@
 
 #+nil
 (dotimes (i 3)
- (pylon:set-value-e *cams* i "TriggerMode" 0))
+  (pylon:set-value-e *cams* i "TriggerMode" 0))
 
 (defparameter *buf-c1* nil)
 (defparameter *buf-c* nil)
@@ -166,6 +166,7 @@
 				    :displaced-to *out-c1*))
   )
 
+#+nil
 (pylon:start-grabbing *cams*)
 
 
@@ -179,7 +180,8 @@
       (let ((th (sb-thread:make-thread 
 		 #'(lambda ()
 		     (progn
-		       (tilt-mirror 1550 2500)
+		       (format t "waiting for cameras ... ")
+		       ;(tilt-mirror 1550 2500)
 		       (loop for i below 3 collect
 			    (destructuring-bind (cam success-p w h) 
 				(multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
@@ -187,8 +189,9 @@
 					;(sleep .1)
 			      ))))
 		 :name "camera-acquisition")))
-	(trigger-all-cameras)
-	(sb-thread:join-thread th)))
+	;(trigger-all-cameras)
+	(sb-thread:join-thread th)
+	(format t "3 cameras responded ~%")))
  (pylon:stop-grabbing *cams*))
 
 #+nil
