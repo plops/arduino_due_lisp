@@ -47,6 +47,11 @@
 #+nil
 (initialize-trigger-outputs)
 
+#+nil
+(arduino-serial-sbcl:talk-arduino
+   (second *ard*) 
+   (first *ard*)
+   "(progn (+ 1 2))")
 
 (defun trigger-all-cameras ()
   (unless *trigger-outputs-initialized*
@@ -128,8 +133,11 @@
 (pylon:cams-open *cams*)
 
 #+nil
-(loop for e in '("Width" "Height" "OffsetX" "OffsetY") collect
-  (pylon:get-value-i *cams* 1 e t nil))
+(loop for j below 3 collect
+     (append 
+      (loop for e in '("Width" "Height" "OffsetX" "OffsetY") collect
+	   (pylon:get-value-i *cams* j e t nil))
+      (list (pylon:get-value-e *cams* j "TriggerMode"))))
 
 #+nil
 (dotimes (i 3)
@@ -137,15 +145,24 @@
 
 #+nil
 (dotimes (i 3)
+ (pylon:to-string-e *cams* i "TriggerMode"))
+
+#+nil
+(dotimes (i 3)
  (pylon:set-value-e *cams* i "TriggerMode" 0))
+
+(defparameter *buf-c1* nil)
+(defparameter *buf-c* nil)
+(defparameter *out-c1* nil)
+(defparameter *out-c* nil)
 
 (let ((w 1024)
       (h 1024))
-  (defparameter *buf-c1* (make-array (* 1024 1024) :element-type '(complex double-float)))
-  (defparameter *out-c1* (make-array (* 1024 1024) :element-type '(complex double-float)))
-  (defparameter *buf-c* (make-array (list 1024 1024) :element-type '(complex double-float)
+  (setf *buf-c1* (make-array (* 1024 1024) :element-type '(complex double-float)))
+  (setf *out-c1* (make-array (* 1024 1024) :element-type '(complex double-float)))
+  (setf *buf-c* (make-array (list 1024 1024) :element-type '(complex double-float)
 				    :displaced-to *buf-c1*))
-  (defparameter *out-c* (make-array (list 1024 1024) :element-type '(complex double-float)
+  (setf *out-c* (make-array (list 1024 1024) :element-type '(complex double-float)
 				    :displaced-to *out-c1*))
   )
 
@@ -155,10 +172,33 @@
 #+nil
 (tilt-mirror-and-trigger-all-cameras 1550 2500)
 
+#+nil
+(progn
+ (pylon:start-grabbing *cams*)
+ (LOOP FOR I BELOW 1 DO
+      (let ((th (sb-thread:make-thread 
+		 #'(lambda ()
+		     (progn
+		       (tilt-mirror 1550 2500)
+		       (loop for i below 3 collect
+			    (destructuring-bind (cam success-p w h) 
+				(multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
+			      (format t "~a~%" (list cam success-p w h))
+					;(sleep .1)
+			      ))))
+		 :name "camera-acquisition")))
+	(trigger-all-cameras)
+	(sb-thread:join-thread th)))
+ (pylon:stop-grabbing *cams*))
+
+#+nil
+(dotimes (i 1)
+  (trigger-all-cameras))
+
+(defvar *bla* nil)
 ;; 10 images in .9s    1.9s
 ;; 100 images in 10.5s 18.5s
 (defun run () ; defparameter *bla*
-  (defparameter *bla* nil)
   (loop for j from 800 below 2750 by 50 collect
       (let ((th (sb-thread:make-thread 
 		 #'(lambda ()
@@ -192,7 +232,6 @@
 				   (push (list cam h w j v) *bla*))))
 			     (format t "acquisition not successful ~%"))))))
 		 :name "camera-acquisition")))
-	(trigger-all-cameras)
 	(arduino-serial-sbcl:talk-arduino
    (second *ard*) 
    (first *ard*)
