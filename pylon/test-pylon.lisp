@@ -67,6 +67,7 @@
  (digital-write 11 0)
  (digital-write 12 0)
  (digital-write 10 0))"))
+
 #+nil
 (trigger-all-cameras)
 
@@ -203,6 +204,8 @@
 ;; 100 images in 10.5s 18.5s
 (defun run () ; defparameter *bla*
   (setf *bla* nil)
+  (unless *trigger-outputs-initialized*
+    (initialize-trigger-outputs))
   (pylon:start-grabbing *cams*)
   (loop for j from 800 below 2750 by 50 collect
       (let ((th (sb-thread:make-thread 
@@ -238,7 +241,22 @@
 				  (format t "acquisition error.~%"))))))
 		 :name "camera-acquisition")))
 	(sleep .1)
-	(trigger-all-cameras)
+	(arduino-serial-sbcl:talk-arduino
+	 (second *ard*) 
+	 (first *ard*)
+	 "(progn
+ (digital-write 11 1)
+ (delay 10)
+ (digital-write 11 0)
+ (delay 100)
+ (digital-write 12 1)
+ (delay 10)
+ (digital-write 12 0)
+ (delay 100)
+ (digital-write 10 1)
+ (delay 10)
+ (digital-write 10 0)
+")
 	(sb-thread:join-thread th)))
   (pylon:stop-grabbing *cams*))
 
