@@ -203,7 +203,7 @@
 ;; 10 images in .9s    1.9s
 ;; 100 images in 10.5s 18.5s
 (defun run () ; defparameter *bla*
-  (setf *bla* nil)
+  (setf *bla* (make-array 3))
   (unless *trigger-outputs-initialized*
     (initialize-trigger-outputs))
   (pylon:start-grabbing *cams*)
@@ -237,7 +237,7 @@
 								   :displaced-to *out-c*)
 						       :x x :y y :w 66 :h 66))))
 					(format t "~a~%" (list cam j v))
-					(push (list cam h w j v) *bla*))))
+					(push (list j v) (aref *bla* cam)))))
 				  (format t "acquisition error.~%"))))))
 		 :name "camera-acquisition")))
 	(sleep .1)
