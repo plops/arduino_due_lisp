@@ -32,6 +32,9 @@
    (arduino-serial-sbcl:open-serial 
     (first (directory "/dev/ttyACM0")))))
 
+#+nil
+(arduino-serial-sbcl:close-serial (second *ard*))
+
 (defvar *trigger-outputs-initialized* nil)
 
 (defun initialize-trigger-outputs ()
@@ -118,7 +121,7 @@
 ;; 40 1024x1024+135+0
 ;; 66 600x600+520+213
 
-;; change: 40 1024x1024+135+0 should be 1024x1024+720+0 now
+;; change: 40 1024x1024+135+0 should be 1024x1024+720+0 now this is pylon cam 2
 
 ;; 65 7980 "Gain (Raw)" 0
 ;; 40 3430 "Exposure Time (Raw)" gain 37
@@ -130,14 +133,17 @@
  (q3 (extract out3 :x (+ 33 193) :y (+ 33 -10) :w 66 :h 66))) ; pylon1
 
 (defparameter *first-orders* `((,(+ 33 138) ,(+ 33 128))
-			       (,(+ 33 193) ,(+ 33 -10))
-			       (,(+ 33 867) ,(+ 33 243))))
+			       
+			       (,(+ 33 867) ,(+ 33 243))
+			       (,(+ 33 193) ,(+ 33 -10))))
 (defparameter *cam-sizes* `((1024 1024)
-			    (600 600)
-			    (1024 1024)))
+			    
+			    (1024 1024)
+			    (600 600)))
 
 (pylon:cams-open *cams*)
-
+#+nil
+(pylon:cams-close *cams*)
 #+nil
 (loop for j below 3 collect
      (append 
@@ -186,7 +192,7 @@
 #+nil
 (progn
  (pylon:start-grabbing *cams*)
- (LOOP FOR I BELOW 100 DO
+ (LOOP FOR I BELOW 10 DO
       (let ((th (sb-thread:make-thread 
 		 #'(lambda ()
 		     (progn
@@ -196,11 +202,13 @@
 			    (destructuring-bind (cam success-p w h) 
 				(multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
 			      (format t "~a~%" (list cam success-p w h))
-			      ;(sleep .1)
+			  ;    (sleep .1)
 			      ))))
 		 :name "camera-acquisition")))
+	(sleep .1)
 	(trigger-all-cameras)
 	(sb-thread:join-thread th)
+	(sleep .1)
 	(format t "3 cameras responded ~%")))
  (pylon:stop-grabbing *cams*))
 
@@ -216,7 +224,7 @@
   (unless *trigger-outputs-initialized*
     (initialize-trigger-outputs))
   (pylon:start-grabbing *cams*)
-  (loop for j from 800 below 2750 by 50 collect
+  (loop for j from 800 below 2750 by 200 collect
       (let ((th (sb-thread:make-thread 
 		 #'(lambda ()
 		     (progn
@@ -250,7 +258,9 @@
 				  (format t "acquisition error.~%"))))))
 		 :name "camera-acquisition")))
 	(sleep .1)
-	(arduino-serial-sbcl:talk-arduino
+	(trigger-all-cameras)
+	(sleep .1)
+#+nil	(arduino-serial-sbcl:talk-arduino
 	 (second *ard*) 
 	 (first *ard*)
 	 "(progn
