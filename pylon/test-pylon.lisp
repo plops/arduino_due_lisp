@@ -120,6 +120,10 @@
 
 ;; change: 40 1024x1024+135+0 should be 1024x1024+720+0 now
 
+;; 65 7980 "Gain (Raw)" 0
+;; 40 3430 "Exposure Time (Raw)" gain 37
+;; 66 16975 gain 37
+
 #+nil
 ((q1 (extract out1 :x (+ 33 867) :y (+ 33 243) :w 66 :h 66)) ; pylon2
  (q2 (extract out2 :x (+ 33 138) :y (+ 33 128) :w 66 :h 66)) ; pylon0
@@ -137,9 +141,13 @@
 #+nil
 (loop for j below 3 collect
      (append 
-      (loop for e in '("Width" "Height" "OffsetX" "OffsetY") collect
+      (loop for e in '("Width" "Height" "OffsetX" "OffsetY" "ExposureTimeRaw" "GainRaw") collect
 	   (pylon:get-value-i *cams* j e t nil))
       (list (pylon:get-value-e *cams* j "TriggerMode"))))
+
+;; => ((1024 1024 720 0 3430 37 0) (1024 1024 452 21 7980 0 0)
+;;     (600 600 520 213 16975 37 0))
+
 
 #+nil
 (dotimes (i 3)
