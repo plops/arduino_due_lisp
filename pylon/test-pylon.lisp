@@ -260,8 +260,13 @@
 								     :element-type '(complex double-float)
 								     :displaced-to *out-c*)
 							 :x x :y y :w 66 :h 66))))
-					  (format t "~a~%" (list cam j v))
-					  (push (list j yj v) (aref *bla* cam)))))
+					  (format t "~a~%" (list cam j yj v))
+					  (push (list j yj v (extract
+							      (make-array (list h w)
+									  :element-type '(complex double-float)
+									  :displaced-to *out-c*)
+							      :x x :y y :w 66 :h 66)) 
+						(aref *bla* cam)))))
 				    (format t "acquisition error.~%"))))))
 		   :name "camera-acquisition")))
 	  (sleep .01)
@@ -290,6 +295,9 @@
 (time  (run))
 
 ;; 902s to run
+;; 980s when extracted complex arrays are safed
+
+(defparameter *bla2* *bla*)
 
 #+nil
 (pylon:terminate *cams*)
