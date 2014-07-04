@@ -229,46 +229,48 @@
   (unless *trigger-outputs-initialized*
     (initialize-trigger-outputs))
   (pylon:start-grabbing *cams*)
-  (loop for j from 1500 below 1550 by 200 collect
-      (let ((th (sb-thread:make-thread 
-		 #'(lambda ()
-		     (progn
-		       (tilt-mirror j 2500)
-		       (loop for i below 3 collect
-			    (destructuring-bind (cam success-p w h) 
-				(multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
-			      (if success-p
-				  (destructuring-bind (x y) (elt *first-orders* cam)
-				    (destructuring-bind (hh ww) (elt *cam-sizes* cam)
-				      (assert (= ww w))
-				      (assert (= hh h))
-				      (fftw:ft *buf-c* :out-arg *out-c* :w w :h h)
-				      (let* ((q (.abs
-						 (extract 
-						  (make-array (list h w)
-							      :element-type '(complex double-float)
-							      :displaced-to *out-c*)
-						  :x x :y y :w 66 :h 66)))
-					     (v (.mean q)))
-					(write-pgm8 (format nil "/dev/shm/o~d.pgm" cam)
-						    (.uint8 
-						     (.abs
-						      (extract
-						       (make-array (list h w)
-								   :element-type '(complex double-float)
-								   :displaced-to *out-c*)
-						       :x x :y y :w 66 :h 66))))
-					(format t "~a~%" (list cam j v))
-					(push (list j v) (aref *bla* cam)))))
-				  (format t "acquisition error.~%"))))))
-		 :name "camera-acquisition")))
-	(sleep .1)
-	(trigger-all-cameras)
-	(sleep .1)
-#+nil	(arduino-serial-sbcl:talk-arduino
-	 (second *ard*) 
-	 (first *ard*)
-	 "(progn
+  (loop for yj from 1800 below 3700 by 50 collect
+       (loop for j from 400 below 2900 by 50 collect
+	    (let ((th (sb-thread:make-thread 
+		   #'(lambda ()
+		       (progn
+			 (tilt-mirror j yj)
+			 (loop for i below 3 collect
+			      (destructuring-bind (cam success-p w h) 
+				  (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
+				(if success-p
+				    (destructuring-bind (x y) (elt *first-orders* cam)
+				      (destructuring-bind (hh ww) (elt *cam-sizes* cam)
+					(assert (= ww w))
+					(assert (= hh h))
+					(fftw:ft *buf-c* :out-arg *out-c* :w w :h h)
+					(let* ((q (.abs
+						   (extract 
+						    (make-array (list h w)
+								:element-type '(complex double-float)
+								:displaced-to *out-c*)
+						    :x x :y y :w 66 :h 66)))
+					       (v (.mean q)))
+					  #+nil
+					  (write-pgm8 (format nil "/dev/shm/o~d.pgm" cam)
+						      (.uint8 
+						       (.abs
+							(extract
+							 (make-array (list h w)
+								     :element-type '(complex double-float)
+								     :displaced-to *out-c*)
+							 :x x :y y :w 66 :h 66))))
+					  (format t "~a~%" (list cam j v))
+					  (push (list j yj v) (aref *bla* cam)))))
+				    (format t "acquisition error.~%"))))))
+		   :name "camera-acquisition")))
+	  (sleep .01)
+	  (trigger-all-cameras)
+	  (sleep .01)
+	  #+nil	(arduino-serial-sbcl:talk-arduino
+		 (second *ard*) 
+		 (first *ard*)
+		 "(progn
  (digital-write 11 1)
  (delay 10)
  (digital-write 11 0)
@@ -281,11 +283,11 @@
  (delay 10)
  (digital-write 10 0)
 ")
-	(sb-thread:join-thread th)))
+	  (sb-thread:join-thread th))))
   (pylon:stop-grabbing *cams*))
 
 #+nil
-(run)
+(time  (run))
 
 #+nil
 (pylon:terminate *cams*)
