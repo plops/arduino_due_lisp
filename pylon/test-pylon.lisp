@@ -297,6 +297,21 @@
 ;; 902s to run
 ;; 980s when extracted complex arrays are safed
 
+;; (room)
+;; Dynamic space usage is:   568,429,344 bytes.
+;; Read-only space usage is:      5,680 bytes.
+;; Static space usage is:         3,120 bytes.
+;; Control stack usage is:        8,616 bytes.
+;; Binding stack usage is:        1,072 bytes.
+;; Control and binding stack usage is for the current thread only.
+;; Garbage collection is currently enabled.
+
+;; Breakdown for dynamic space:
+;;   432,097,984 bytes for     5,720 simple-array-complex-double-float objects.
+;;   28,747,552 bytes for   408,538 instance objects.
+;;   107,648,368 bytes for 2,673,532 other objects.
+;;   568,493,904 bytes for 3,087,790 dynamic objects (space total.)
+
 (defparameter *bla2* *bla*)
 
 #+nil
