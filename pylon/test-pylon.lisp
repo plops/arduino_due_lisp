@@ -132,10 +132,15 @@
  (q2 (extract out2 :x (+ 33 138) :y (+ 33 128) :w 66 :h 66)) ; pylon0
  (q3 (extract out3 :x (+ 33 193) :y (+ 33 -10) :w 66 :h 66))) ; pylon1
 
+#+nil
 (defparameter *first-orders* `((,(+ 33 138) ,(+ 33 128))
 			       
 			       (,(+ 33 867) ,(+ 33 243))
 			       (,(+ 33 193) ,(+ 33 -10))))
+
+(defparameter *first-orders* `((124 274)
+			       (168 161)
+			       (225 18)))
 (defparameter *cam-sizes* `((1024 1024)
 			    
 			    (1024 1024)
@@ -224,7 +229,7 @@
   (unless *trigger-outputs-initialized*
     (initialize-trigger-outputs))
   (pylon:start-grabbing *cams*)
-  (loop for j from 800 below 2750 by 200 collect
+  (loop for j from 1500 below 1550 by 200 collect
       (let ((th (sb-thread:make-thread 
 		 #'(lambda ()
 		     (progn
@@ -247,7 +252,7 @@
 					     (v (.mean q)))
 					(write-pgm8 (format nil "/dev/shm/o~d.pgm" cam)
 						    (.uint8 
-						     (.abs 
+						     (.abs
 						      (extract
 						       (make-array (list h w)
 								   :element-type '(complex double-float)
