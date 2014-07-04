@@ -289,6 +289,8 @@
 #+nil
 (time  (run))
 
+;; 902s to run
+
 #+nil
 (pylon:terminate *cams*)
 
