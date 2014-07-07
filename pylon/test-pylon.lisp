@@ -15,10 +15,12 @@
 	'(*default-pathname-defaults*
 	  #p"/home/martin/arduino_due_lisp/arduino-serial-sbcl/"
 	  #p"/home/martin/stage/cl-cffi-fftw3/"
+	  #p"/home/martin/stage/cl-ics/"
 	  #p"/home/martin/arduino_due_lisp/pylon/"
 	  #p"/home/martin/arduino_due_lisp/image-processing/"))
   (asdf:load-system "fftw")
   (asdf:load-system "pylon")
+  (asdf:load-system "ics")
   (asdf:load-system "arduino-serial-sbcl")
   (asdf:load-system "image-processing"))
 
@@ -111,6 +113,11 @@
 ;; camera 0 Using device Basler acA1920-25gm#00305315DFDD#192.168.4.100:3956
 ;; camera 1 Using device Basler acA1920-25gm#00305315DFDE#192.168.5.102:3956
 ;; camera 2 Using device Basler acA1920-25gm#00305315DFC4#192.168.6.101:3956
+
+;; camera 0 Using device Basler acA1920-25gm#00305315DFDD#192.168.4.100:3956
+;; camera 1 Using device Basler acA1920-25gm#00305315DFDE#192.168.5.102:3956
+;; camera 2 Using device Basler acA1920-25gm#00305315DFC4#192.168.6.101:3956
+
 
 ;; correspondence between aravis and pylon cameras:
 ;; (set-region *cam2* :keep-old nil :h 1024 :w 1024 :x 452 :y 21) ;; pylon cam 0
@@ -229,8 +236,8 @@
   (unless *trigger-outputs-initialized*
     (initialize-trigger-outputs))
   (pylon:start-grabbing *cams*)
-  (loop for yj from 1800 below 3700 by 50 collect
-       (loop for j from 400 below 2900 by 50 collect
+  (loop for yj from 1800 below 3700 by 50 and yji from 0 collect
+       (loop for j from 400 below 2900 by 50 and ji from 0 collect
 	    (let ((th (sb-thread:make-thread 
 		   #'(lambda ()
 		       (progn
@@ -261,7 +268,7 @@
 								     :displaced-to *out-c*)
 							 :x x :y y :w 66 :h 66))))
 					  (format t "~a~%" (list cam j yj v))
-					  (push (list j yj v (extract
+					  (push (list j yj ji yji v (extract
 							      (make-array (list h w)
 									  :element-type '(complex double-float)
 									  :displaced-to *out-c*)
@@ -312,8 +319,22 @@
 ;;   107,648,368 bytes for 2,673,532 other objects.
 ;;   568,493,904 bytes for 3,087,790 dynamic objects (space total.)
 
-(defparameter *bla2* *bla*)
-
 #+nil
 (pylon:terminate *cams*)
 
+
+#+nil
+(defun run2 ()
+ (let ((aj (make-hash-table))
+       (ayj (make-hash-table)))
+   (loop for e in (aref *bla* 0) do
+	(when (and e (listp e))
+	  (destructuring-bind (j yj v im) e
+	    (format t "~a~%" j)))
+	#+nil
+	(setf (gethash j aj) 1
+	      (gethash yj ayj) 1))
+   (defparameter *bla1* (list aj ayj))))
+
+#+nil
+(run2)

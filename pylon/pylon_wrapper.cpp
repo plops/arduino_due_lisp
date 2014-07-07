@@ -54,10 +54,12 @@ extern "C" {
       cout << "attaching cameras" << endl;
       // Create and attach all Pylon Devices.
       for ( size_t i = 0; i < cameras->GetSize(); ++i) {
-	cout << "camera " << i << endl;
+	cout << "camera " << i << ":";
 	(*cameras)[ i ].Attach( tlFactory.CreateDevice( devices[ i ]));
 	// Print the model name of the camera.
-	cout << "Using device " << (*cameras)[ i ].GetDeviceInfo().GetFullName() << endl;
+	cout << " FullName " << (*cameras)[ i ].GetDeviceInfo().GetFullName()
+	     << " serial " << (*cameras)[ i ].GetDeviceInfo().GetSerialNumber()
+	     << endl;
       }
       return cameras;
     }
