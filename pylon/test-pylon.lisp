@@ -307,8 +307,14 @@
 (run2)
 
 #+nil
-(let* ((h 
-	(loop for (j yj ji yji v im) in (butlast (aref *bla* 0)) maximize yji))
-       (w
-	(loop for (j yj ji yji v im) in (butlast (aref *bla* 0)) maximize ji))
-       (a (make-array (list h w 66 66) :element-type '(complex single-float)))))
+(time
+ (let* ((h 
+	 (1+ (loop for (j yj ji yji v im) in (butlast (aref *bla* 0)) maximize yji)))
+	(w
+	 (1+ (loop for (j yj ji yji v im) in (butlast (aref *bla* 0)) maximize ji)))
+	(a (make-array (list h w 66 66) :element-type '(complex single-float))))
+   (loop for (j yj ji yji v im) in (butlast (aref *bla* 0)) do
+	(dotimes (jj 66)
+	  (dotimes (ii 66)
+	    (setf (aref a yji ji jj ii) (coerce (aref im jj ii) '(complex single-float))))))
+   (ics:write-ics2 "/home/martin/scan.ics" a)))
