@@ -199,7 +199,7 @@
 
 (defvar *bla* nil)
 (defun run () ; defparameter *bla*
-  (setf *bla* (make-array 3))
+  (setf *bla* (make-array 3 :initial-element nil))
   (unless *trigger-outputs-initialized*
     (initialize-trigger-outputs))
   (pylon:start-grabbing *cams*)
@@ -296,8 +296,8 @@
        (ayj (make-hash-table)))
    (loop for e in (aref *bla* 0) do
 	(when (and e (listp e))
-	  (destructuring-bind (j yj v im) e
-	    (format t "~a~%" j)))
+	  (destructuring-bind (j yj ji yji v im) e
+	    (format t "~a~%" (list ji yji))))
 	#+nil
 	(setf (gethash j aj) 1
 	      (gethash yj ayj) 1))
@@ -305,3 +305,10 @@
 
 #+nil
 (run2)
+
+#+nil
+(let* ((h 
+	(loop for (j yj ji yji v im) in (butlast (aref *bla* 0)) maximize yji))
+       (w
+	(loop for (j yj ji yji v im) in (butlast (aref *bla* 0)) maximize ji))
+       (a (make-array (list h w 66 66) :element-type '(complex single-float)))))
