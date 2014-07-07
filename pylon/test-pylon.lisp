@@ -110,46 +110,19 @@
 (defparameter *fact* (pylon::factory))
 (defparameter *cams* (pylon:create *fact* 3))
 
-;; camera 0 Using device Basler acA1920-25gm#00305315DFDD#192.168.4.100:3956
-;; camera 1 Using device Basler acA1920-25gm#00305315DFDE#192.168.5.102:3956
-;; camera 2 Using device Basler acA1920-25gm#00305315DFC4#192.168.6.101:3956
+;; camera 0: FullName Basler acA1920-25gm#00305315DFC4#192.168.6.101:3956 serial 21433540 *cam1*
+;; camera 1: FullName Basler acA1920-25gm#00305315DFDD#192.168.4.100:3956 serial 21433565 *cam2*
+;; camera 2: FullName Basler acA1920-25gm#00305315DFDE#192.168.5.102:3956 serial 21433566 *cam3*
 
-;; camera 0 Using device Basler acA1920-25gm#00305315DFDD#192.168.4.100:3956
-;; camera 1 Using device Basler acA1920-25gm#00305315DFDE#192.168.5.102:3956
-;; camera 2 Using device Basler acA1920-25gm#00305315DFC4#192.168.6.101:3956
-
-
-;; correspondence between aravis and pylon cameras:
-;; (set-region *cam2* :keep-old nil :h 1024 :w 1024 :x 452 :y 21) ;; pylon cam 0
-;; (set-region *cam1* :keep-old nil :h 1024 :w 1024 :x 135 :y 0)  ;; pylon cam 2
-;; (set-region *cam3* :keep-old nil :h 600 :w 600 :x 520 :y 213)  ;; pylon cam 1
-
-;; 65 1024x1024+452+21
-;; 40 1024x1024+135+0
-;; 66 600x600+520+213
-
-;; change: 40 1024x1024+135+0 should be 1024x1024+720+0 now this is pylon cam 2
-
-;; 65 7980 "Gain (Raw)" 0
-;; 40 3430 "Exposure Time (Raw)" gain 37
-;; 66 16975 gain 37
-
-#+nil
-((q1 (extract out1 :x (+ 33 867) :y (+ 33 243) :w 66 :h 66)) ; pylon2
- (q2 (extract out2 :x (+ 33 138) :y (+ 33 128) :w 66 :h 66)) ; pylon0
- (q3 (extract out3 :x (+ 33 193) :y (+ 33 -10) :w 66 :h 66))) ; pylon1
-
-#+nil
-(defparameter *first-orders* `((,(+ 33 138) ,(+ 33 128))
-			       
-			       (,(+ 33 867) ,(+ 33 243))
-			       (,(+ 33 193) ,(+ 33 -10))))
+;; aravis serial   area of interest  1st order  exposure  gain
+;; *cam1*   40     1024x1024+720+0   +124+274   3430      37
+;; *cam2*   65     1024x1024+452+21  +168+161   7980      0
+;; *cam3*   66     600x600+520+213   +225+18    16975     37
 
 (defparameter *first-orders* `((124 274)
 			       (168 161)
 			       (225 18)))
 (defparameter *cam-sizes* `((1024 1024)
-			    
 			    (1024 1024)
 			    (600 600)))
 
@@ -162,10 +135,6 @@
       (loop for e in '("Width" "Height" "OffsetX" "OffsetY" "ExposureTimeRaw" "GainRaw") collect
 	   (pylon:get-value-i *cams* j e t nil))
       (list (pylon:get-value-e *cams* j "TriggerMode"))))
-
-;; => ((1024 1024 720 0 3430 37 0) (1024 1024 452 21 7980 0 0)
-;;     (600 600 520 213 16975 37 0))
-
 
 #+nil
 (dotimes (i 3)
@@ -204,7 +173,7 @@
 #+nil
 (progn
  (pylon:start-grabbing *cams*)
- (LOOP FOR I BELOW 10 DO
+ (LOOP FOR I BELOW 1 DO
       (let ((th (sb-thread:make-thread 
 		 #'(lambda ()
 		     (progn
@@ -229,8 +198,6 @@
   (trigger-all-cameras))
 
 (defvar *bla* nil)
-;; 10 images in .9s    1.9s
-;; 100 images in 10.5s 18.5s
 (defun run () ; defparameter *bla*
   (setf *bla* (make-array 3))
   (unless *trigger-outputs-initialized*
