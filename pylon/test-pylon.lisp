@@ -203,8 +203,8 @@
   (unless *trigger-outputs-initialized*
     (initialize-trigger-outputs))
   (pylon:start-grabbing *cams*)
-  (loop for yj from 1800 below 3700 by 50 and yji from 0 collect
-       (loop for j from 400 below 2900 by 50 and ji from 0 collect
+  (loop for yj from 1800 below 3700 by 20 and yji from 0 collect
+       (loop for j from 400 below 2900 by 20 and ji from 0 collect
 	    (let ((th (sb-thread:make-thread 
 		   #'(lambda ()
 		       (progn
@@ -307,14 +307,14 @@
 (run2)
 
 #+nil
-(time
- (let* ((h 
-	 (1+ (loop for (j yj ji yji v im) in (butlast (aref *bla* 0)) maximize yji)))
-	(w
-	 (1+ (loop for (j yj ji yji v im) in (butlast (aref *bla* 0)) maximize ji)))
-	(a (make-array (list h w 66 66) :element-type '(complex single-float))))
-   (loop for (j yj ji yji v im) in (butlast (aref *bla* 0)) do
-	(dotimes (jj 66)
-	  (dotimes (ii 66)
-	    (setf (aref a yji ji jj ii) (coerce (aref im jj ii) '(complex single-float))))))
-   (ics:write-ics2 "/home/martin/scan.ics" a)))
+(dotimes (cam 3)
+  (let* ((h 
+	  (1+ (loop for (j yj ji yji v im) in (aref *bla* cam) maximize yji)))
+	 (w
+	  (1+ (loop for (j yj ji yji v im) in (aref *bla* cam) maximize ji)))
+	 (a (make-array (list h w 66 66) :element-type '(complex single-float))))
+    (loop for (j yj ji yji v im) in (aref *bla* cam) do
+	 (dotimes (jj 66)
+	   (dotimes (ii 66)
+	     (setf (aref a yji ji jj ii) (coerce (aref im jj ii) '(complex single-float))))))
+    (ics:write-ics2 (format nil "/home/martin/scan~d.ics" cam) a)))
