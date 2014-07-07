@@ -318,14 +318,15 @@
 
 
 #+nil
-(dotimes (cam 3)
-  (let* ((h 
-	  (1+ (loop for (j yj ji yji v im) in (aref *bla* cam) maximize yji)))
-	 (w
-	  (1+ (loop for (j yj ji yji v im) in (aref *bla* cam) maximize ji)))
-	 (a (make-array (list h w 66 66) :element-type '(complex single-float))))
-    (loop for (j yj ji yji v im) in (aref *bla* cam) do
-	 (dotimes (jj 66)
-	   (dotimes (ii 66)
-	     (setf (aref a yji ji jj ii) (coerce (aref im jj ii) '(complex single-float))))))
-    (ics:write-ics2 (format nil "/home/martin/scan~d.ics" cam) a)))
+(time
+ (let* ((h 
+	 (1+ (loop for (j yj ji yji v im) in (aref *bla* 0) maximize yji)))
+	(w
+	 (1+ (loop for (j yj ji yji v im) in (aref *bla* 0) maximize ji)))
+	(a (make-array (list 3 h w 66 66) :element-type '(complex single-float))))
+   (dotimes (cam 3)
+     (loop for (j yj ji yji v im) in (aref *bla* cam) do
+	  (dotimes (jj 66)
+	    (dotimes (ii 66)
+	      (setf (aref a cam yji ji jj ii) (coerce (aref im jj ii) '(complex single-float)))))))
+   (ics:write-ics2 "/home/martin/scan0707.ics" a)))
