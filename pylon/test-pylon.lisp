@@ -266,7 +266,11 @@
   (pylon:stop-grabbing *cams*))
 
 #+nil
-(time  (run))
+(time
+ (progn (format t "~a~%" (get-decoded-time))
+	(run)
+	(format t "~a~%" (get-decoded-time))))
+
 
 ;; 902s to run
 ;; 980s when extracted complex arrays are safed
@@ -329,4 +333,4 @@
 	  (dotimes (jj 66)
 	    (dotimes (ii 66)
 	      (setf (aref a cam yji ji jj ii) (coerce (aref im jj ii) '(complex single-float)))))))
-   (ics:write-ics2 "/home/martin/scan0707.ics" a)))
+   (ics:write-ics2 "/home/martin/scan0707c.ics" a)))

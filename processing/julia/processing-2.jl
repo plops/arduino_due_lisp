@@ -63,47 +63,25 @@ end
 
 write_pgm(abs(a[:,:,1]))
 
-# try reading all the data (considerably faster than matlab)
-a=Array(Complex64,80,84,151,161);
-fns=find_ics_files(dir)
-i = 1;
-@time for file in fns
-    println(file)
-    a[:,:,:,i] = read_ics(dir * fns[i])
-    i = i+1;
-end
-
-
-# this is data from a second experiment:
-a2=Array(Complex64,80,84,151,161);
-dir2 = "/media/sda4/b/20140309/1_/"
-fns=find_ics_files(dir2)
-i = 1;
-@time for f in fns
-    println(f)
-    a2[:,:,:,i] = read_ics(dir * fns[i])
-    i = i+1;
-end
 
     
-@time extrema(abs(a)) # 3.7s
+@time extrema(abs(a)) # 4.9s
 
-a = reshape(a,80*84,151*161)
-
-@time acam = mean(abs(a),[3 4]);
-
-write_pgm(acam,"/dev/shm/acam.pgm")
+for cam=1:3
+    acam = mean(abs(a[:,:,:,:,cam]),[3 4]);
+    write_pgm(acam,"/dev/shm/acam$cam.pgm")
+    aang = squeeze(mean(abs(a[:,:,:,:,cam]),[1 2]),[1 2]);
+    write_pgm(aang,"/dev/shm/aang$cam.pgm")
+end
 
 acamb = (acam .> quantile(reshape(acam,80*84),.5));
 
 write_pgm(acamb*1.0,"/dev/shm/acamb.pgm")
 
-@time aang = squeeze(mean(abs(a),[1 2]),[1 2]);
 
 aangb = (aang .> quantile(reshape(aang,151*161),.6));
 
 
-write_pgm(aang,"/dev/shm/aang.pgm")
 write_pgm(aangb,"/dev/shm/aangb.pgm")
 asmall=reshape(a,80*84,151*161)[reshape(acamb,80*84),reshape(aangb,151*161)]
 
