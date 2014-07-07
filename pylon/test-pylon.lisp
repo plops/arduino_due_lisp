@@ -271,6 +271,15 @@
 ;; 902s to run
 ;; 980s when extracted complex arrays are safed
 
+;; Evaluation took:
+;;   2731.082 seconds of real time
+;;   5921.979000 seconds of total run time (5796.728000 user, 125.251000 system)
+;;   [ Run times consist of 8.982 seconds GC time, and 5912.997 seconds non-GC time. ]
+;;   216.84% CPU
+;;   7,681,963,930,572 processor cycles
+;;   34,209,748,240 bytes consed
+
+
 ;; (room)
 ;; Dynamic space usage is:   568,429,344 bytes.
 ;; Read-only space usage is:      5,680 bytes.
@@ -305,6 +314,8 @@
 
 #+nil
 (run2)
+
+
 
 #+nil
 (dotimes (cam 3)
