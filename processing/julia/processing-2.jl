@@ -12,7 +12,7 @@ function find_ics_raw_start(fn)
     res
 end
 
-ics_file = "/home/martin/scan0707d.ics"
+
 
 find_ics_raw_start(ics_file)
 
@@ -29,7 +29,7 @@ function read_ics(fn)
     a
 end
 
-a = read_ics(ics_file);
+
 
 
 # check that the dimensions make sense
@@ -69,26 +69,31 @@ write_pgm(abs(a[:,:,1]))
     
 @time extrema(abs(a)) # 4.9s
 
-for cam=1:3
-    acam = mean(abs(a[:,:,:,:,cam]),[3 4]);
-    write_pgm(acam,"/dev/shm/acam$cam.pgm")
-    aang = squeeze(mean(abs(a[:,:,:,:,cam]),[1 2]),[1 2]);
-    write_pgm(aang,"/dev/shm/aang$cam.pgm")
+@time for file in ["d" "e"] 
+    ics_file = "/home/martin/scan0707$file.ics"
+    a = read_ics(ics_file);
+    for cam=1:3
+        acam = mean(abs(a[:,:,:,:,cam]),[3 4]);
+        acamb = (acam .> quantile(reshape(acam,66*66),.5f0));
+        write_pgm(acam,"/dev/shm/acam$file$cam.pgm")
+        write_pgm(acamb*1.0,"/dev/shm/acamb$file$cam.pgm")
+        aang = squeeze(mean(abs(a[:,:,:,:,cam]),[1 2]),[1 2]);
+        aangb = (aang .> quantile(reshape(aang,125*95),.6f0));
+        write_pgm(aang,"/dev/shm/aang$file$cam.pgm")
+        write_pgm(aangb,"/dev/shm/aangb$file$cam.pgm")
+        asmall=reshape(a,66*66,125*95)[reshape(acamb,66*66),reshape(aangb,125*95)]
+    end
 end
-
-acamb = (acam .> quantile(reshape(acam,80*84),.5));
-
-write_pgm(acamb*1.0,"/dev/shm/acamb.pgm")
+  
 
 
-aangb = (aang .> quantile(reshape(aang,151*161),.6));
+
+
+
+
 
 
 write_pgm(aangb,"/dev/shm/aangb.pgm")
-asmall=reshape(a,80*84,151*161)[reshape(acamb,80*84),reshape(aangb,151*161)]
-
-
-asmall2=reshape(a2,80*84,151*161)[reshape(acamb,80*84),reshape(aangb,151*161)]
 
     ## julia> size(asmall)
 ## (3360,9724)
@@ -99,7 +104,7 @@ asmall2=reshape(a2,80*84,151*161)[reshape(acamb,80*84),reshape(aangb,151*161)]
 
 # julia> size(a)
 # (6720,24311)
-# elapsed time: 632.120279614 seconds (6320399940 bytes allocated)
+1# elapsed time: 632.120279614 seconds (6320399940 bytes allocated)
 
 # diagm(s)
 # svdfact is  more efficient than sv
