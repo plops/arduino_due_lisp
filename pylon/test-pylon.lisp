@@ -127,8 +127,21 @@
     (21433540 1024 1024  720    0  124  274   3430  37))
   "    id      w    h    x     y   kx   ky    exp   gain")
 
+(eval-when (:compile-toplevel :execute :load-toplevel)
+ (let ((a nil))
+   (defun init-cam-parameter-hash ()
+     (setf a (make-hash-table))
+     (loop for (id w h x y kx ky exp gain) in *cam-parameters* do
+	  (setf (gethash id a) (list id w h x y kx ky exp gain))))
+   (defun get-cam-parameters (cam)
+     (gethash (parse-integer (pylon:cam-get-serial-number *cams* cam)) a))))
+
+
+(init-cam-parameter-hash)
+
+
 #+nil
-(pylon:cam-get-serial-number *cams* 2)
+(parse-integer (pylon:cam-get-serial-number *cams* 2))
 
 (pylon:cams-open *cams*)
 #+nil
@@ -218,7 +231,7 @@
 				  (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
 				(if success-p
 				    (destructuring-bind (id ww hh ox oy x y exp gain) 
-					(elt *cam-parameters* cam)
+					(get-cam-parameters cam)
 				      (assert (= ww w))
 				      (assert (= hh h))
 				      (fftw:ft *buf-c* :out-arg *out-c* :w w :h h)
