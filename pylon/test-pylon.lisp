@@ -220,8 +220,8 @@
   (unless *trigger-outputs-initialized*
     (initialize-trigger-outputs))
   (pylon:start-grabbing *cams*)
-  (loop for yj from 1800 below 3700 by 20 and yji from 0 collect
-       (loop for j from 400 below 2900 by 20 and ji from 0 collect
+  (loop for yj from 1800 below 3700 by 100 and yji from 0 collect
+       (loop for j from 400 below 2900 by 100 and ji from 0 collect
 	    (let ((th (sb-thread:make-thread 
 		   #'(lambda ()
 		       (progn
@@ -342,7 +342,9 @@
 
 #+nil
 (time
- (let* ((h 
+ (let* ((date "0708")
+	(ver 1)
+	(h 
 	 (1+ (loop for (j yj ji yji v im) in (aref *bla* 0) maximize yji)))
 	(w
 	 (1+ (loop for (j yj ji yji v im) in (aref *bla* 0) maximize ji)))
@@ -352,8 +354,10 @@
 	  (dotimes (jj 66)
 	    (dotimes (ii 66)
 	      (setf (aref a cam yji ji jj ii) (coerce (aref im jj ii) '(complex single-float)))))))
-   (ics:write-ics2 "/home/martin/scan0707e.ics" a)
-   (with-open-file (s "/home/martin/scan-e.dat" :direction :output
+   (ics:write-ics2 (format nil "/home/martin/scan~a_~d.ics" date ver) a)
+   (with-open-file (s (format nil "/home/martin/scan~a_~d.dat" date ver) :direction :output
 		      :if-exists :supersede :if-does-not-exist :create)
-     (format s "~a" *cam-parameters*))))
+     (dotimes (cam 3)
+       (format s "~a" (get-cam-parameters cam))))))
+
 
