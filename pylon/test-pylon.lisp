@@ -338,4 +338,5 @@
 	  (dotimes (jj 66)
 	    (dotimes (ii 66)
 	      (setf (aref a cam yji ji jj ii) (coerce (aref im jj ii) '(complex single-float)))))))
-   (ics:write-ics2 "/home/martin/scan0707d.ics" a)))
+   (ics:write-ics2 "/home/martin/scan0707e.ics" a)))
+
