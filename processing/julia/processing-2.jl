@@ -69,24 +69,29 @@ write_pgm(abs(a[:,:,1]))
     
 @time extrema(abs(a)) # 4.9s
 
-@time for file in ["d" "e"] 
-    ics_file = "/home/martin/scan0707$file.ics"
-    a = read_ics(ics_file);
-    for cam=1:3
-        acam = mean(abs(a[:,:,:,:,cam]),[3 4]);
-        acamb = (acam .> quantile(reshape(acam,66*66),.5f0));
-        write_pgm(acam,"/dev/shm/acam$file$cam.pgm")
-        write_pgm(acamb*1.0,"/dev/shm/acamb$file$cam.pgm")
-        aang = squeeze(mean(abs(a[:,:,:,:,cam]),[1 2]),[1 2]);
-        aangb = (aang .> quantile(reshape(aang,125*95),.6f0));
-        write_pgm(aang,"/dev/shm/aang$file$cam.pgm")
-        write_pgm(aangb,"/dev/shm/aangb$file$cam.pgm")
-        asmall=reshape(a,66*66,125*95)[reshape(acamb,66*66),reshape(aangb,125*95)]
+begin
+    acam = zeros(66,66,2,3)
+    acamb = zeros(66,66,2,3)
+    aang = zeros(125,95,2,3)
+    aangb = zeros(125,95,2,3)
+    for (i, file) in [(1,"d") (2,"e")]
+        ics_file = "/home/martin/scan0707$file.ics"
+        a = read_ics(ics_file);
+        for cam=1:3
+            acam[:,:,i,cam] = squeeze(mean(abs(a[:,:,:,:,cam]),[3 4]),[3 4]);
+            acamb[:,:,i,cam] = (acam[:,:,i,cam] .> quantile(reshape(acam[:,:,i,cam],66*66),.5f0));
+            write_pgm(acam[:,:,i,cam],"/dev/shm/acam_$i-$cam.pgm")
+            write_pgm(acamb[:,:,i,cam]*1.0,"/dev/shm/acamb_$i-$cam.pgm")
+            aang[:,:,i,cam] = squeeze(mean(abs(a[:,:,:,:,cam]),[1 2]),[1 2]);
+            aangb[:,:,i,cam] = (aang[:,:,i,cam] .> quantile(reshape(aang[:,:,i,cam],125*95),.6f0));
+            write_pgm(aang[:,:,i,cam],"/dev/shm/aang_$i-$cam.pgm")
+            write_pgm(aangb[:,:,i,cam],"/dev/shm/aangb_$i-$cam.pgm")
+        end
     end
 end
-  
 
 
+#            asmall=reshape(a,66*66,125*95)[reshape(acamb,66*66),reshape(aangb,125*95)]
 
 
 
