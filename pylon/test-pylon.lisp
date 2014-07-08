@@ -119,15 +119,16 @@
 ;; *cam2*   65     1024x1024+452+21  +168+161   7980      0
 ;; *cam3*   66     600x600+520+213   +225+18    16975     37
 
-(defparameter *first-orders* `((168 161)
-			       (225 18)
-			       (124 274)
-			       
-			       ))
-(defparameter *cam-sizes* `((1024 1024)
-			    (600 600)
-			    (1024 1024)
-			    ))
+
+
+(defparameter *cam-parameters*
+  `((21433565 1024 1024  452   21  168  161   7980   0)
+    (21433566  600  600  520  213  225   18  16975  37)
+    (21433540 1024 1024  720    0  124  274   3430  37))
+  "    id      w    h    x     y   kx   ky    exp   gain")
+
+
+
 
 (pylon:cams-open *cams*)
 #+nil
@@ -216,34 +217,34 @@
 			      (destructuring-bind (cam success-p w h) 
 				  (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
 				(if success-p
-				    (destructuring-bind (x y) (elt *first-orders* cam)
-				      (destructuring-bind (hh ww) (elt *cam-sizes* cam)
-					(assert (= ww w))
-					(assert (= hh h))
-					(fftw:ft *buf-c* :out-arg *out-c* :w w :h h)
-					(let* ((q (.abs
-						   (extract 
-						    (make-array (list h w)
-								:element-type '(complex double-float)
-								:displaced-to *out-c*)
-						    :x x :y y :w 66 :h 66)))
-					       (v (.mean q)))
-					  #+nil
-					  (write-pgm8 (format nil "/dev/shm/o~d.pgm" cam)
-						      (.uint8 
-						       (.abs
-							(extract
-							 (make-array (list h w)
-								     :element-type '(complex double-float)
-								     :displaced-to *out-c*)
-							 :x x :y y :w 66 :h 66))))
-					  (format t "~a~%" (list cam j yj v))
-					  (push (list j yj ji yji v (extract
-							      (make-array (list h w)
-									  :element-type '(complex double-float)
-									  :displaced-to *out-c*)
-							      :x x :y y :w 66 :h 66)) 
-						(aref *bla* cam)))))
+				    (destructuring-bind (id ww hh ox oy x y exp gain) 
+					(elt *cam-parameters* cam)
+				      (assert (= ww w))
+				      (assert (= hh h))
+				      (fftw:ft *buf-c* :out-arg *out-c* :w w :h h)
+				      (let* ((q (.abs
+						 (extract 
+						  (make-array (list h w)
+							      :element-type '(complex double-float)
+							      :displaced-to *out-c*)
+						  :x x :y y :w 66 :h 66)))
+					     (v (.mean q)))
+					#+nil
+					(write-pgm8 (format nil "/dev/shm/o~d.pgm" cam)
+						    (.uint8 
+						     (.abs
+						      (extract
+						       (make-array (list h w)
+								   :element-type '(complex double-float)
+								   :displaced-to *out-c*)
+						       :x x :y y :w 66 :h 66))))
+					(format t "~a~%" (list cam j yj v))
+					(push (list j yj ji yji v (extract
+								   (make-array (list h w)
+									       :element-type '(complex double-float)
+									       :displaced-to *out-c*)
+								   :x x :y y :w 66 :h 66)) 
+					      (aref *bla* cam))))
 				    (format t "acquisition error.~%"))))))
 		   :name "camera-acquisition")))
 	  (sleep .01)
@@ -338,5 +339,8 @@
 	  (dotimes (jj 66)
 	    (dotimes (ii 66)
 	      (setf (aref a cam yji ji jj ii) (coerce (aref im jj ii) '(complex single-float)))))))
-   (ics:write-ics2 "/home/martin/scan0707e.ics" a)))
+   (ics:write-ics2 "/home/martin/scan0707e.ics" a)
+   (with-open-file (s "/home/martin/scan-e.dat" :direction :output
+		      :if-exists :supersede :if-does-not-exist :create)
+     (format s "~a" *cam-parameters*))))
 
