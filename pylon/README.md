@@ -70,6 +70,23 @@ Issue the Open or Close command only for the camera with index `cam`
 in the CInstantCameraArray `handle`. If `cam` is bigger than the
 number of available cameras, nothing is done.
 
+
+```
+cam-get-full-name     handle cam => string
+```
+
+Returns the full name of the camera as a string, e.g. "Basler
+acA1920-25gm#00305315DFDE#192.168.5.102:3956"
+
+
+```
+cam-get-serial-number handle cam => string
+```
+
+Returns the uniq serial number of a camera as a string,
+e.g. "21433566".
+
+
 ``` 
 get-max-i   handle cam node => int
 get-min-i   handle cam node => int

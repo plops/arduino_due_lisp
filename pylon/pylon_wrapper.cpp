@@ -68,6 +68,39 @@ extern "C" {
       return NULL;
     }
   }
+  const char* pylon_wrapper_cam_get_serial_number(void*cams,int cam)
+  {
+    try{
+      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      if(cam>=cameras->GetSize()) {
+      	cout << "there are not as many cameras available as requested: "
+	     << cam << ">=" << cameras->GetSize() << endl;
+	return NULL;
+      }
+      return (*cameras)[cam].GetDeviceInfo().GetSerialNumber().c_str();
+    }
+    catch (GenICam::GenericException& e) {
+      printf( "Exception caught in %s msg=%s\n",__func__, e.what());
+      return NULL;
+    }
+  }
+  const char* pylon_wrapper_cam_get_full_name(void*cams,int cam)
+  {
+    try{
+      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      if(cam>=cameras->GetSize()) {
+      	cout << "there are not as many cameras available as requested: "
+	     << cam << ">=" << cameras->GetSize() << endl;
+	return NULL;
+      }
+      return (*cameras)[cam].GetDeviceInfo().GetFullName().c_str();
+    }
+    catch (GenICam::GenericException& e) {
+      printf( "Exception caught in %s msg=%s\n",__func__, e.what());
+      return NULL;
+    }
+  }
+
   int pylon_wrapper_get_max_i(void*cams,int cam,const char*node)
   {
     try{

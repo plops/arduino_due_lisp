@@ -22,4 +22,6 @@
      #:cams-open
      #:cams-close
      #:cam-open
-     #:cam-close))
+     #:cam-close
+     #:cam-get-serial-number
+     #:cam-get-full-name))

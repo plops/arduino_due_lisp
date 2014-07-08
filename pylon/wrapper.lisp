@@ -168,4 +168,11 @@
   (cams :pointer)
   (cam :int))
 
+(cffi:defcfun ("pylon_wrapper_cam_get_serial_number" cam-get-serial-number) :string
+  (cams :pointer)
+  (cam :int))
+(cffi:defcfun ("pylon_wrapper_cam_get_full_name" cam-get-full-name) :string
+  (cams :pointer)
+  (cam :int))
+
 

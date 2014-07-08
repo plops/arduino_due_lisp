@@ -26,3 +26,5 @@ void pylon_wrapper_set_value_e(void*cams,int cam,const char*node,int value);
 int pylon_wrapper_get_value_e(void*cams,int cam,const char*node);
 void pylon_wrapper_to_string_e(void*cams,int cam,const char*node);
 void pylon_wrapper_from_string_e(void*cams,int cam,const char*node,char*value);
+const char* pylon_wrapper_cam_get_serial_number(void*cams,int cam);
+const char* pylon_wrapper_cam_get_full_name(void*cams,int cam);

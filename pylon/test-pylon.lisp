@@ -127,8 +127,8 @@
     (21433540 1024 1024  720    0  124  274   3430  37))
   "    id      w    h    x     y   kx   ky    exp   gain")
 
-
-
+#+nil
+(pylon:cam-get-serial-number *cams* 2)
 
 (pylon:cams-open *cams*)
 #+nil
