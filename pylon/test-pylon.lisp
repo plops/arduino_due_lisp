@@ -119,12 +119,15 @@
 ;; *cam2*   65     1024x1024+452+21  +168+161   7980      0
 ;; *cam3*   66     600x600+520+213   +225+18    16975     37
 
-(defparameter *first-orders* `((124 274)
-			       (168 161)
-			       (225 18)))
+(defparameter *first-orders* `((168 161)
+			       (225 18)
+			       (124 274)
+			       
+			       ))
 (defparameter *cam-sizes* `((1024 1024)
+			    (600 600)
 			    (1024 1024)
-			    (600 600)))
+			    ))
 
 (pylon:cams-open *cams*)
 #+nil
@@ -267,11 +270,13 @@
 
 #+nil
 (time
- (progn (format t "~a~%" (get-decoded-time))
+ (progn (format t "~a~%" (multiple-value-list (get-decoded-time)))
 	(run)
-	(format t "~a~%" (get-decoded-time))))
-
-
+	(format t "~a~%" (multiple-value-list (get-decoded-time)))))
+#+nil
+(setf *bla* nil)
+#+nil
+(sb-ext:gc :full t)
 ;; 902s to run
 ;; 980s when extracted complex arrays are safed
 
@@ -333,4 +338,4 @@
 	  (dotimes (jj 66)
 	    (dotimes (ii 66)
 	      (setf (aref a cam yji ji jj ii) (coerce (aref im jj ii) '(complex single-float)))))))
-   (ics:write-ics2 "/home/martin/scan0707c.ics" a)))
+   (ics:write-ics2 "/home/martin/scan0707d.ics" a)))

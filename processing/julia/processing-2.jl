@@ -11,7 +11,9 @@ function find_ics_raw_start(fn)
     close(f)
     res
 end
-ics_file = "/home/martin/scan0707.ics"
+
+ics_file = "/home/martin/scan0707d.ics"
+
 find_ics_raw_start(ics_file)
 
 # this function 
