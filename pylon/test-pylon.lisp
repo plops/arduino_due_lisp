@@ -76,6 +76,17 @@
 #+nil
 (trigger-all-cameras)
 
+(defun block-laser ()
+  (arduino-serial-sbcl:talk-arduino
+   (second *ard*) (first *ard*)
+   "(progn (pin-mode 8 1) (digital-write 8 0))"))
+
+(defun unblock-laser ()
+  (arduino-serial-sbcl:talk-arduino
+   (second *ard*) (first *ard*)
+   "(digital-write 8 1)"))
+
+
 ;; fiber center first coordinate:   800 .. 1550 .. 2750
 ;; fiber center second coordinate: 1800 .. 2500 .. 3580
 
@@ -217,6 +228,8 @@
 (defvar *bla* nil)
 (defun run ()
   (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
+  (dotimes (i 3)
+    (pylon:set-value-e *cams* i "TriggerMode" 1))
   (pylon:start-grabbing *cams*)
   (loop for yj from 1800 below 3700 by 15  and yji from 0 collect
        (loop for j from 400 below 2900 by 15 and ji from 0 collect
@@ -261,6 +274,36 @@
  (progn (format t "~a~%" (multiple-value-list (get-decoded-time)))
 	(run)
 	(format t "~a~%" (multiple-value-list (get-decoded-time)))))
+
+(defun capture-dark-images ()
+  (block-laser)
+  (sleep .1)
+  (dotimes (i 3)
+    (pylon:set-value-e *cams* i "TriggerMode" 0))
+  (pylon:start-grabbing *cams*)
+  (prog1
+      (loop for i below 3 collect
+	   (destructuring-bind (cam success-p w h) 
+	       (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
+	     (if success-p
+		 (destructuring-bind (id ww hh ox oy x y exp gain) 
+		     (get-cam-parameters cam)
+		   (declare (ignorable id ox oy exp gain))
+		   (assert (= ww w))
+		   (assert (= hh h))
+		   (let* ((q (.realpart
+			      (make-array (list h w)
+					  :element-type '(complex double-float)
+					  :displaced-to *buf-c*)))
+			  (v (.mean q)))
+		     (list (get-cam-parameters cam) v)))
+		 (format t "acquisition error.~%"))))
+    (progn (pylon:stop-grabbing *cams*)
+	   (unblock-laser))))
+
+#+nil
+(format t "~a~%" (capture-dark-images))
+
 #+nil
 (setf *bla* nil)
 #+nil
@@ -329,6 +372,7 @@
    (ics:write-ics2 (format nil "/home/martin/scan~a_~d.ics" date ver) a)
    (with-open-file (s (format nil "/home/martin/scan~a_~d.dat" date ver) :direction :output
 		      :if-exists :supersede :if-does-not-exist :create)
+     (format t "~a~%" (capture-dark-images))
      (dotimes (cam 3)
        (format s "~a" (list (get-cam-parameters cam)
 			    (loop for (a b c d e im) in (aref *bla* cam) collect

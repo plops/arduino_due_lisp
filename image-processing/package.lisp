@@ -18,5 +18,6 @@
    #:.phiphi
    #:.mean
    #:write-pgm8
-   #:write-pgm16))
+   #:write-pgm16
+   #:.realpart))
 
