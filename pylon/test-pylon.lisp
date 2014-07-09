@@ -231,8 +231,8 @@
   (dotimes (i 3)
     (pylon:set-value-e *cams* i "TriggerMode" 1))
   (pylon:start-grabbing *cams*)
-  (loop for yj from 1800 below 3700 by 15  and yji from 0 collect
-       (loop for j from 400 below 2900 by 15 and ji from 0 collect
+  (loop for yj from 1800 below 3700 by 50  and yji from 0 collect
+       (loop for j from 400 below 2900 by 50 and ji from 0 collect
 	    (let ((th (sb-thread:make-thread 
 		   #'(lambda ()
 		       (progn
@@ -275,6 +275,10 @@
 	(run)
 	(format t "~a~%" (multiple-value-list (get-decoded-time)))))
 
+(defun make-camera-buffer (cam) 
+  (destructuring-bind (id ww hh ox oy x y exp gain) (get-cam-parameters cam)
+    (make-array (list hh ww) :element-type 'double-float :initial-element 0d0)))
+
 (defun capture-dark-images ()
   (block-laser)
   (sleep .1)
@@ -282,27 +286,39 @@
     (pylon:set-value-e *cams* i "TriggerMode" 0))
   (pylon:start-grabbing *cams*)
   (prog1
-      (loop for i below 3 collect
-	   (destructuring-bind (cam success-p w h) 
-	       (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
-	     (if success-p
-		 (destructuring-bind (id ww hh ox oy x y exp gain) 
-		     (get-cam-parameters cam)
-		   (declare (ignorable id ox oy exp gain))
-		   (assert (= ww w))
-		   (assert (= hh h))
-		   (let* ((q (.realpart
-			      (make-array (list h w)
-					  :element-type '(complex double-float)
-					  :displaced-to *buf-c*)))
-			  (v (.mean q)))
-		     (list (get-cam-parameters cam) v)))
-		 (format t "acquisition error.~%"))))
+      (let ((cambuf (loop for cam below 3 collect (make-camera-buffer cam)))
+	    (count (loop for cam below 3 collect 0)))
+	(loop for j below 10 do
+	     (loop for i below 3 do
+		  (destructuring-bind (cam success-p w h) 
+		      (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
+		    (if success-p
+			(destructuring-bind (id ww hh ox oy x y exp gain) 
+			    (get-cam-parameters cam)
+			  (declare (ignorable id ox oy x y exp gain))
+			  (assert (= ww w))
+			  (assert (= hh h))
+			  (let* ((q (.realpart
+				     (make-array (list h w)
+						 :element-type '(complex double-float)
+						 :displaced-to *buf-c*)))
+				 ;(v (.mean q))
+				 )
+			    (.accum (elt cambuf cam) q)
+			    (incf (elt count cam))))
+		    (format t "acquisition error.~%")))))
+	(loop for cam below 3 do
+	     (setf (elt cambuf cam) (.* (elt cambuf cam) (/ (elt count cam)))))
+	(values cambuf count))
     (progn (pylon:stop-grabbing *cams*)
 	   (unblock-laser))))
 
 #+nil
-(format t "~a~%" (capture-dark-images))
+(defparameter *bla* (multiple-value-list (capture-dark-images)))
+
+#+nil
+(dotimes (i 3)
+ (ics:write-ics2 (format nil "/dev/shm/dark_~d.ics" i) (elt (first *bla*) i)))
 
 #+nil
 (setf *bla* nil)

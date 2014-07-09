@@ -19,5 +19,6 @@
    #:.mean
    #:write-pgm8
    #:write-pgm16
-   #:.realpart))
+   #:.realpart
+   #:.accum))
 

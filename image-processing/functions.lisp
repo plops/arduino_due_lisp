@@ -27,6 +27,13 @@
       (setf (aref b1 i) (realpart (aref a1 i))))
     b))
 
+(defun .accum (dst b)
+  (let* ((b1 (.linear b))
+	 (dst1 (.linear dst)))
+    (dotimes (i (length dst1))
+      (setf (aref dst1 i) (+ (aref dst1 i) (aref b1 i))))
+    dst))
+
 (defun .abs* (a) ;; this is an ugly hack because clozure common lisp
 		 ;; doesn't support foreign complex double-float
 		 ;; arrays
@@ -158,6 +165,7 @@
       (number (dotimes (i (length c1))
 		 (setf (aref c1 i) (* (aref a1 i) b)))))
     c))
+
 
 (defun .+ (a b)
   (let* ((c (make-array (array-dimensions a)
