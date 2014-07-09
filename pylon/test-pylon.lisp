@@ -215,7 +215,7 @@
   (trigger-all-cameras))
 
 (defvar *bla* nil)
-(defun run () ; defparameter *bla*
+(defun run ()
   (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
   (pylon:start-grabbing *cams*)
   (loop for yj from 1800 below 3700 by 10  and yji from 0 collect
@@ -230,6 +230,7 @@
 				(if success-p
 				    (destructuring-bind (id ww hh ox oy x y exp gain) 
 					(get-cam-parameters cam)
+				     (declare (ignorable id ox oy exp gain))
 				      (assert (= ww w))
 				      (assert (= hh h))
 				      (fftw:ft *buf-c* :out-arg *out-c* :w w :h h)
@@ -240,15 +241,6 @@
 							      :displaced-to *out-c*)
 						  :x x :y y :w 66 :h 66)))
 					     (v (.mean q)))
-					#+nil
-					(write-pgm8 (format nil "/dev/shm/o~d.pgm" cam)
-						    (.uint8 
-						     (.abs
-						      (extract
-						       (make-array (list h w)
-								   :element-type '(complex double-float)
-								   :displaced-to *out-c*)
-						       :x x :y y :w 66 :h 66))))
 					(format t "~a~%" (list cam j yj v))
 					(push (list j yj ji yji v (extract
 								   (make-array (list h w)
@@ -261,22 +253,6 @@
 	  (sleep .01)
 	  (trigger-all-cameras)
 	  (sleep .01)
-	  #+nil	(arduino-serial-sbcl:talk-arduino
-		 (second *ard*) 
-		 (first *ard*)
-		 "(progn
- (digital-write 11 1)
- (delay 10)
- (digital-write 11 0)
- (delay 100)
- (digital-write 12 1)
- (delay 10)
- (digital-write 12 0)
- (delay 100)
- (digital-write 10 1)
- (delay 10)
- (digital-write 10 0)
-")
 	  (sb-thread:join-thread th))))
   (pylon:stop-grabbing *cams*))
 
@@ -316,7 +292,8 @@
 ;;   107,648,368 bytes for 2,673,532 other objects.
 ;;   568,493,904 bytes for 3,087,790 dynamic objects (space total.)
 
-+nil(pylon:terminate *cams*)
+#+nil
+(pylon:terminate *cams*)
 #+nil
 (defun run2 ()
  (let ((aj (make-hash-table))
