@@ -216,12 +216,10 @@
 
 (defvar *bla* nil)
 (defun run () ; defparameter *bla*
-  (setf *bla* (make-array 3 :initial-element nil))
-  (unless *trigger-outputs-initialized*
-    (initialize-trigger-outputs))
+  (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
   (pylon:start-grabbing *cams*)
-  (loop for yj from 1800 below 3700 by 100 and yji from 0 collect
-       (loop for j from 400 below 2900 by 100 and ji from 0 collect
+  (loop for yj from 1800 below 3700 by 10  and yji from 0 collect
+       (loop for j from 400 below 2900 by 10 and ji from 0 collect
 	    (let ((th (sb-thread:make-thread 
 		   #'(lambda ()
 		       (progn
@@ -318,10 +316,7 @@
 ;;   107,648,368 bytes for 2,673,532 other objects.
 ;;   568,493,904 bytes for 3,087,790 dynamic objects (space total.)
 
-#+nil
-(pylon:terminate *cams*)
-
-
++nil(pylon:terminate *cams*)
 #+nil
 (defun run2 ()
  (let ((aj (make-hash-table))

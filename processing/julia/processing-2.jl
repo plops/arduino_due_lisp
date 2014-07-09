@@ -78,11 +78,11 @@ begin
         ics_file = "/home/martin/scan0707$file.ics"
         a = read_ics(ics_file);
         for cam=1:3
-            acam[:,:,i,cam] = squeeze(mean(abs(a[:,:,:,:,cam]),[3 4]),[3 4]);
+            acam[:,:,i,cam] = squeeze(mean(abs2(a[:,:,:,:,cam]),[3 4]),[3 4]);
             acamb[:,:,i,cam] = (acam[:,:,i,cam] .> quantile(reshape(acam[:,:,i,cam],66*66),.5f0));
             write_pgm(acam[:,:,i,cam],"/dev/shm/acam_$i-$cam.pgm")
             write_pgm(acamb[:,:,i,cam]*1.0,"/dev/shm/acamb_$i-$cam.pgm")
-            aang[:,:,i,cam] = squeeze(mean(abs(a[:,:,:,:,cam]),[1 2]),[1 2]);
+            aang[:,:,i,cam] = squeeze(mean(abs2(a[:,:,:,:,cam]),[1 2]),[1 2]);
             aangb[:,:,i,cam] = (aang[:,:,i,cam] .> quantile(reshape(aang[:,:,i,cam],125*95),.6f0));
             write_pgm(aang[:,:,i,cam],"/dev/shm/aang_$i-$cam.pgm")
             write_pgm(aangb[:,:,i,cam],"/dev/shm/aangb_$i-$cam.pgm")
