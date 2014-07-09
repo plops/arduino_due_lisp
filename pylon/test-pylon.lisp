@@ -218,8 +218,8 @@
 (defun run ()
   (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
   (pylon:start-grabbing *cams*)
-  (loop for yj from 1800 below 3700 by 10  and yji from 0 collect
-       (loop for j from 400 below 2900 by 10 and ji from 0 collect
+  (loop for yj from 1800 below 3700 by 15  and yji from 0 collect
+       (loop for j from 400 below 2900 by 15 and ji from 0 collect
 	    (let ((th (sb-thread:make-thread 
 		   #'(lambda ()
 		       (progn
