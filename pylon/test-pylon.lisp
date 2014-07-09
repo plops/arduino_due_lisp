@@ -314,7 +314,7 @@
 
 #+nil
 (time
- (let* ((date "0708")
+ (let* ((date "0709")
 	(ver 1)
 	(h 
 	 (1+ (loop for (j yj ji yji v im) in (aref *bla* 0) maximize yji)))
@@ -330,6 +330,7 @@
    (with-open-file (s (format nil "/home/martin/scan~a_~d.dat" date ver) :direction :output
 		      :if-exists :supersede :if-does-not-exist :create)
      (dotimes (cam 3)
-       (format s "~a" (get-cam-parameters cam))))))
-
+       (format s "~a" (list (get-cam-parameters cam)
+			    (loop for (a b c d e im) in (aref *bla* cam) collect
+				 (list a b c d e))))))))
 
