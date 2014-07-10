@@ -1,7 +1,11 @@
 
+(declaim (optimize (speed 3) (safety 1) (debug 0)))
 (in-package :image-processing)
 
 (defun .linear (a)
+  #+sbcl
+  (sb-ext:array-storage-vector a)
+  #-sbcl
   (make-array (array-total-size a)
 	      :element-type (array-element-type a)
 	      :displaced-to a))
@@ -12,12 +16,18 @@
   (reduce #'min (.linear a)))
 
 (defun .abs (a)
-   (let* ((b (make-array (array-dimensions a) :element-type 'double-float))
-	 (b1 (.linear b))
-	 (a1 (.linear a)))
-    (dotimes (i (length a1))
-      (setf (aref b1 i) (abs (aref a1 i))))
-    b))
+  (typecase a
+    ((simple-array (complex double-float) 2)
+     (let* ((b (make-array (array-dimensions a) :element-type 'double-float))
+	    (b1 (.linear b))
+	    (a1 (.linear a)))
+       (declare (type (simple-array (complex double-float) 2) a)
+		(type (simple-array double-float 2) b)
+		(type (simple-array (complex double-float) 1) a1)
+		(type (simple-array double-float 1) b1))
+       (dotimes (i (length a1))
+	 (setf (aref b1 i) (abs (aref a1 i))))
+       b))))
 
 (defun .realpart (a)
   (let* ((b (make-array (array-dimensions a) :element-type 'double-float))
