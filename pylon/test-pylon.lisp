@@ -279,7 +279,7 @@
   (destructuring-bind (id ww hh ox oy x y exp gain) (get-cam-parameters cam)
     (make-array (list hh ww) :element-type 'double-float :initial-element 0d0)))
 
-(defun capture-dark-images ()
+(defun capture-dark-images (&optional (n 10))
   (block-laser)
   (sleep .1)
   (dotimes (i 3)
@@ -288,7 +288,7 @@
   (prog1
       (let ((cambuf (loop for cam below 3 collect (make-camera-buffer cam)))
 	    (count (loop for cam below 3 collect 0)))
-	(loop for j below 10 do
+	(loop for j below n do
 	     (loop for i below 3 do
 		  (destructuring-bind (cam success-p w h) 
 		      (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
@@ -314,7 +314,10 @@
 	   (unblock-laser))))
 
 #+nil
-(defparameter *bla* (multiple-value-list (capture-dark-images)))
+(time
+ (defparameter *bla* (multiple-value-list (capture-dark-images 300))))
+
+*bla*
 
 #+nil
 (dotimes (i 3)

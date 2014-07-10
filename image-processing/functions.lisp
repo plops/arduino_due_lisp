@@ -20,7 +20,7 @@
     b))
 
 (defun .realpart (a)
-   (let* ((b (make-array (array-dimensions a) :element-type 'double-float))
+  (let* ((b (make-array (array-dimensions a) :element-type 'double-float))
 	 (b1 (.linear b))
 	 (a1 (.linear a)))
     (dotimes (i (length a1))
