@@ -130,7 +130,10 @@
 ;; *cam2*   65     1024x1024+452+21  +168+161   7980      0
 ;; *cam3*   66     600x600+520+213   +225+18    16975     37
 
-
+(defparameter *cam-parameters*
+  `((21433565 2 2 512 512 249  17  0 12635 "transmission with polrot (top)")
+    (21433566 1 1 580 580 520 215 28 33040 "backreflection with polrot")
+    (21433540 2 2 512 512 365   0  0 16135 "transmission same pol")))
 
 (defparameter *cam-parameters*
   `((21433565 1024 1024  452   21  168  161   7980   0)
@@ -277,6 +280,7 @@
 
 (defun make-camera-buffer (cam) 
   (destructuring-bind (id ww hh ox oy x y exp gain) (get-cam-parameters cam)
+    (declare (ignorable id ox oy x y exp gain))
     (make-array (list hh ww) :element-type 'double-float :initial-element 0d0)))
 
 (defun capture-dark-images (&optional (n 10))
