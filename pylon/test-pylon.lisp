@@ -131,11 +131,12 @@
 ;; *cam3*   66     600x600+520+213   +225+18    16975     37
 
 (defparameter *cam-parameters*
-  `((21433565 2 2 512 512 249  17  0 12635 "transmission with polrot (top)")
-    (21433566 1 1 580 580 520 215 28 33040 "backreflection with polrot")
-    (21433540 2 2 512 512 365   0  0 16135 "transmission same pol")))
+  `((21433565    2    2   512 512   249  17  0   0   0 12635 "transmission with polrot (top)")
+    (21433566    1    1   580 580   520 215  0   0  28 33040 "backreflection with polrot")
+    (21433540    2    2   512 512   365   0  0   0   0 16135 "transmission same pol"))
+  "    id      binx  biny  w   h     x    y kx  ky   g   e   name")
 
-(defparameter *cam-parameters*
+#+nil (defparameter *cam-parameters*
   `((21433565 1024 1024  452   21  168  161   7980   0)
     (21433566  600  600  520  213  225   18  16975  37)
     (21433540 1024 1024  720    0  124  274   3430  37))
