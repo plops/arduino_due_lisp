@@ -20,5 +20,7 @@
    #:write-pgm8
    #:write-pgm16
    #:.realpart
-   #:.accum))
+   #:.accum
+   #:^.-
+   #:.abs2))
 

@@ -218,7 +218,16 @@
 (dotimes (i 1)
   (trigger-all-cameras))
 
+#+nil
+(dotimes (i 3)
+  (ics:write-ics2 (format nil "/dev/shm/o~d.ics" i) (.abs (elt *blob* i))))
+;; measure 1st order positions in imagej:
+;; o0 565 185 -22 66
+;; o1 540  66 105 66
+;; o2 566 133 446 66
 (defvar *bla* nil)
+(defparameter *blob* nil)
+(defvar *dark* nil)
 (defun run ()
   (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
   (dotimes (i 3)
@@ -226,8 +235,8 @@
   (unwind-protect 
        (progn
 	 (pylon:start-grabbing *cams*)
-	 (loop for yj from 1800 below 3700 by 50  and yji from 0 collect
-	      (loop for j from 400 below 2900 by 50 and ji from 0 collect
+	 (let ((yj 2550) (yji 0)) ; loop for yj from 1800 below 3700 by 50  and yji from 0 collect
+	      (let ((j 1550) (ji 0)) ; loop for j from 400 below 2900 by 50 and ji from 0 collect
 		   (let ((th (sb-thread:make-thread 
 			      #'(lambda ()
 				  (progn
@@ -241,6 +250,8 @@
 						 (declare (ignorable id binx biny ox oy d g e name))
 						 (assert (= ww w))
 						 (assert (= hh h))
+						 #+nil (when *dark*
+						   (^.- *buf-c* (elt *dark* cam)))
 						 (fftw:ft *buf-c* :out-arg *out-c* :w w :h h)
 						 (let* (#+nil
 							(q (.abs
@@ -253,11 +264,25 @@
 							(v (.mean q))
 							(v 1d0))
 						   (format t "~a~%" (list cam j yj v))
-						   (push (list j yj ji yji v (extract
-									      (make-array (list h w)
-											  :element-type '(complex double-float)
-											  :displaced-to *out-c*)
-									      :x x :y y :w 66 :h 66)) 
+						   
+						   (push (adjust-array
+							  (make-array (list h w)
+								      :element-type '(complex double-float)
+								      :displaced-to *out-c*)
+							  (list h w)
+							  :element-type '(complex double-float))
+							 *blob*)
+						   nil
+						   #+nil
+						   (ics:write-ics2 (format nil "/dev/shm/o~d.ics" cam) 
+								   (.abs (make-array (list h w)
+										     :element-type '(complex double-float)
+										     :displaced-to *out-c*)))
+						   #+nil (push (list j yj ji yji v  *out-c* #+nil (extract
+											      (make-array (list h w)
+													  :element-type '(complex double-float)
+													  :displaced-to *out-c*)
+											      :x x :y y :w 66 :h 66)) 
 							 (aref *bla* cam))))
 					       (format t "acquisition error.~%"))))))
 			      :name "camera-acquisition")))
@@ -267,13 +292,18 @@
 		     (sb-thread:join-thread th)))))
     (pylon:stop-grabbing *cams*)))
 
+
+#+nil
+(run)
+
+
 #+nil
 (time
  (progn (format t "~a~%" (multiple-value-list (get-decoded-time)))
 	(sb-sprof:with-profiling (:max-samples 1000
                                        :report :flat
                                        :loop nil)
-	 (run))
+	  (run))
 	(format t "~a~%" (multiple-value-list (get-decoded-time)))))
 
 (defun make-camera-buffer (cam) 
@@ -324,8 +354,10 @@
 (sb-sprof:with-profiling (:max-samples 1000
                                        :report :flat
                                        :loop nil)
-  (defparameter *bla* (multiple-value-list (capture-dark-images 1000))))
+  (defparameter *dark* (multiple-value-list (capture-dark-images 100))))
 
+#+nil
+(defparameter *dark* (multiple-value-list (capture-dark-images 100)))
 #+nil
 (dotimes (i 3)
  (ics:write-ics2 (format nil "/dev/shm/dark_~d.ics" i) (elt (first *bla*) i)))
