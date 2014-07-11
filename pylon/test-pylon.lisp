@@ -107,8 +107,7 @@
  (digital-write 12 0)
  (digital-write 10 0))" x y))) 
 
-(defun tilt-mirror (x y)
-  (arduino-serial-sbcl:talk-arduino
+(defun tilt-mirror (x y)  (arduino-serial-sbcl:talk-arduino
    (second *ard*) 
    (first *ard*)
 ;; delay waits ms
@@ -234,7 +233,7 @@
 			 (loop for i below 3 collect
 			      (destructuring-bind (cam success-p w h) 
 				  (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
-				(if success-p
+				#+nil (if success-p
 				    (destructuring-bind (id      binx  biny  ww   hh     ox   oy x  y   d  g   e   name) 
 					(get-cam-parameters cam)
 				      (assert (= ww w))
@@ -265,7 +264,10 @@
 #+nil
 (time
  (progn (format t "~a~%" (multiple-value-list (get-decoded-time)))
-	(run)
+	(sb-sprof:with-profiling (:max-samples 1000
+                                       :report :flat
+                                       :loop nil)
+	 (run))
 	(format t "~a~%" (multiple-value-list (get-decoded-time)))))
 
 (defun make-camera-buffer (cam) 
