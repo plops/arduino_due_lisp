@@ -151,9 +151,12 @@
      (append 
       (loop for e in '("BinningHorizontal" "BinningVertical" 
 		       "Width" "Height"
-		       "OffsetX" "OffsetY" "ExposureTimeRaw" "GainRaw") collect
+		       "OffsetX" "OffsetY" 
+		       "ExposureTimeRaw" "GainRaw") collect
 	   (pylon:get-value-i *cams* j e t nil))
-      (list (pylon:get-value-e *cams* j "TriggerMode"))))
+      (list (pylon:get-value-e *cams* j "TriggerMode")
+	    (pylon:get-value-b *cams* j "AcquisitionFrameRateEnabled")
+	    (pylon:get-value-f *cams* j "ResultingFrameRateAbs"))))
 
 #+nil
 (dotimes (i 3)
@@ -289,8 +292,7 @@
 			       (get-cam-parameters cam)
 			     (assert (= ww w))
 			     (assert (= hh h))
-			     (format t "new size: ~a~%" (list h w (* h w) (length (.linear *buf-c*))) )
-			     (let* ((q (.realpart
+			     #+nil (let* ((q (.realpart
 					(make-array (list h w)
 						    :element-type '(complex double-float)
 						    :displaced-to (.linear *buf-c*))))
@@ -300,7 +302,8 @@
 			       (incf (elt count cam))))
 			   (format t "acquisition error.~%")))))
 	   (loop for cam below 3 do
-		(setf (elt cambuf cam) (.* (elt cambuf cam) (/ (elt count cam)))))
+		(unless (= 0 (elt count cam))
+		 (setf (elt cambuf cam) (.* (elt cambuf cam) (/ (elt count cam))))))
 	   (values cambuf count))))
     (progn (pylon:stop-grabbing *cams*)
 	    (unblock-laser))))
@@ -308,7 +311,7 @@
 
 #+nil
 (time
- (defparameter *bla* (multiple-value-list (capture-dark-images 10))))
+ (defparameter *bla* (multiple-value-list (capture-dark-images 100))))
 
 
 #+nil

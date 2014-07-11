@@ -108,6 +108,18 @@
   (cam :int)
   (node :string))
 
+(cffi:defcfun ("pylon_wrapper_get_value_f" %get-value-f) :float
+  (cams :pointer)
+  (cam :int)
+  (node :string)
+  (verify :int)
+  (ignore-cache :int))
+(cffi:defcfun ("pylon_wrapper_get_value_b" %get-value-b) :int
+  (cams :pointer)
+  (cam :int)
+  (node :string)
+  (verify :int)
+  (ignore-cache :int))
 (cffi:defcfun ("pylon_wrapper_get_value_i" %get-value-i) :int
   (cams :pointer)
   (cam :int)
@@ -115,6 +127,10 @@
   (verify :int)
   (ignore-cache :int))
 
+(defun get-value-f (cams cam node &optional (verify nil) (ignore-cache nil))
+  (%get-value-f cams cam node (if verify 1 0) (if ignore-cache 1 0)))
+(defun get-value-b (cams cam node &optional (verify nil) (ignore-cache nil))
+  (%get-value-b cams cam node (if verify 1 0) (if ignore-cache 1 0)))
 (defun get-value-i (cams cam node &optional (verify nil) (ignore-cache nil))
   (%get-value-i cams cam node (if verify 1 0) (if ignore-cache 1 0)))
 

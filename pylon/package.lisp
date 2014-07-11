@@ -11,6 +11,8 @@
      #:get-max-i
      #:get-min-i
      #:get-inc-i
+     #:get-value-f
+     #:get-value-b
      #:get-value-i
      #:set-value-i
      #:get-symbolics-e

@@ -160,6 +160,44 @@ extern "C" {
       return -1;
     }
   }
+  float pylon_wrapper_get_value_f(void*cams,int cam,const char*node,int verify, int ignore_cache)
+  {
+    try{
+      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      if(cam>=cameras->GetSize()) {
+      	cout << "there are not as many cameras available as requested: "
+	     << cam << ">=" << cameras->GetSize() << endl;
+	return -1.0;
+      }
+
+      INodeMap &control = (*cameras)[cam].GetNodeMap();
+      const CFloatPtr nod=control.GetNode(node);
+      return nod->GetValue(verify,ignore_cache);
+    }
+    catch (GenICam::GenericException& e) {
+      printf( "Exception caught in %s msg=%s\n",__func__, e.what());
+      return -1.0;
+    }
+  }
+  int pylon_wrapper_get_value_b(void*cams,int cam,const char*node,int verify, int ignore_cache)
+  {
+    try{
+      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      if(cam>=cameras->GetSize()) {
+      	cout << "there are not as many cameras available as requested: "
+	     << cam << ">=" << cameras->GetSize() << endl;
+	return -1.0;
+      }
+
+      INodeMap &control = (*cameras)[cam].GetNodeMap();
+      const CBooleanPtr nod=control.GetNode(node);
+      return nod->GetValue(verify,ignore_cache);
+    }
+    catch (GenICam::GenericException& e) {
+      printf( "Exception caught in %s msg=%s\n",__func__, e.what());
+      return -1.0;
+    }
+  }
   int pylon_wrapper_get_value_i(void*cams,int cam,const char*node,int verify, int ignore_cache)
   {
     try{

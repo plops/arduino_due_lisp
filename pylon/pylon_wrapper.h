@@ -19,6 +19,8 @@ void pylon_wrapper_grab_cdf(void*cams,int ww,int hh,double * buf,int*camera,int*
 int pylon_wrapper_get_max_i(void*cams,int cam,const char*node);
 int pylon_wrapper_get_min_i(void*cams,int cam,const char*node);
 int pylon_wrapper_get_inc_i(void*cams,int cam,const char*node);
+float pylon_wrapper_get_value_f(void*cams,int cam,const char*node,int verify, int ignore_cache);
+int pylon_wrapper_get_value_b(void*cams,int cam,const char*node,int verify, int ignore_cache);
 int pylon_wrapper_get_value_i(void*cams,int cam,const char*node,int verify, int ignore_cache);
 void pylon_wrapper_set_value_i(void*cams,int cam,const char*node,int value);
 void pylon_wrapper_get_symbolics_e(void*cams,int cam,const char*node); 
