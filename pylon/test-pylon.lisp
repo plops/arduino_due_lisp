@@ -272,6 +272,9 @@
   (destructuring-bind (id binx biny ww hh ox oy x y d g e name) (get-cam-parameters cam)
     (make-array (list hh ww) :element-type 'double-float :initial-element 0d0)))
 
+#+nil
+(require :sb-sprof)
+
 (defun capture-dark-images (&optional (n 10))
   (block-laser)
   (sleep .1)
@@ -310,7 +313,10 @@
 
 
 #+nil
-(defparameter *bla* (multiple-value-list (capture-dark-images 100)))
+(sb-sprof:with-profiling (:max-samples 1000
+                                       :report :flat
+                                       :loop nil)
+  (defparameter *bla* (multiple-value-list (capture-dark-images 1000))))
 
 #+nil
 (dotimes (i 3)

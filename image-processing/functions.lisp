@@ -48,6 +48,7 @@
     b))
 
 (defun .accum (dst b)
+  (declare (optimize (speed 3)))
   (declare (type (array double-float 2) b)
 	   (type (simple-array double-float 2) dst)
 	   (values (simple-array double-float 2) &optional))
