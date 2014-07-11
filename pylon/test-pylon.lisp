@@ -155,7 +155,7 @@
 		       "ExposureTimeRaw" "GainRaw") collect
 	   (pylon:get-value-i *cams* j e t nil))
       (list (pylon:get-value-e *cams* j "TriggerMode")
-	    (pylon:get-value-b *cams* j "AcquisitionFrameRateEnabled")
+	    (pylon:get-value-b *cams* j "AcquisitionFrameRateEnable")
 	    (pylon:get-value-f *cams* j "ResultingFrameRateAbs"))))
 
 #+nil
@@ -311,8 +311,7 @@
 
 #+nil
 (time
- (defparameter *bla* (multiple-value-list (capture-dark-images 100))))
-
+ (defparameter *bla* (multiple-value-list (capture-dark-images 400))))
 
 #+nil
 (dotimes (i 3)
