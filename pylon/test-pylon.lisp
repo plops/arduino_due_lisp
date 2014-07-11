@@ -146,8 +146,9 @@
  (let ((a nil))
    (defun init-cam-parameter-hash ()
      (setf a (make-hash-table))
-     (loop for (id w h x y kx ky exp gain) in *cam-parameters* do
-	  (setf (gethash id a) (list id w h x y kx ky exp gain))))
+     (loop for (id      binx  biny  w   h     x    y kx  ky   d  g   e   name)
+	in *cam-parameters* do
+	  (setf (gethash id a) (list id      binx  biny  w   h     x    y kx  ky   d  g   e   name))))
    (defun get-cam-parameters (cam)
      (gethash (parse-integer (pylon:cam-get-serial-number *cams* cam)) a))))
 
@@ -164,7 +165,9 @@
 #+nil
 (loop for j below 3 collect
      (append 
-      (loop for e in '("Width" "Height" "OffsetX" "OffsetY" "ExposureTimeRaw" "GainRaw") collect
+      (loop for e in '("BinningHorizontal" "BinningVertical" 
+		       "Width" "Height"
+		       "OffsetX" "OffsetY" "ExposureTimeRaw" "GainRaw") collect
 	   (pylon:get-value-i *cams* j e t nil))
       (list (pylon:get-value-e *cams* j "TriggerMode"))))
 
@@ -185,13 +188,13 @@
 (defparameter *out-c1* nil)
 (defparameter *out-c* nil)
 
-(let ((w 1024)
-      (h 1024))
-  (setf *buf-c1* (make-array (* 1024 1024) :element-type '(complex double-float)))
-  (setf *out-c1* (make-array (* 1024 1024) :element-type '(complex double-float)))
-  (setf *buf-c* (make-array (list 1024 1024) :element-type '(complex double-float)
+(let ((w 580)
+      (h 580))
+  (setf *buf-c1* (make-array (* w h) :element-type '(complex double-float)))
+  (setf *out-c1* (make-array (* w h) :element-type '(complex double-float)))
+  (setf *buf-c* (make-array (list h w) :element-type '(complex double-float)
 				    :displaced-to *buf-c1*))
-  (setf *out-c* (make-array (list 1024 1024) :element-type '(complex double-float)
+  (setf *out-c* (make-array (list h w) :element-type '(complex double-float)
 				    :displaced-to *out-c1*))
   )
 
@@ -245,9 +248,8 @@
 			      (destructuring-bind (cam success-p w h) 
 				  (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
 				(if success-p
-				    (destructuring-bind (id ww hh ox oy x y exp gain) 
+				    (destructuring-bind (id      binx  biny  ww   hh     ox   oy x  y   d  g   e   name) 
 					(get-cam-parameters cam)
-				     (declare (ignorable id ox oy exp gain))
 				      (assert (= ww w))
 				      (assert (= hh h))
 				      (fftw:ft *buf-c* :out-arg *out-c* :w w :h h)
@@ -280,8 +282,7 @@
 	(format t "~a~%" (multiple-value-list (get-decoded-time)))))
 
 (defun make-camera-buffer (cam) 
-  (destructuring-bind (id ww hh ox oy x y exp gain) (get-cam-parameters cam)
-    (declare (ignorable id ox oy x y exp gain))
+  (destructuring-bind (id      binx  biny  ww   hh     ox   oy x  y   d  g   e   name) (get-cam-parameters cam)
     (make-array (list hh ww) :element-type 'double-float :initial-element 0d0)))
 
 (defun capture-dark-images (&optional (n 10))
@@ -289,40 +290,41 @@
   (sleep .1)
   (dotimes (i 3)
     (pylon:set-value-e *cams* i "TriggerMode" 0))
-  (pylon:start-grabbing *cams*)
-  (prog1
-      (let ((cambuf (loop for cam below 3 collect (make-camera-buffer cam)))
-	    (count (loop for cam below 3 collect 0)))
-	(loop for j below n do
-	     (loop for i below 3 do
-		  (destructuring-bind (cam success-p w h) 
-		      (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
-		    (if success-p
-			(destructuring-bind (id ww hh ox oy x y exp gain) 
-			    (get-cam-parameters cam)
-			  (declare (ignorable id ox oy x y exp gain))
-			  (assert (= ww w))
-			  (assert (= hh h))
-			  (let* ((q (.realpart
-				     (make-array (list h w)
-						 :element-type '(complex double-float)
-						 :displaced-to *buf-c*)))
-				 ;(v (.mean q))
-				 )
-			    (.accum (elt cambuf cam) q)
-			    (incf (elt count cam))))
-		    (format t "acquisition error.~%")))))
-	(loop for cam below 3 do
-	     (setf (elt cambuf cam) (.* (elt cambuf cam) (/ (elt count cam)))))
-	(values cambuf count))
+  (unwind-protect 
+   (progn
+     (pylon:start-grabbing *cams*)
+     (prog1
+	 (let ((cambuf (loop for cam below 3 collect (make-camera-buffer cam)))
+	       (count (loop for cam below 3 collect 0)))
+	   (loop for j below n do
+		(loop for i below 3 do
+		     (destructuring-bind (cam success-p w h) 
+			 (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
+		       (if success-p
+			   (destructuring-bind (id      binx  biny  ww   hh     ox   oy x  y   d  g   e   name) 
+			       (get-cam-parameters cam)
+			     (assert (= ww w))
+			     (assert (= hh h))
+			     (let* ((q (.realpart
+					(make-array (list h w)
+						    :element-type '(complex double-float)
+						    :displaced-to (.linear *buf-c*))))
+					;(v (.mean q))
+				    )
+			       (.accum (elt cambuf cam) q)
+			       (incf (elt count cam))))
+			   (format t "acquisition error.~%")))))
+	   (loop for cam below 3 do
+		(setf (elt cambuf cam) (.* (elt cambuf cam) (/ (elt count cam)))))
+	   (values cambuf count))))
     (progn (pylon:stop-grabbing *cams*)
-	   (unblock-laser))))
+	    (unblock-laser))))
+
 
 #+nil
 (time
- (defparameter *bla* (multiple-value-list (capture-dark-images 300))))
+ (defparameter *bla* (multiple-value-list (capture-dark-images 10))))
 
-*bla*
 
 #+nil
 (dotimes (i 3)

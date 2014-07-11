@@ -3,8 +3,12 @@
 (in-package :image-processing)
 
 (defun .linear (a)
+;  #+sbcl  (declare (values (simple-array * *) &optional))
   #+sbcl
-  (sb-ext:array-storage-vector a)
+  (let ((d (array-displacement a)))
+   (if d
+       d
+       (sb-ext:array-storage-vector a)))
   #-sbcl
   (make-array (array-total-size a)
 	      :element-type (array-element-type a)
@@ -30,9 +34,13 @@
        b))))
 
 (defun .realpart (a)
+  (declare (type (array (complex double-float) 2) a))
   (let* ((b (make-array (array-dimensions a) :element-type 'double-float))
 	 (b1 (.linear b))
 	 (a1 (.linear a)))
+    (declare (type (simple-array double-float 2) b)
+	     (type (simple-array (complex double-float) 1) a1)
+	     (type (simple-array double-float 1) b1))
     (dotimes (i (length a1))
       (setf (aref b1 i) (realpart (aref a1 i))))
     b))
