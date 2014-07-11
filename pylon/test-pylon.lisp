@@ -312,49 +312,59 @@ rectangular, for alpha=1 Hann window."
   (unwind-protect 
        (progn
 	 (pylon:start-grabbing *cams*)
-	 (;let ((yj 2550) (yji 0)) ;
-	  loop for yj from 1800 below 3700 by 50  and yji from 0 collect
-	       (;let ((j 1550) (ji 0)) ;
-		loop for j from 400 below 2900 by 50 and ji from 0 collect
+	 (				;let ((yj 2550) (yji 0)) ;
+	  loop for yj from 1800 below 3700 by 100  and yji from 0 collect
+	       (				;let ((j 1550) (ji 0)) ;
+		loop for j from 400 below 2900 by 100 and ji from 0 collect
 		     (let ((th (sb-thread:make-thread 
 				#'(lambda ()
 				    (progn
-				    (tilt-mirror j yj)
-				    (loop for i below 3 collect
-					 (destructuring-bind (cam success-p w h) 
-					     (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
-					   (if success-p
-					       (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
-						   (get-cam-parameters cam)
-						 (declare (ignorable id binx biny ox oy d g e name))
-						 (assert (= ww w))
-						 (assert (= hh h))
-						 (when (and *dark* *win*)
-						   (subtract-bg-and-multiply-window
-						    *buf-c* (elt (first *dark*) cam)
-						    (elt *win* cam)))
-						 (fftw:ft *buf-c* :out-arg *out-c* :w w :h h)
-						 (let* ((q (make-array (list h w)
-								      :element-type '(complex double-float)
-								      :displaced-to *out-c*))
-							#+nil
-							(v (.mean (.abs2 q)))
-							(v 1d0))
-						   
-						   (push (list j yj ji yji v  *out-c*  (extract q :x x :y y :w d :h d)) 
-							 (aref *bla* cam))))
-					       (format t "acquisition error.~%"))))))
-			      :name "camera-acquisition")))
-		     (sleep .01)
-		     (trigger-all-cameras)
-		     (sleep .01)
-		     (sb-thread:join-thread th)))))
+				      (tilt-mirror j yj)
+				      (let ((workers
+					     (loop for i below 3 collect
+						  (sb-thread:make-thread 
+						   #'(lambda ()
+						       (destructuring-bind (cam success-p w h) 
+							   (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
+							 (if success-p
+							     (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+								 (get-cam-parameters cam)
+							       (declare (ignorable id binx biny ox oy d g e name))
+							       (assert (= ww w))
+							       (assert (= hh h))
+							       (when (and *dark* *win*)
+								 (subtract-bg-and-multiply-window
+								  *buf-c* (elt (first *dark*) cam)
+								  (elt *win* cam)))
+							       (fftw:ft *buf-c* :out-arg *out-c* :w w :h h)
+							       (let* ((q (make-array (list h w)
+										     :element-type '(complex double-float)
+										     :displaced-to *out-c*))
+								      #+nil
+								      (v (.mean (.abs2 q)))
+								      (v 1d0))
+								 (format t "~a~%" (list j yj))
+								 (push (list j yj ji yji v  *out-c*  (extract q :x x :y y :w d :h d)) 
+								       (aref *bla* cam))))
+							     (format t "acquisition error.~%"))))))))
+					(loop for th in workers do (sb-thread:join-thread th)))))
+				:name "camera-acquisition")))
+		       (sleep .01)
+		       (trigger-all-cameras)
+		       (sleep .01)
+		       (sb-thread:join-thread th)))))
     (pylon:stop-grabbing *cams*)))
 
 
 #+nil
 (run)
 
+#+nil
+(length (elt *bla* 0))
+
+
+#+nil
+(require :sb-sprof)
 
 #+nil
 (time
@@ -368,9 +378,6 @@ rectangular, for alpha=1 Hann window."
 (defun make-camera-buffer (cam) 
   (destructuring-bind (id binx biny ww hh ox oy x y d g e name) (get-cam-parameters cam)
     (make-array (list hh ww) :element-type 'double-float :initial-element 0d0)))
-
-#+nil
-(require :sb-sprof)
 
 (defun capture-dark-images (&optional (n 10))
   (block-laser)
