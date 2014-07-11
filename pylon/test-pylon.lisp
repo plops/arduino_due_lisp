@@ -120,10 +120,12 @@
 (defparameter *cams* (pylon:create *fact* 3))
 
 (defparameter *cam-parameters*
-  `((21433565    2    2   512 512   249  17  0   0  66   0 12635 "transmission with polrot (top)")
-    (21433566    1    1   580 580   520 215  0   0  66 28 33040 "backreflection with polrot")
-    (21433540    2    2   512 512   365   0  0   0  66  0 16135 "transmission same pol"))
-  "    id      binx  biny  w   h     x    y kx  ky   d  g   e   name")
+  `((21433565    2    2   512 512   249  17 167 478  66   0 12635 "transmission with polrot (top)")
+    (21433566    1    1   580 580   520 215 220  11  66  28 33040 "backreflection with polrot")
+    (21433540    2    2   512 512   365   0 101 138  66   0 16135 "transmission same pol"))
+  "    id      binx  biny  w   h     x    y  kx  ky   d   g   e   name")
+
+
 
 (eval-when (:compile-toplevel :execute :load-toplevel)
  (let ((a nil))
@@ -221,12 +223,14 @@
 #+nil
 (dotimes (i 3)
   (ics:write-ics2 (format nil "/dev/shm/o~d.ics" i) (.abs (elt *blob* i))))
-;; measure 1st order positions in imagej:
-;; o0 565 185 -22 66
-;; o1 540  66 105 66
-;; o2 566 133 446 66
+#+nil
+(dotimes (i 3)
+  (destructuring-bind (id cam x y im) (elt *blob* i)
+   (write-pgm8 (format nil "/dev/shm/o~d.pgm" id) (.uint8 (.abs im)))))
 (defvar *bla* nil)
 (defparameter *blob* nil)
+#+nil 
+(run)
 (defvar *dark* nil)
 (defun run ()
   (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
@@ -253,24 +257,14 @@
 						 #+nil (when *dark*
 						   (^.- *buf-c* (elt *dark* cam)))
 						 (fftw:ft *buf-c* :out-arg *out-c* :w w :h h)
-						 (let* (#+nil
-							(q (.abs
-							    (extract 
-							     (make-array (list h w)
-									 :element-type '(complex double-float)
-									 :displaced-to *out-c*)
-							     :x x :y y :w 66 :h 66)))
+						 (let* ((q (make-array (list h w)
+								      :element-type '(complex double-float)
+								      :displaced-to *out-c*))
 							#+nil
-							(v (.mean q))
+							(v (.mean (.abs2 q)))
 							(v 1d0))
 						   (format t "~a~%" (list cam j yj v))
-						   
-						   (push (adjust-array
-							  (make-array (list h w)
-								      :element-type '(complex double-float)
-								      :displaced-to *out-c*)
-							  (list h w)
-							  :element-type '(complex double-float))
+						   (push (list id cam x y (extract q :x x :y y :w d :h d))
 							 *blob*)
 						   nil
 						   #+nil
@@ -278,7 +272,7 @@
 								   (.abs (make-array (list h w)
 										     :element-type '(complex double-float)
 										     :displaced-to *out-c*)))
-						   #+nil (push (list j yj ji yji v  *out-c* #+nil (extract
+						   #+nil (push (list j yj ji yji v  *out-c*  (extract
 											      (make-array (list h w)
 													  :element-type '(complex double-float)
 													  :displaced-to *out-c*)
@@ -354,10 +348,10 @@
 (sb-sprof:with-profiling (:max-samples 1000
                                        :report :flat
                                        :loop nil)
-  (defparameter *dark* (multiple-value-list (capture-dark-images 100))))
+  (defparameter *dark* (multiple-value-list (capture-dark-images 200))))
 
 #+nil
-(defparameter *dark* (multiple-value-list (capture-dark-images 100)))
+(defparameter *dark* (multiple-value-list (capture-dark-images 500)))
 #+nil
 (dotimes (i 3)
  (ics:write-ics2 (format nil "/dev/shm/dark_~d.ics" i) (elt (first *bla*) i)))
