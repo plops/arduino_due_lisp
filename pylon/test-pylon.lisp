@@ -223,43 +223,49 @@
   (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
   (dotimes (i 3)
     (pylon:set-value-e *cams* i "TriggerMode" 1))
-  (pylon:start-grabbing *cams*)
-  (loop for yj from 1800 below 3700 by 50  and yji from 0 collect
-       (loop for j from 400 below 2900 by 50 and ji from 0 collect
-	    (let ((th (sb-thread:make-thread 
-		   #'(lambda ()
-		       (progn
-			 (tilt-mirror j yj)
-			 (loop for i below 3 collect
-			      (destructuring-bind (cam success-p w h) 
-				  (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
-				#+nil (if success-p
-				    (destructuring-bind (id      binx  biny  ww   hh     ox   oy x  y   d  g   e   name) 
-					(get-cam-parameters cam)
-				      (assert (= ww w))
-				      (assert (= hh h))
-				      (fftw:ft *buf-c* :out-arg *out-c* :w w :h h)
-				      (let* ((q (.abs
-						 (extract 
-						  (make-array (list h w)
-							      :element-type '(complex double-float)
-							      :displaced-to *out-c*)
-						  :x x :y y :w 66 :h 66)))
-					     (v (.mean q)))
-					(format t "~a~%" (list cam j yj v))
-					(push (list j yj ji yji v (extract
-								   (make-array (list h w)
-									       :element-type '(complex double-float)
-									       :displaced-to *out-c*)
-								   :x x :y y :w 66 :h 66)) 
-					      (aref *bla* cam))))
-				    (format t "acquisition error.~%"))))))
-		   :name "camera-acquisition")))
-	  (sleep .01)
-	  (trigger-all-cameras)
-	  (sleep .01)
-	  (sb-thread:join-thread th))))
-  (pylon:stop-grabbing *cams*))
+  (unwind-protect 
+       (progn
+	 (pylon:start-grabbing *cams*)
+	 (loop for yj from 1800 below 3700 by 50  and yji from 0 collect
+	      (loop for j from 400 below 2900 by 50 and ji from 0 collect
+		   (let ((th (sb-thread:make-thread 
+			      #'(lambda ()
+				  (progn
+				    (tilt-mirror j yj)
+				    (loop for i below 3 collect
+					 (destructuring-bind (cam success-p w h) 
+					     (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
+					   (if success-p
+					       (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+						   (get-cam-parameters cam)
+						 (declare (ignorable id binx biny ox oy d g e name))
+						 (assert (= ww w))
+						 (assert (= hh h))
+						 (fftw:ft *buf-c* :out-arg *out-c* :w w :h h)
+						 (let* (#+nil
+							(q (.abs
+							    (extract 
+							     (make-array (list h w)
+									 :element-type '(complex double-float)
+									 :displaced-to *out-c*)
+							     :x x :y y :w 66 :h 66)))
+							#+nil
+							(v (.mean q))
+							(v 1d0))
+						   (format t "~a~%" (list cam j yj v))
+						   (push (list j yj ji yji v (extract
+									      (make-array (list h w)
+											  :element-type '(complex double-float)
+											  :displaced-to *out-c*)
+									      :x x :y y :w 66 :h 66)) 
+							 (aref *bla* cam))))
+					       (format t "acquisition error.~%"))))))
+			      :name "camera-acquisition")))
+		     (sleep .01)
+		     (trigger-all-cameras)
+		     (sleep .01)
+		     (sb-thread:join-thread th)))))
+    (pylon:stop-grabbing *cams*)))
 
 #+nil
 (time
