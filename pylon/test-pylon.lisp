@@ -121,7 +121,7 @@
 
 (defparameter *cam-parameters*
   `((21433565    2    2   512 512   249  17 167 478  66   0 12635 "transmission with polrot (top)")
-    (21433566    1    1   580 580   520 215 220  11  66  28 33040 "backreflection with polrot")
+    (21433566    1    1   580 580   520 215 220  11  66  28 33040 "backreflection with polrot") ;; this one has order on zero line
     (21433540    2    2   512 512   365   0 101 138  66   0 16135 "transmission same pol"))
   "    id      binx  biny  w   h     x    y  kx  ky   d   g   e   name")
 
@@ -226,12 +226,53 @@
 #+nil
 (dotimes (i 3)
   (destructuring-bind (id cam x y im) (elt *blob* i)
-   (write-pgm8 (format nil "/dev/shm/o~d.pgm" id) (.uint8 (.abs im)))))
+   (write-pgm8 (format nil "/dev/shm/o~d.pgm" id) (.uint8 (.log (.abs im))))))
 (defvar *bla* nil)
 (defparameter *blob* nil)
 #+nil 
 (run)
 (defvar *dark* nil)
+(first *dark*)
+
+(defun planck-taper (nn &key (eps .9d0))
+  "http://en.wikipedia.org/wiki/Window_function#Planck-taper_window
+The amount of tapering (the region over which the function is exactly
+1) is controlled by the parameter eps, with smaller values giving
+sharper transitions."
+  (declare (type (unsigned-byte 32) nn)
+	   (type double-float eps)
+	   (values (simple-array double-float 1) &optional))
+  (let ((w (make-array nn :element-type 'double-float))
+	(n-1 (- nn 1)))
+    (flet ((z+ (n)
+	     (* 2 eps (+ (/ (+ 1 (/ (* 2 n)
+				    n-1)))
+			 (/ (+ 1 
+			       (* -2 eps)
+			       (/ (* 2 n)
+				  n-1))))))
+	   (z- (n)
+	     (* 2 eps (+ (/ (+ 1 (/ (* -2 n)
+				    n-1)))
+			 (/ (+ 1 
+			       (* -2 eps)
+			       (/ (* -2 n)
+				  n-1)))))))
+     (dotimes (n nn)
+       (setf (aref w n)
+	     (cond ((and (<= 0 n)
+			 (< n (* eps n-1))) 
+		    (/ 1 (+ (exp (z+ n)) 1)))
+		   ((< (* eps n-1) n (* (- 1 eps) n-1)) 
+		    1d0)
+		   ((and (< (* (- 1 eps) n-1) n)
+			 (<= n n-1))
+		    (/ 1 (+ (exp (z- n)) 1)))
+		   (t 0d0)))))
+    w))
+
+(defun prepare-window (dark)
+  (destructuring-bind (darks count)))
 (defun run ()
   (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
   (dotimes (i 3)
@@ -254,8 +295,8 @@
 						 (declare (ignorable id binx biny ox oy d g e name))
 						 (assert (= ww w))
 						 (assert (= hh h))
-						 #+nil (when *dark*
-						   (^.- *buf-c* (elt *dark* cam)))
+						 (when *dark*
+						   (^.- *buf-c* (elt (first *dark*) cam)))
 						 (fftw:ft *buf-c* :out-arg *out-c* :w w :h h)
 						 (let* ((q (make-array (list h w)
 								      :element-type '(complex double-float)
@@ -264,8 +305,9 @@
 							(v (.mean (.abs2 q)))
 							(v 1d0))
 						   (format t "~a~%" (list cam j yj v))
-						   (push (list id cam x y (extract q :x x :y y :w d :h d))
-							 *blob*)
+						   (let ((d 600))
+						    (push (list id cam x y (extract q :x x :y y :w d :h d))
+							  *blob*))
 						   nil
 						   #+nil
 						   (ics:write-ics2 (format nil "/dev/shm/o~d.ics" cam) 
