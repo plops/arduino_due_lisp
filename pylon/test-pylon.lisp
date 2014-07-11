@@ -232,7 +232,9 @@
 #+nil 
 (run)
 (defvar *dark* nil)
-(first *dark*)
+
+
+(declaim (optimize (safety 3) (debug 3)))
 
 (defun planck-taper (nn &key (eps .9d0))
   "http://en.wikipedia.org/wiki/Window_function#Planck-taper_window
@@ -244,35 +246,49 @@ sharper transitions."
 	   (values (simple-array double-float 1) &optional))
   (let ((w (make-array nn :element-type 'double-float))
 	(n-1 (- nn 1)))
-    (flet ((z+ (n)
-	     (* 2 eps (+ (/ (+ 1 (/ (* 2 n)
-				    n-1)))
-			 (/ (+ 1 
-			       (* -2 eps)
-			       (/ (* 2 n)
-				  n-1))))))
-	   (z- (n)
-	     (* 2 eps (+ (/ (+ 1 (/ (* -2 n)
-				    n-1)))
-			 (/ (+ 1 
-			       (* -2 eps)
-			       (/ (* -2 n)
-				  n-1)))))))
-     (dotimes (n nn)
-       (setf (aref w n)
-	     (cond ((and (<= 0 n)
-			 (< n (* eps n-1))) 
-		    (/ 1 (+ (exp (z+ n)) 1)))
-		   ((< (* eps n-1) n (* (- 1 eps) n-1)) 
-		    1d0)
-		   ((and (< (* (- 1 eps) n-1) n)
-			 (<= n n-1))
-		    (/ 1 (+ (exp (z- n)) 1)))
-		   (t 0d0)))))
+    (flet ((z+ (x)
+	     (* 2 eps (+ (/ (+ 1 x))
+			 (/ (+ 1 (* -2 eps) x)))))
+	   (z- (x)
+	     (* 2 eps (+ (/ (- 1 x))
+			 (/ (- 1 (* 2 eps) x))))))
+      (dotimes (n nn)
+	(let ((x (* (/ 2d0 n-1) n)))
+	 (setf (aref w n)
+	       (cond #+nil ((and (<= 0 n)
+			   (< n (* eps n-1))) 
+		      (/ 1 (+ (exp (z- n)) 1)))
+		     ((< (* eps n-1) n (* (- 1 eps) n-1)) 
+		      1d0)
+		     ((and (< (* (- 1 eps) n-1) n)
+			   (<= n n-1))
+		      (/ 1 (+ (exp (z- n)) 1)))
+		     (t 0d0))))))
     w))
 
-(defun prepare-window (dark)
-  (destructuring-bind (darks count)))
+
+#+nil
+(with-open-file (s "/dev/shm/o.dat" :direction :output
+		   :if-does-not-exist :create
+		   :if-exists :supersede)
+  (let ((n 300))
+   (loop for i below n and j across (planck-taper n :eps .2d0)
+      do 
+	(format s "~d ~f ~%" i j))))
+
+(defun planck-taper2 (&key (w 100) (h w) (eps-x .9d0) (eps-y eps-x))
+  (declare (type (unsigned-byte 32) w h)
+	   (values (simple-array double-float 2) &optional))
+  (let ((b (make-array (list h w) :element-type 'double-float))
+	(wh (planck-taper h :eps eps-y))
+	(ww (planck-taper w :eps eps-x)))
+    (dotimes (j h)
+      (dotimes (i w)
+	(setf (aref b j i) (* (aref wh j)
+			      (aref ww i)))))
+    b))
+#+nil
+(write-pgm8 "/dev/shm/planck.pgm" (.uint8 (planck-taper2 :w 512)))
 (defun run ()
   (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
   (dotimes (i 3)

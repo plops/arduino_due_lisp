@@ -181,6 +181,7 @@
      b)))
 
 (defun .rr (a)
+  (declare (type (simple-array double-float 2) &optional))
   (unless (or (arrayp a) (listp a))
     (error ".rr argument must be dimension list or array."))
   (let* ((dims (typecase a
