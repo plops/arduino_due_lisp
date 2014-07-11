@@ -391,23 +391,26 @@ rectangular, for alpha=1 Hann window."
 	  (let ((cambuf (loop for cam below 3 collect (make-camera-buffer cam)))
 		(count (loop for cam below 3 collect 0)))
 	    (loop for j below n do
-		 (loop for i below 3 do
-		      (destructuring-bind (cam success-p w h) 
-			  (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
-			(if success-p
-			    (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
-				(get-cam-parameters cam)
-			      (assert (= ww w))
-			      (assert (= hh h))
-			      (let* ((q (.realpart
-					 (make-array (list h w)
-						     :element-type '(complex double-float)
-						     :displaced-to (.linear *buf-c*))))
+		 (let ((workers
+			(loop for i below 3 collect
+			     (sb-thread:make-thread #'(lambda ()
+							(destructuring-bind (cam success-p w h) 
+							    (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
+							  (if success-p
+							      (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+								  (get-cam-parameters cam)
+								(assert (= ww w))
+								(assert (= hh h))
+								(let* ((q (.realpart
+									   (make-array (list h w)
+										       :element-type '(complex double-float)
+										       :displaced-to (.linear *buf-c*))))
 					;(v (.mean q))
-				     )
-				(.accum (elt cambuf cam) q)
-				(incf (elt count cam))))
-			    (format t "acquisition error.~%")))))
+								       )
+								  (.accum (elt cambuf cam) q)
+								  (incf (elt count cam))))
+							      (format t "acquisition error.~%"))))))))
+		   (loop for th in workers do (sb-thread:join-thread th))))
 	    (loop for cam below 3 do
 		 (unless (= 0 (elt count cam))
 		   (setf (elt cambuf cam) (.* (elt cambuf cam) (/ (elt count cam))))))
