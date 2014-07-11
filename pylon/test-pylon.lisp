@@ -220,51 +220,7 @@
 (dotimes (i 1)
   (trigger-all-cameras))
 
-#+nil
-(dotimes (i 3)
-  (ics:write-ics2 (format nil "/dev/shm/o~d.ics" i) (.abs (elt *blob* i))))
-#+nil
-(dotimes (i 3)
-  (destructuring-bind (id cam x y im) (elt *blob* i)
-   (write-pgm8 (format nil "/dev/shm/o~d.pgm" id) (.uint8 (.log (.abs im))))))
-(defvar *bla* nil)
-(defparameter *blob* nil)
-#+nil 
-(run)
-(defvar *dark* nil)
 
-
-(declaim (optimize (safety 3) (debug 3)))
-
-(defun planck-taper (nn &key (eps .9d0))
-  "http://en.wikipedia.org/wiki/Window_function#Planck-taper_window
-The amount of tapering (the region over which the function is exactly
-1) is controlled by the parameter eps, with smaller values giving
-sharper transitions."
-  (declare (type (unsigned-byte 32) nn)
-	   (type double-float eps)
-	   (values (simple-array double-float 1) &optional))
-  (let ((w (make-array nn :element-type 'double-float))
-	(n-1 (- nn 1)))
-    (flet ((z+ (x)
-	     (* 2 eps (+ (/ (+ 1 x))
-			 (/ (+ 1 (* -2 eps) x)))))
-	   (z- (x)
-	     (* 2 eps (+ (/ (- 1 x))
-			 (/ (- 1 (* 2 eps) x))))))
-      (dotimes (n nn)
-	(let ((x (* (/ 2d0 n-1) n)))
-	 (setf (aref w n)
-	       (cond #+nil ((and (<= 0 n)
-			   (< n (* eps n-1))) 
-		      (/ 1 (+ (exp (z- n)) 1)))
-		     ((< (* eps n-1) n (* (- 1 eps) n-1)) 
-		      1d0)
-		     ((and (< (* (- 1 eps) n-1) n)
-			   (<= n n-1))
-		      (/ 1 (+ (exp (z- n)) 1)))
-		     (t 0d0))))))
-    w))
 
 (defun tukey-window (nn &key (alpha .9d0))
   "The Tukey window,[8][39] also known as the tapered cosine window,
@@ -291,28 +247,6 @@ rectangular, for alpha=1 Hann window."
     w))
 
 
-#+nil
-(with-open-file (s "/dev/shm/o.dat" :direction :output
-		   :if-does-not-exist :create
-		   :if-exists :supersede)
-  (let ((n 300))
-   (loop for i below n and j across (tukey-window n :alpha .1d0
-						  )
-      do 
-	(format s "~d ~f ~%" i j))))
-
-(defun planck-taper2 (&key (w 100) (h w) (eps-x .9d0) (eps-y eps-x))
-  (declare (type (unsigned-byte 32) w h)
-	   (values (simple-array double-float 2) &optional))
-  (let ((b (make-array (list h w) :element-type 'double-float))
-	(wh (planck-taper h :eps eps-y))
-	(ww (planck-taper w :eps eps-x)))
-    (dotimes (j h)
-      (dotimes (i w)
-	(setf (aref b j i) (* (aref wh j)
-			      (aref ww i)))))
-    b))
-
 
 (defun tukey-window2 (&key (w 100) (h w) (alpha-x .2d0) (alpha-y alpha-x))
   (declare (type (unsigned-byte 32) w h)
@@ -328,6 +262,49 @@ rectangular, for alpha=1 Hann window."
 
 #+nil
 (write-pgm8 "/dev/shm/tukey.pgm" (.uint8 (tukey-window2 :w 512)))
+
+(defun subtract-bg-and-multiply-window (a bg win)
+  "calculate win*(a-bg) and return result in a"
+  (declare (type (array (complex double-float) 2) a)
+	   (type (array double-float 2) bg win)
+	   (values (array (complex double-float) 2) &optional))
+  (let* ((a1 (.linear a))
+	 (b1 (.linear bg))
+	 (w1 (.linear win))
+	 (n (min (array-total-size a)
+		 (array-total-size bg)
+		 (array-total-size win))))
+    (dotimes (i n)
+      (setf (aref a1 i) (* (aref w1 i)
+			   (- (aref a1 i) (aref b1 i)))))
+    a))
+
+(defparameter *win* nil)
+
+(defun create-windows (darks &key (alpha-x .2d0) (alpha-y alpha-x))
+  (setf *win*
+	(loop for e in darks collect
+	     (destructuring-bind (h w) (array-dimensions e)
+	       (tukey-window2 :w w :h h :alpha-x alpha-x :alpha-y alpha-y))))
+  nil)
+
+#+nil
+(create-windows (first *dark*))
+
+#+nil
+(dotimes (i 3)
+  (ics:write-ics2 (format nil "/dev/shm/o~d.ics" i) (.abs (elt *blob* i))))
+#+nil
+(dotimes (i 3)
+  (destructuring-bind (id cam x y im) (elt *blob* i)
+   (write-pgm8 (format nil "/dev/shm/o~d.pgm" id) (.uint8 (.abs im)))))
+(defvar *bla* nil)
+(defparameter *blob* nil)
+#+nil 
+(run)
+(defvar *dark* nil)
+
+
 (defun run ()
   (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
   (dotimes (i 3)
@@ -335,11 +312,13 @@ rectangular, for alpha=1 Hann window."
   (unwind-protect 
        (progn
 	 (pylon:start-grabbing *cams*)
-	 (let ((yj 2550) (yji 0)) ; loop for yj from 1800 below 3700 by 50  and yji from 0 collect
-	      (let ((j 1550) (ji 0)) ; loop for j from 400 below 2900 by 50 and ji from 0 collect
-		   (let ((th (sb-thread:make-thread 
-			      #'(lambda ()
-				  (progn
+	 (;let ((yj 2550) (yji 0)) ;
+	  loop for yj from 1800 below 3700 by 50  and yji from 0 collect
+	       (;let ((j 1550) (ji 0)) ;
+		loop for j from 400 below 2900 by 50 and ji from 0 collect
+		     (let ((th (sb-thread:make-thread 
+				#'(lambda ()
+				    (progn
 				    (tilt-mirror j yj)
 				    (loop for i below 3 collect
 					 (destructuring-bind (cam success-p w h) 
@@ -350,8 +329,10 @@ rectangular, for alpha=1 Hann window."
 						 (declare (ignorable id binx biny ox oy d g e name))
 						 (assert (= ww w))
 						 (assert (= hh h))
-						 (when *dark*
-						   (^.- *buf-c* (elt (first *dark*) cam)))
+						 (when (and *dark* *win*)
+						   (subtract-bg-and-multiply-window
+						    *buf-c* (elt (first *dark*) cam)
+						    (elt *win* cam)))
 						 (fftw:ft *buf-c* :out-arg *out-c* :w w :h h)
 						 (let* ((q (make-array (list h w)
 								      :element-type '(complex double-float)
@@ -359,21 +340,8 @@ rectangular, for alpha=1 Hann window."
 							#+nil
 							(v (.mean (.abs2 q)))
 							(v 1d0))
-						   (format t "~a~%" (list cam j yj v))
-						   (let ((d 600))
-						    (push (list id cam x y (extract q :x x :y y :w d :h d))
-							  *blob*))
-						   nil
-						   #+nil
-						   (ics:write-ics2 (format nil "/dev/shm/o~d.ics" cam) 
-								   (.abs (make-array (list h w)
-										     :element-type '(complex double-float)
-										     :displaced-to *out-c*)))
-						   #+nil (push (list j yj ji yji v  *out-c*  (extract
-											      (make-array (list h w)
-													  :element-type '(complex double-float)
-													  :displaced-to *out-c*)
-											      :x x :y y :w 66 :h 66)) 
+						   
+						   (push (list j yj ji yji v  *out-c*  (extract q :x x :y y :w d :h d)) 
 							 (aref *bla* cam))))
 					       (format t "acquisition error.~%"))))))
 			      :name "camera-acquisition")))
