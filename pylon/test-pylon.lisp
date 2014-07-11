@@ -280,38 +280,37 @@
   (unwind-protect 
    (progn
      (pylon:start-grabbing *cams*)
-     (prog1
-	 (let ((cambuf (loop for cam below 3 collect (make-camera-buffer cam)))
-	       (count (loop for cam below 3 collect 0)))
-	   (loop for j below n do
-		(loop for i below 3 do
-		     (destructuring-bind (cam success-p w h) 
-			 (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
-		       (if success-p
-			   (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
-			       (get-cam-parameters cam)
-			     (assert (= ww w))
-			     (assert (= hh h))
-			     #+nil (let* ((q (.realpart
-					(make-array (list h w)
-						    :element-type '(complex double-float)
-						    :displaced-to (.linear *buf-c*))))
+     (time (prog1
+	  (let ((cambuf (loop for cam below 3 collect (make-camera-buffer cam)))
+		(count (loop for cam below 3 collect 0)))
+	    (loop for j below n do
+		 (loop for i below 3 do
+		      (destructuring-bind (cam success-p w h) 
+			  (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
+			(if success-p
+			    (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+				(get-cam-parameters cam)
+			      (assert (= ww w))
+			      (assert (= hh h))
+			      (let* ((q (.realpart
+					 (make-array (list h w)
+						     :element-type '(complex double-float)
+						     :displaced-to (.linear *buf-c*))))
 					;(v (.mean q))
-				    )
-			       (.accum (elt cambuf cam) q)
-			       (incf (elt count cam))))
-			   (format t "acquisition error.~%")))))
-	   (loop for cam below 3 do
-		(unless (= 0 (elt count cam))
-		 (setf (elt cambuf cam) (.* (elt cambuf cam) (/ (elt count cam))))))
-	   (values cambuf count))))
+				     )
+				(.accum (elt cambuf cam) q)
+				(incf (elt count cam))))
+			    (format t "acquisition error.~%")))))
+	    (loop for cam below 3 do
+		 (unless (= 0 (elt count cam))
+		   (setf (elt cambuf cam) (.* (elt cambuf cam) (/ (elt count cam))))))
+	    (values cambuf count)))))
     (progn (pylon:stop-grabbing *cams*)
 	    (unblock-laser))))
 
 
 #+nil
-(time
- (defparameter *bla* (multiple-value-list (capture-dark-images 400))))
+(defparameter *bla* (multiple-value-list (capture-dark-images 100)))
 
 #+nil
 (dotimes (i 3)
