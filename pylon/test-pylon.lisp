@@ -70,8 +70,7 @@
  (digital-write 10 1) 
  (delay 10) 
  (digital-write 11 0)
- (digital-write 12 0)
- (digital-write 10 0))"))
+ (digital-write 12 0) (digital-write 10 0))"))
 
 #+nil
 (trigger-all-cameras)
@@ -121,26 +120,11 @@
 (defparameter *fact* (pylon::factory))
 (defparameter *cams* (pylon:create *fact* 3))
 
-;; camera 0: FullName Basler acA1920-25gm#00305315DFC4#192.168.6.101:3956 serial 21433540 *cam1*
-;; camera 1: FullName Basler acA1920-25gm#00305315DFDD#192.168.4.100:3956 serial 21433565 *cam2*
-;; camera 2: FullName Basler acA1920-25gm#00305315DFDE#192.168.5.102:3956 serial 21433566 *cam3*
-
-;; aravis serial   area of interest  1st order  exposure  gain
-;; *cam1*   40     1024x1024+720+0   +124+274   3430      37
-;; *cam2*   65     1024x1024+452+21  +168+161   7980      0
-;; *cam3*   66     600x600+520+213   +225+18    16975     37
-
 (defparameter *cam-parameters*
   `((21433565    2    2   512 512   249  17  0   0  66   0 12635 "transmission with polrot (top)")
     (21433566    1    1   580 580   520 215  0   0  66 28 33040 "backreflection with polrot")
     (21433540    2    2   512 512   365   0  0   0  66  0 16135 "transmission same pol"))
   "    id      binx  biny  w   h     x    y kx  ky   d  g   e   name")
-
-#+nil (defparameter *cam-parameters*
-  `((21433565 1024 1024  452   21  168  161   7980   0)
-    (21433566  600  600  520  213  225   18  16975  37)
-    (21433540 1024 1024  720    0  124  274   3430  37))
-  "    id      w    h    x     y   kx   ky    exp   gain")
 
 (eval-when (:compile-toplevel :execute :load-toplevel)
  (let ((a nil))
@@ -282,7 +266,7 @@
 	(format t "~a~%" (multiple-value-list (get-decoded-time)))))
 
 (defun make-camera-buffer (cam) 
-  (destructuring-bind (id      binx  biny  ww   hh     ox   oy x  y   d  g   e   name) (get-cam-parameters cam)
+  (destructuring-bind (id binx biny ww hh ox oy x y d g e name) (get-cam-parameters cam)
     (make-array (list hh ww) :element-type 'double-float :initial-element 0d0)))
 
 (defun capture-dark-images (&optional (n 10))
@@ -301,10 +285,11 @@
 		     (destructuring-bind (cam success-p w h) 
 			 (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
 		       (if success-p
-			   (destructuring-bind (id      binx  biny  ww   hh     ox   oy x  y   d  g   e   name) 
+			   (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
 			       (get-cam-parameters cam)
 			     (assert (= ww w))
 			     (assert (= hh h))
+			     (format t "new size: ~a~%" (list h w (* h w) (length (.linear *buf-c*))) )
 			     (let* ((q (.realpart
 					(make-array (list h w)
 						    :element-type '(complex double-float)
