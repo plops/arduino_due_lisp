@@ -353,7 +353,15 @@ rectangular, for alpha=1 Hann window."
 		       (sb-thread:join-thread th)))))
     (pylon:stop-grabbing *cams*)))
 
-
+#+nil
+(/ 
+ (let ((count 0))
+   (loop for yj from 1800 below 3700 by 40 do
+	(loop for j from 400 below 2900 by 40 do
+	     (incf count)))
+   count)
+ 377.4) ;; => 8 fps
+ 
 #+nil
 (run)
 
@@ -481,7 +489,7 @@ rectangular, for alpha=1 Hann window."
 #+nil
 (time
  (let* ((date "0713")
-	(ver 4)
+	(ver 5)
 	(h 
 	 (1+ (loop for (j yj ji yji v im) in (aref *bla* 0) maximize yji)))
 	(w
