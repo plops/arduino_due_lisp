@@ -315,9 +315,9 @@ rectangular, for alpha=1 Hann window."
        (progn
 	 (pylon:start-grabbing *cams*)
 	 (				;let ((yj 2550) (yji 0)) ;
-	  loop for yj from 1800 below 3700 by 100  and yji from 0 collect
+	  loop for yj from 1800 below 3700 by 40  and yji from 0 collect
 	       (				;let ((j 1550) (ji 0)) ;
-		loop for j from 400 below 2900 by 100 and ji from 0 collect
+		loop for j from 400 below 2900 by 40 and ji from 0 collect
 		     (let ((th (sb-thread:make-thread 
 				#'(lambda ()
 				    (progn
@@ -481,7 +481,7 @@ rectangular, for alpha=1 Hann window."
 #+nil
 (time
  (let* ((date "0713")
-	(ver 3)
+	(ver 4)
 	(h 
 	 (1+ (loop for (j yj ji yji v im) in (aref *bla* 0) maximize yji)))
 	(w
