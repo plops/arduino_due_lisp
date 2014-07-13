@@ -274,6 +274,8 @@ rectangular, for alpha=1 Hann window."
 	 (n (min (array-total-size a)
 		 (array-total-size bg)
 		 (array-total-size win))))
+    (declare (type (simple-array (complex double-float) 1) a1)
+	     (type (simple-array double-float 1) b1 w1))
     (dotimes (i n)
       (setf (aref a1 i) (* (aref w1 i)
 			   (- (aref a1 i) (aref b1 i)))))
@@ -419,7 +421,8 @@ rectangular, for alpha=1 Hann window."
   (defparameter *dark* (multiple-value-list (capture-dark-images 200))))
 
 #+nil
-(defparameter *dark* (multiple-value-list (capture-dark-images 500)))
+(time
+ (defparameter *dark* (multiple-value-list (capture-dark-images 500))))
 #+nil
 (dotimes (i 3)
  (ics:write-ics2 (format nil "/dev/shm/dark_~d.ics" i) (elt (first *bla*) i)))
@@ -478,7 +481,7 @@ rectangular, for alpha=1 Hann window."
 #+nil
 (time
  (let* ((date "0713")
-	(ver 2)
+	(ver 3)
 	(h 
 	 (1+ (loop for (j yj ji yji v im) in (aref *bla* 0) maximize yji)))
 	(w
