@@ -478,7 +478,7 @@ rectangular, for alpha=1 Hann window."
 #+nil
 (time
  (let* ((date "0713")
-	(ver 1)
+	(ver 2)
 	(h 
 	 (1+ (loop for (j yj ji yji v im) in (aref *bla* 0) maximize yji)))
 	(w
