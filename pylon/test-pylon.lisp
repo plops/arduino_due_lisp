@@ -320,34 +320,30 @@ rectangular, for alpha=1 Hann window."
 				#'(lambda ()
 				    (progn
 				      (tilt-mirror j yj)
-				      (let ((workers
-					     (loop for i below 3 collect
-						  (sb-thread:make-thread 
-						   #'(lambda ()
-						       (destructuring-bind (cam success-p w h) 
-							   (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
-							 (if success-p
-							     (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
-								 (get-cam-parameters cam)
-							       (declare (ignorable id binx biny ox oy d g e name))
-							       (assert (= ww w))
-							       (assert (= hh h))
-							       (when (and *dark* *win*)
-								 (subtract-bg-and-multiply-window
-								  *buf-c* (elt (first *dark*) cam)
-								  (elt *win* cam)))
-							       (fftw:ft *buf-c* :out-arg *out-c* :w w :h h)
-							       (let* ((q (make-array (list h w)
-										     :element-type '(complex double-float)
-										     :displaced-to *out-c*))
-								      #+nil
-								      (v (.mean (.abs2 q)))
-								      (v 1d0))
-								 (format t "~a~%" (list j yj))
-								 (push (list j yj ji yji v  *out-c*  (extract q :x x :y y :w d :h d)) 
-								       (aref *bla* cam))))
-							     (format t "acquisition error.~%"))))))))
-					(loop for th in workers do (sb-thread:join-thread th)))))
+				      (loop for i below 3 do
+					   (destructuring-bind (cam success-p w h) 
+					       (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
+					     (if success-p
+						 (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+						     (get-cam-parameters cam)
+						   (declare (ignorable id binx biny ox oy d g e name))
+						   (assert (= ww w))
+						   (assert (= hh h))
+						   (when (and *dark* *win*)
+						     (subtract-bg-and-multiply-window
+						      *buf-c* (elt (first *dark*) cam)
+						      (elt *win* cam)))
+						   (fftw:ft *buf-c* :out-arg *out-c* :w w :h h :flag fftw::+measure+)
+						   (let* ((q (make-array (list h w)
+									 :element-type '(complex double-float)
+									 :displaced-to *out-c*))
+							  #+nil
+							  (v (.mean (.abs2 q)))
+							  (v 1d0))
+						     (format t "~a~%" (list j yj))
+						     (push (list j yj ji yji v  *out-c*  (extract q :x x :y y :w d :h d)) 
+							   (aref *bla* cam))))
+						 (format t "acquisition error.~%"))))))
 				:name "camera-acquisition")))
 		       (sleep .01)
 		       (trigger-all-cameras)
@@ -391,26 +387,23 @@ rectangular, for alpha=1 Hann window."
 	  (let ((cambuf (loop for cam below 3 collect (make-camera-buffer cam)))
 		(count (loop for cam below 3 collect 0)))
 	    (loop for j below n do
-		 (let ((workers
-			(loop for i below 3 collect
-			     (sb-thread:make-thread #'(lambda ()
-							(destructuring-bind (cam success-p w h) 
-							    (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
-							  (if success-p
-							      (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
-								  (get-cam-parameters cam)
-								(assert (= ww w))
-								(assert (= hh h))
-								(let* ((q (.realpart
-									   (make-array (list h w)
-										       :element-type '(complex double-float)
-										       :displaced-to (.linear *buf-c*))))
+		 (loop for i below 3 do
+		      (destructuring-bind (cam success-p w h) 
+			  (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
+			(if success-p
+			    (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+				(get-cam-parameters cam)
+			      (assert (= ww w))
+			      (assert (= hh h))
+			      (let* ((q (.realpart
+					 (make-array (list h w)
+						     :element-type '(complex double-float)
+						     :displaced-to (.linear *buf-c*))))
 					;(v (.mean q))
-								       )
-								  (.accum (elt cambuf cam) q)
-								  (incf (elt count cam))))
-							      (format t "acquisition error.~%"))))))))
-		   (loop for th in workers do (sb-thread:join-thread th))))
+				     )
+				(.accum (elt cambuf cam) q)
+				(incf (elt count cam))))
+			    (format t "acquisition error.~%")))))
 	    (loop for cam below 3 do
 		 (unless (= 0 (elt count cam))
 		   (setf (elt cambuf cam) (.* (elt cambuf cam) (/ (elt count cam))))))
@@ -484,7 +477,7 @@ rectangular, for alpha=1 Hann window."
 
 #+nil
 (time
- (let* ((date "0709")
+ (let* ((date "0713")
 	(ver 1)
 	(h 
 	 (1+ (loop for (j yj ji yji v im) in (aref *bla* 0) maximize yji)))
@@ -499,7 +492,7 @@ rectangular, for alpha=1 Hann window."
    (ics:write-ics2 (format nil "/home/martin/scan~a_~d.ics" date ver) a)
    (with-open-file (s (format nil "/home/martin/scan~a_~d.dat" date ver) :direction :output
 		      :if-exists :supersede :if-does-not-exist :create)
-     (format t "~a~%" (capture-dark-images))
+     ;(format t "~a~%" (capture-dark-images))
      (dotimes (cam 3)
        (format s "~a" (list (get-cam-parameters cam)
 			    (loop for (a b c d e im) in (aref *bla* cam) collect
