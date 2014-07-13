@@ -315,9 +315,9 @@ rectangular, for alpha=1 Hann window."
        (progn
 	 (pylon:start-grabbing *cams*)
 	 (				;let ((yj 2550) (yji 0)) ;
-	  loop for yj from 1800 below 3700 by 40  and yji from 0 collect
+	  loop for yj from 1800 below 3700 by 30  and yji from 0 collect
 	       (				;let ((j 1550) (ji 0)) ;
-		loop for j from 400 below 2900 by 40 and ji from 0 collect
+		loop for j from 400 below 2900 by 30 and ji from 0 collect
 		     (let ((th (sb-thread:make-thread 
 				#'(lambda ()
 				    (progn
@@ -356,11 +356,11 @@ rectangular, for alpha=1 Hann window."
 #+nil
 (/ 
  (let ((count 0))
-   (loop for yj from 1800 below 3700 by 40 do
-	(loop for j from 400 below 2900 by 40 do
+   (loop for yj from 1800 below 3700 by 30 do
+	(loop for j from 400 below 2900 by 30 do
 	     (incf count)))
    count)
- 377.4) ;; => 8 fps
+ 670.492) ;; => 8 fps
  
 #+nil
 (run)
@@ -430,7 +430,7 @@ rectangular, for alpha=1 Hann window."
 
 #+nil
 (time
- (defparameter *dark* (multiple-value-list (capture-dark-images 500))))
+ (defparameter *dark* (multiple-value-list (capture-dark-images 1000))))
 #+nil
 (dotimes (i 3)
  (ics:write-ics2 (format nil "/dev/shm/dark_~d.ics" i) (elt (first *bla*) i)))
@@ -489,7 +489,7 @@ rectangular, for alpha=1 Hann window."
 #+nil
 (time
  (let* ((date "0713")
-	(ver 8)
+	(ver 9)
 	(h 
 	 (1+ (loop for (j yj ji yji v im) in (aref *bla* 0) maximize yji)))
 	(w
