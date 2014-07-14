@@ -27,6 +27,7 @@
   (w (:pointer :int))
   (h (:pointer :int)))
 
+
 (defun grabp (cams w h buf)
   ;; buf is returned by foreign-alloc
   (cffi:with-foreign-objects ((cam :int)
@@ -95,6 +96,36 @@
 		  (cffi:mem-ref hout :int)
 		  (cffi:mem-ref framenr :int)
 		  ))))))
+
+(cffi:defcfun ("pylon_wrapper_grab_store" %grab-store) :void
+  (cams :pointer)
+  (nfd :int)
+  (fd (:pointer :int))
+  (camera (:pointer :int))
+  (success-p (:pointer :int))
+  (w (:pointer :int))
+  (h (:pointer :int))
+  (frame-nr (:pointer :int)))
+
+(defun grab-store (cams fds)
+  "grab one image and write it into one of the file descriptors"
+  (declare (type (or (array (complex double-float) 2)) buf))
+  (let ((n (length fds))
+	(fda (make-array n :element-type '(signed-byte 64)
+			 :initial-contents fds)))
+    (sb-sys:with-pinned-object (fda)
+     (cffi:with-foreign-objects ((cam :int)
+				 (success-p :int)
+				 (wout :int)
+				 (hout :int)
+				 (framenr :int))
+       (%grab-store cams n (sb-sys:vector-sap fda)
+		    cam success-p wout hout framenr)
+       (values (cffi:mem-ref cam :int)
+	       (if (= (cffi:mem-ref success-p :int) 1) t nil)
+	       (cffi:mem-ref wout :int)
+	       (cffi:mem-ref hout :int)
+	       (cffi:mem-ref framenr :int))))))
 
 
 (cffi:defcfun ("pylon_wrapper_get_max_i" get-max-i) :int

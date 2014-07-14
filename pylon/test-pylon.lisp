@@ -203,7 +203,7 @@
 		       (format t "waiting for cameras ... ")
 		       ;(tilt-mirror 1550 2500)
 		       (loop for i below 3 collect
-			    (destructuring-bind (cam success-p w h) 
+			    (destructuring-bind (cam success-p w h framenr) 
 				(multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
 			      (format t "~a~%" (list cam success-p w h))
 			  ;    (sleep .1)
@@ -323,7 +323,7 @@ rectangular, for alpha=1 Hann window."
 				    (progn
 				      (tilt-mirror j yj)
 				      (loop for i below 3 do
-					   (destructuring-bind (cam success-p w h) 
+					   (destructuring-bind (cam success-p w h framenr) 
 					       (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
 					     (if success-p
 						 (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
@@ -398,7 +398,7 @@ rectangular, for alpha=1 Hann window."
 		(count (loop for cam below 3 collect 0)))
 	    (loop for j below n do
 		 (loop for i below 3 do
-		      (destructuring-bind (cam success-p w h) 
+		      (destructuring-bind (cam success-p w h framenr) 
 			  (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
 			(if success-p
 			    (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
