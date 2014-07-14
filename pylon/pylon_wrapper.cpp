@@ -498,7 +498,7 @@ extern "C" {
 	if(0<=cameraContextValue && cameraContextValue < nfd){
 	  int ret = write(fd[cameraContextValue],pImageBuffer,n);
 	  if(n != ret){
-	    cout << "write error: " << ret << endl;
+	    cout << "write error: fd["<< cameraContextValue << "]=" << fd[cameraContextValue] <<  " n=" << n << " != " << ret << endl;
 	    if(ret==-1)
 	      cout << "errno: " << errno << " " << strerror(errno) << endl;
 	    *success_p = -3;

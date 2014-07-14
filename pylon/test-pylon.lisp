@@ -317,7 +317,7 @@ rectangular, for alpha=1 Hann window."
 	(progn 
 	  (setf fds
 		(loop for i below 3 collect
-		     (sb-unix::unix-open (format nil "/dev/shm/raw~a.raw" i) (logior sb-unix:o_creat 
+		     (sb-unix::unix-open (format nil "/dev/shm/r~a.raw" i) (logior sb-unix:o_creat 
 										     sb-unix:o_trunc
 										     sb-unix:o_wronly) 
 					 #o666)))
