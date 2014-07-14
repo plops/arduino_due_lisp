@@ -337,9 +337,9 @@ rectangular, for alpha=1 Hann window."
 				    (unless (= 1 success-p)
 				      (format t "acquisition error. ~a~%" success-p))))))
 		       :name "camera-acquisition")))
-	      (sleep .01)
+	      (sleep .001)
 	      (trigger-all-cameras)
-	      (sleep .01)
+	      (sleep .001)
 	      (sb-thread:join-thread th)))))
     (progn (pylon:stop-grabbing *cams*)
 	   (loop for e in fds do
@@ -413,7 +413,7 @@ rectangular, for alpha=1 Hann window."
 	(loop for j from 400 below 2900 by step do
 	     (incf count)))
    count)
- 37.625) ;; => 12.6 fps
+ 33.36) ;; => 14.2 fps
  
 #+nil
 (run)
