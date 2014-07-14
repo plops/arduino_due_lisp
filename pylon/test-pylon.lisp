@@ -87,6 +87,11 @@
    (second *ard*) (first *ard*)
    "(digital-write 8 1)"))
 
+#+nil
+(block-laser)
+#+nil
+(unblock-laser)
+
 
 ;; fiber center first coordinate:   800 .. 1550 .. 2750
 ;; fiber center second coordinate: 1800 .. 2500 .. 3580
@@ -123,9 +128,9 @@
 (defparameter *cams* (pylon:create *fact* 3))
 
 (defparameter *cam-parameters*
-  `((21433565    2    2   512 512   249  17 167 478  66   0 12635 "transmission with polrot (top)")
+  `((21433565    2    2   512 512   249  17 167 478  66   0  8000 "transmission with polrot (top)")
     (21433566    1    1   580 580   520 215 220  11  66  28 33040 "backreflection with polrot") ;; this one has order on zero line
-    (21433540    2    2   512 512   365   0 101 138  66   0 16135 "transmission same pol"))
+    (21433540    2    2   512 512   365   0 101 138  66   0  8000 "transmission same pol"))
   "    id      binx  biny  w   h     x    y  kx  ky   d   g   e   name")
 
 
@@ -157,10 +162,19 @@
 		       "Width" "Height"
 		       "OffsetX" "OffsetY" 
 		       "ExposureTimeRaw" "GainRaw" "GevTimestampTickFrequency") collect
-	   (pylon:get-value-i *cams* j e t nil))
+	   (list (pylon:get-value-i *cams* j e t nil)
+		 (pylon:get-inc-i *cams* j e)))
       (list (pylon:get-value-e *cams* j "TriggerMode")
 	    (pylon:get-value-b *cams* j "AcquisitionFrameRateEnable")
 	    (pylon:get-value-f *cams* j "ResultingFrameRateAbs"))))
+
+#+nil
+(loop for i below 3 collect
+     (destructuring-bind (    id      binx  biny  w   h     x    y  kx  ky   d   g   e   name)
+	 (get-cam-parameters i)
+       (let ((inc (pylon:get-inc-i *cams* i "ExposureTimeRaw")))
+	 (pylon:set-value-i *cams* i "ExposureTimeRaw" (* inc (floor e inc))))
+       (list e (pylon:get-value-i *cams* i "ExposureTimeRaw"))))
 
 #+nil
 (dotimes (i 3)
@@ -299,15 +313,22 @@ rectangular, for alpha=1 Hann window."
 #+nil
 (dotimes (i 3)
   (ics:write-ics2 (format nil "/dev/shm/o~d.ics" i) (.abs (elt *blob* i))))
+
 #+nil
 (dotimes (i 3)
-  (destructuring-bind (id cam x y im) (elt *blob* i)
-   (write-pgm8 (format nil "/dev/shm/o~d.pgm" id) (.uint8 (.abs im)))))
+  (destructuring-bind (ii j x y v outc) (first (elt *bla* i))
+    (format t "~a~%" (list i (get-cam-parameters i)))
+    (write-pgm8 (format nil "/dev/shm/o~d.pgm" i) (.uint8 (.log (.abs outc))))))
+
 (defvar *bla* nil)
 (defparameter *blob* nil)
 #+nil 
 (run)
 (defvar *dark* nil)
+
+#+nil
+(DOTIMES (i 3)
+ (write-pgm8 (format nil "/dev/shm/o~d.pgm" i) (.uint8 (.log (.abs (sixth (first (elt *bla* i))))))))
 
 
 (defun run-raw ()
@@ -367,10 +388,10 @@ rectangular, for alpha=1 Hann window."
   (unwind-protect 
        (progn
 	 (pylon:start-grabbing *cams*)
-	 (				;let ((yj 2550) (yji 0)) ;
-	  loop for yj from 1800 below 3700 by 100  and yji from 0 collect
-	       (				;let ((j 1550) (ji 0)) ;
-		loop for j from 400 below 2900 by 100 and ji from 0 collect
+	 (let ((yj 2550) (yji 0)) ;
+	  ;loop for yj from 1800 below 3700 by 100  and yji from 0 collect
+	       (let ((j 1550) (ji 0)) ;
+		;loop for j from 400 below 2900 by 100 and ji from 0 collect
 		     (let ((th (sb-thread:make-thread 
 				#'(lambda ()
 				    (progn
@@ -396,7 +417,10 @@ rectangular, for alpha=1 Hann window."
 							  (v (.mean (.abs2 q)))
 							  (v 1d0))
 						     (format t "~a~%" (list j yj))
-						     (push (list j yj ji yji v  *out-c*  (extract q :x x :y y :w d :h d)) 
+						     
+						     (push (list j yj ji yji v  ;*out-c*  (extract q :x x :y y :w w :h h)
+								 (adjust-array q (list h w)
+									       :element-type '(complex double-float))) 
 							   (aref *bla* cam))))
 						 (format t "acquisition error.~%"))))))
 				:name "camera-acquisition")))
@@ -414,7 +438,7 @@ rectangular, for alpha=1 Hann window."
 	(loop for j from 400 below 2900 by step do
 	     (incf count)))
    count)
- 33.36) ;; => 14.2 fps
+ 54.0) ;; => 9.65 fps
  
 #+nil
 (run)
@@ -486,6 +510,9 @@ rectangular, for alpha=1 Hann window."
 (time
  (defparameter *dark* (multiple-value-list (capture-dark-images 1000))))
 #+nil
+(create-windows (first *dark*))
+
+#+nil
 (dotimes (i 3)
  (ics:write-ics2 (format nil "/dev/shm/dark_~d.ics" i) (elt (first *bla*) i)))
 
@@ -542,8 +569,8 @@ rectangular, for alpha=1 Hann window."
 
 #+nil
 (time
- (let* ((date "0713")
-	(ver 10)
+ (let* ((date "0714")
+	(ver 1)
 	(h 
 	 (1+ (loop for (j yj ji yji v im) in (aref *bla* 0) maximize yji)))
 	(w

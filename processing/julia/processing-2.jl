@@ -24,13 +24,13 @@ function read_ics(fn)
     pos = find_ics_raw_start(fn)
     f=open(fn)
     seek(f,pos)
-    a=read(f,Complex64,66,66,167,127,3)
+    a=read(f,Complex64,66,66,25,19,3)
     close(f)
     a
 end
 
 
-
+a = read_ics(ics_file)
 
 # check that the dimensions make sense
 (filesize(ics_file)-602)/(66*66*125*95*3)
@@ -74,24 +74,24 @@ write_pgm(abs(a[:,:,1]))
 @time begin
     kw=66
     kh=66
-    w=167
-    h=127
-    n=1
+    w=25
+    h=19
+    n=2
     acam = zeros(kw,kh,n,3)
     acamb = zeros(kw,kh,n,3)
     aang = zeros(w,h,n,3)
     aangb = zeros(w,h,n,3)
     for (i, file) in [(1,"1")]
-        ics_file = "/home/martin/scan0709_$i.ics"
+        ics_file = "/home/martin/scan0714_$file.ics"
         a = read_ics(ics_file);
         for cam=1:3
-            acam[:,:,i,cam] = squeeze(mean(abs2(a[:,:,:,:,cam]),[3 4]),[3 4]);
+            acam[:,:,i,cam] = log(squeeze(mean(abs(a[:,:,:,:,cam]),[3 4]),[3 4]));
             #acamb[:,:,i,cam] = (acam[:,:,i,cam] .> quantile(reshape(acam[:,:,i,cam],kw*kh),.5f0));
-            write_pgm(acam[:,:,i,cam],"/dev/shm/acam_$i-$cam.pgm")
+            write_pgm(acam[:,:,i,cam],"/dev/shm/acam_$file-$cam.pgm")
             #write_pgm(acamb[:,:,i,cam]*1.0,"/dev/shm/acamb_$i-$cam.pgm")
-            aang[:,:,i,cam] = squeeze(mean(abs2(a[:,:,:,:,cam]),[1 2]),[1 2]);
+            aang[:,:,i,cam] = log(squeeze(mean(abs(a[:,:,:,:,cam]),[1 2]),[1 2]));
             #aangb[:,:,i,cam] = (aang[:,:,i,cam] .> quantile(reshape(aang[:,:,i,cam],w*h),.6f0));
-            write_pgm(aang[:,:,i,cam],"/dev/shm/aang_$i-$cam.pgm")
+            write_pgm(aang[:,:,i,cam],"/dev/shm/aang_$file-$cam.pgm")
             #write_pgm(aangb[:,:,i,cam],"/dev/shm/aangb_$i-$cam.pgm")
         end
     end
