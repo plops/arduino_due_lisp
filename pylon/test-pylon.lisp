@@ -428,7 +428,7 @@ rectangular, for alpha=1 Hann window."
 
 #+nil
 (time
- (progn (format t "~a~%" (multiple-value-list (get-decoded-time)))
+  (progn (format t "~a~%" (multiple-value-list (get-decoded-time)))
 	(sb-sprof:with-profiling (:max-samples 1000
                                        :report :flat
                                        :loop nil)
