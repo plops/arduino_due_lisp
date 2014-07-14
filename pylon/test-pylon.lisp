@@ -74,6 +74,24 @@
  (digital-write 10 0))"
    :time .00001d0))
 
+(defun trigger-all-cameras-several-times (&key (n 475))
+  (unless *trigger-outputs-initialized*
+    (initialize-trigger-outputs))
+  (arduino-serial-sbcl:talk-arduino
+   (second *ard*) 
+   (first *ard*)
+   (format nil "(dotimes (i ~d)
+ (digital-write 11 1)
+ (digital-write 12 1) 
+ (digital-write 10 1) 
+ (delay 1) 
+ (digital-write 11 0)
+ (digital-write 12 0) 
+ (digital-write 10 0)
+ (delay 25))" n)
+   :time .00001d0))
+
+
 #+nil
 (trigger-all-cameras)
 
@@ -363,6 +381,41 @@ rectangular, for alpha=1 Hann window."
 		(sb-unix::unix-close e))))))
 
 
+(defun run-raw-several ()
+  (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
+  (dotimes (i 3)
+    (pylon:set-value-e *cams* i "TriggerMode" 1))
+  (let ((fds nil))
+   (unwind-protect 
+	(progn 
+	  (setf fds
+		(loop for i below 3 collect
+		     (sb-unix::unix-open (format nil "/dev/shm/r~a.raw" i) (logior sb-unix:o_creat 
+										     sb-unix:o_trunc
+										     sb-unix:o_wronly) 
+					 #o666)))
+	  (defparameter *blaf* fds)
+	  (pylon:start-grabbing *cams*)
+	  (let ((th (sb-thread:make-thread 
+		     #'(lambda ()
+			 (loop for yj from 1800 below 3700 by 100  and yji from 0 collect
+			      (loop for j from 400 below 2900 by 100 and ji from 0 collect
+					;(tilt-mirror j yj)
+				   (loop for i below 3 do
+					(destructuring-bind (cam success-p w h framenr) 
+					    (multiple-value-list (pylon::grab-store *cams* fds))
+					  (unless (= 1 success-p)
+					    (format t "acquisition error. ~a~%" success-p)))))))
+		     :name "camera-acquisition")))
+	    (sleep .0001)
+	    (time
+	     (trigger-all-cameras-several-times))
+	    (sb-thread:join-thread th)))
+    (progn (pylon:stop-grabbing *cams*)
+	   (loop for e in fds do
+		(sb-unix::unix-close e))))))
+
+
 
 #+nil
 (require :sb-sprof)
@@ -437,13 +490,14 @@ rectangular, for alpha=1 Hann window."
 
 #+nil
 (/ 
- (let ((count 0)
-       (step 100))
-   (loop for yj from 1800 below 3700 by step do
-	(loop for j from 400 below 2900 by step do
-	     (incf count)))
-   count)
- 27.7) ;; => 17.14  fps with trigger
+ (progn (let ((count 0)
+	      (step 100))
+	  (loop for yj from 1800 below 3700 by step do
+	       (loop for j from 400 below 2900 by step do
+		    (incf count)))
+	  (format t "~a~%" count)
+	  count))
+ 10.6) ;; => 17.14  fps with trigger
 
 #+nil
 (DOTIMES (i 3)
