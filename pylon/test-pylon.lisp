@@ -107,7 +107,8 @@
  (delay 1) 
  (digital-write 11 0)
  (digital-write 12 0)
- (digital-write 10 0))" x y))) 
+ (digital-write 10 0))" x y)
+   :time .0001d0)) 
 
 (defun tilt-mirror (x y)  (arduino-serial-sbcl:talk-arduino
    (second *ard*) 
@@ -155,7 +156,7 @@
       (loop for e in '("BinningHorizontal" "BinningVertical" 
 		       "Width" "Height"
 		       "OffsetX" "OffsetY" 
-		       "ExposureTimeRaw" "GainRaw") collect
+		       "ExposureTimeRaw" "GainRaw" "GevTimestampTickFrequency") collect
 	   (pylon:get-value-i *cams* j e t nil))
       (list (pylon:get-value-e *cams* j "TriggerMode")
 	    (pylon:get-value-b *cams* j "AcquisitionFrameRateEnable")
@@ -331,16 +332,15 @@ rectangular, for alpha=1 Hann window."
 	    (let ((th (sb-thread:make-thread 
 		       #'(lambda ()
 			   (progn
-			     ;(tilt-mirror j yj)
+			     (tilt-mirror j yj)
 			     (loop for i below 3 do
 				  (destructuring-bind (cam success-p w h framenr) 
 				      (multiple-value-list (pylon::grab-store *cams* fds))
 				    (unless (= 1 success-p)
 				      (format t "acquisition error. ~a~%" success-p))))))
 		       :name "camera-acquisition")))
-	      (sleep .001)
+	      (sleep .0001)
 	      (trigger-all-cameras)
-	      (sleep .001)
 	      (sb-thread:join-thread th)))))
     (progn (pylon:stop-grabbing *cams*)
 	   (loop for e in fds do
@@ -400,9 +400,9 @@ rectangular, for alpha=1 Hann window."
 							   (aref *bla* cam))))
 						 (format t "acquisition error.~%"))))))
 				:name "camera-acquisition")))
-		       (sleep .01)
+		       (sleep .001)
 		       (trigger-all-cameras)
-		       (sleep .01)
+		       (sleep .001)
 		       (sb-thread:join-thread th)))))
     (pylon:stop-grabbing *cams*)))
 
