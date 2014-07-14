@@ -68,9 +68,10 @@
  (digital-write 11 1)
  (digital-write 12 1) 
  (digital-write 10 1) 
- (delay 10) 
+ (delay 1) 
  (digital-write 11 0)
- (digital-write 12 0) (digital-write 10 0))"))
+ (digital-write 12 0) 
+ (digital-write 10 0))"))
 
 #+nil
 (trigger-all-cameras)
@@ -329,7 +330,7 @@ rectangular, for alpha=1 Hann window."
 	    (let ((th (sb-thread:make-thread 
 		       #'(lambda ()
 			   (progn
-			     (tilt-mirror j yj)
+			     ;(tilt-mirror j yj)
 			     (loop for i below 3 do
 				  (destructuring-bind (cam success-p w h framenr) 
 				      (multiple-value-list (pylon::grab-store *cams* fds))
@@ -343,6 +344,7 @@ rectangular, for alpha=1 Hann window."
     (progn (pylon:stop-grabbing *cams*)
 	   (loop for e in fds do
 		(sb-unix::unix-close e))))))
+
 
 
 #+nil

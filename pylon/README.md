@@ -142,8 +142,8 @@ Start acquisition on all cameras of the handle.
 
 
 ```
-grab     cams w h buf => (values cam success-p w h)
-grab-cdf cams w h buf => (values cam success-p w h)
+grab     cams w h buf => (values cam success-p w h frame-nr)
+grab-cdf cams w h buf => (values cam success-p w h frame-nr)
 ```
 
 `grab` copies one acquired image into an array `buf` of (unsigned-byte
@@ -157,6 +157,49 @@ In case of an error, all four return values are -1.
 
 `grab-cdf` converts the data into (complex double-float) to simplify
 further processing with fftw.
+
+
+```
+grab-store cams fds => (values cam success-p w h frame-nr)
+```
+
+Acquire one image and store in one of the filedescriptors in the list
+`fds`. 
+
+example use:
+
+```common-lisp
+(defparameter *cams* (pylon:create *fact* 3))
+
+(pylon:cams-open *cams*)
+
+(let ((fds nil))
+  (unwind-protect 
+       (progn 
+	 (setf fds
+	       (loop for i below 3 collect
+		    (sb-unix::unix-open (format nil "/dev/shm/raw~a.raw" i) 
+					(logior sb-unix:o_creat sb-unix:o_trunc sb-unix:o_wronly) 
+					#o666)))
+	 (pylon:start-grabbing *cams*)
+	 (dotimes (j 100)
+	   (let ((th (sb-thread:make-thread 
+		      #'(lambda ()
+			  (loop for i below 3 do
+			       (destructuring-bind (cam success-p w h framenr) 
+				   (multiple-value-list (pylon::grab-store *cams* fds))
+				 (unless (= 1 success-p)
+				   (format t "acquisition error. ~a~%" success-p)))))
+		      :name "camera-acquisition")))
+	     (sleep .01)
+	     (trigger-all-cameras)
+	     (sleep .01)
+	     (sb-thread:join-thread th))))
+    (progn (pylon:stop-grabbing *cams*)
+	   (loop for e in fds do
+		(sb-unix::unix-close e)))))
+```
+
 
 
 
