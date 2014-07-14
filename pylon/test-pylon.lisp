@@ -307,6 +307,49 @@ rectangular, for alpha=1 Hann window."
 (defvar *dark* nil)
 
 
+(defun run-raw ()
+  (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
+  (dotimes (i 3)
+    (pylon:set-value-e *cams* i "TriggerMode" 1))
+  (let ((fds nil))
+   (unwind-protect 
+	(progn 
+	  (setf fds
+		(loop for i below 3 collect
+		     (sb-unix::unix-open (format nil "/dev/shm/raw~a.raw" i) (logior sb-unix:o_creat 
+										     sb-unix:o_trunc) 
+					 #o666)))
+	  (pylon:start-grabbing *cams*)
+	  (				;let ((yj 2550) (yji 0)) ;
+	   loop for yj from 1800 below 3700 by 100  and yji from 0 collect
+	   (				;let ((j 1550) (ji 0)) ;
+	    loop for j from 400 below 2900 by 100 and ji from 0 collect
+	    (let ((th (sb-thread:make-thread 
+		       #'(lambda ()
+			   (progn
+			     (tilt-mirror j yj)
+			     (loop for i below 3 do
+				  (destructuring-bind (cam success-p w h framenr) 
+				      (multiple-value-list (pylon::grab-store *cams* fds))
+				    (unless (= 1 success-p)
+				      (format t "acquisition error. ~a~%" success-p))))))
+		       :name "camera-acquisition")))
+	      (sleep .01)
+	      (trigger-all-cameras)
+	      (sleep .01)
+	      (sb-thread:join-thread th)))))
+    (progn (pylon:stop-grabbing *cams*)
+	   (loop for e in fds do
+		(sb-unix::unix-close e))))))
+#+nil
+(time
+ (progn (format t "~a~%" (multiple-value-list (get-decoded-time)))
+	(sb-sprof:with-profiling (:max-samples 1000
+                                       :report :flat
+                                       :loop nil)
+	  (run-raw))
+	(format t "~a~%" (multiple-value-list (get-decoded-time)))))
+
 (defun run ()
   (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
   (dotimes (i 3)
@@ -355,12 +398,13 @@ rectangular, for alpha=1 Hann window."
 
 #+nil
 (/ 
- (let ((count 0))
-   (loop for yj from 1800 below 3700 by 30 do
-	(loop for j from 400 below 2900 by 30 do
+ (let ((count 0)
+       (step 100))
+   (loop for yj from 1800 below 3700 by step do
+	(loop for j from 400 below 2900 by step do
 	     (incf count)))
    count)
- 670.492) ;; => 8 fps
+ 37.59) ;; => 12.6 fps
  
 #+nil
 (run)

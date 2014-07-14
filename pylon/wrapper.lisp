@@ -121,7 +121,7 @@
        (%grab-store cams n (sb-sys:vector-sap fda)
 		    cam success-p wout hout framenr)
        (values (cffi:mem-ref cam :int)
-	       (if (= (cffi:mem-ref success-p :int) 1) t nil)
+	       (cffi:mem-ref success-p :int)
 	       (cffi:mem-ref wout :int)
 	       (cffi:mem-ref hout :int)
 	       (cffi:mem-ref framenr :int))))))
