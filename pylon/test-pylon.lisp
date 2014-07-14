@@ -98,11 +98,11 @@
 ;; delay waits ms
    (format nil "(progn
  (dac ~a ~a)
- (delay 100)
+ (delay 5)
  (digital-write 11 1)
  (digital-write 12 1) 
  (digital-write 10 1) 
- (delay 10) 
+ (delay 1) 
  (digital-write 11 0)
  (digital-write 12 0)
  (digital-write 10 0))" x y))) 
@@ -310,7 +310,7 @@ rectangular, for alpha=1 Hann window."
 (defun run-raw ()
   (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
   (dotimes (i 3)
-    (pylon:set-value-e *cams* i "TriggerMode" 0))
+    (pylon:set-value-e *cams* i "TriggerMode" 1))
   (let ((fds nil))
    (unwind-protect 
 	(progn 
@@ -329,33 +329,20 @@ rectangular, for alpha=1 Hann window."
 	    (let ((th (sb-thread:make-thread 
 		       #'(lambda ()
 			   (progn
-			    ; (tilt-mirror j yj)
+			     (tilt-mirror j yj)
 			     (loop for i below 3 do
 				  (destructuring-bind (cam success-p w h framenr) 
 				      (multiple-value-list (pylon::grab-store *cams* fds))
 				    (unless (= 1 success-p)
 				      (format t "acquisition error. ~a~%" success-p))))))
 		       :name "camera-acquisition")))
-;	      (sleep .01)
-;	      (trigger-all-cameras)
-;	      (sleep .01)
+	      (sleep .01)
+	      (trigger-all-cameras)
+	      (sleep .01)
 	      (sb-thread:join-thread th)))))
     (progn (pylon:stop-grabbing *cams*)
 	   (loop for e in fds do
 		(sb-unix::unix-close e))))))
-
-(let ((fd (sb-unix::unix-open "/dev/shm/test.dat"
-			      (logior sb-unix:o_creat
-				      sb-unix:o_trunc
-				      sb-unix:o_wronly) 
-			      #o666))
-      (buf (make-array 128 :element-type '(unsigned-byte 8)
-		       :initial-element #x32)))
-  (list 
-   fd
-   (unless (sb-unix::unix-write fd buf 12 128)
-     (sb-unix::get-errno))
-   (sb-unix::unix-close fd)))
 
 
 #+nil
@@ -424,7 +411,7 @@ rectangular, for alpha=1 Hann window."
 	(loop for j from 400 below 2900 by step do
 	     (incf count)))
    count)
- 12.104) ;; => 39.24 fps
+ 37.625) ;; => 12.6 fps
  
 #+nil
 (run)
