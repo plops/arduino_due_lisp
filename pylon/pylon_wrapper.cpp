@@ -1,4 +1,5 @@
 #include <pylon/PylonIncludes.h>
+#include <unistd.h>
 
 using namespace Pylon;
 using namespace GenApi;
@@ -437,7 +438,7 @@ extern "C" {
 	cout << "Gray value of first pixel: " << (uint32_t) pImageBuffer[0] << endl << endl;
 
 	*w = ptrGrabResult->GetWidth();
-	*h = ptrGrabResult->GetHeight();
+	*h = ptrGrabResult->GetHeight(); // FIXME this doesnt work with 12 bit
 	if (ww<*w)
 	  printf("width of input array not sufficient");
 	if (hh<*h)
@@ -457,8 +458,55 @@ extern "C" {
       *success_p = -1;
     }
   }
+  // store image into file
+  void pylon_wrapper_grab_store(void*cams,int nfd,int*fd,int*camera,int*success_p,
+				int*w,int*h,int*framenr)
+  {
+    *camera = -1;
+    *w = -1;
+    *h = -1;
+    *success_p = -1;
+    *framenr = -1;
+
+    try{
+      CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
+      if(cameras->IsGrabbing()){
+	CGrabResultPtr ptrGrabResult;
+	cameras->RetrieveResult( 5000, ptrGrabResult, TimeoutHandling_ThrowException);
+	// context allows to determine which camera produced the grab result
+	intptr_t cameraContextValue = ptrGrabResult->GetCameraContext();
+	*camera = cameraContextValue;
+	cout << "Camera " <<  cameraContextValue << ": " << (*cameras)[ cameraContextValue ].GetDeviceInfo().GetFullName() << endl;
+	cout << "GrabSucceeded: " << ptrGrabResult->GrabSucceeded() 
+	     << " fnr=" << ptrGrabResult->GetFrameNumber() 
+	     << " ts=" << ptrGrabResult->GetTimeStamp()  
+	     << " id=" << ptrGrabResult->GetID()  
+	     << " inr=" << ptrGrabResult->GetImageNumber()  
+	     << " skip=" << ptrGrabResult->GetNumberOfSkippedImages()  << endl;
+	*success_p = ptrGrabResult->GrabSucceeded();
+	if(!ptrGrabResult->GrabSucceeded()){
+	  std::cout << "Error: " << ptrGrabResult->GetErrorCode() << " " << ptrGrabResult->GetErrorDescription();
+	  return;
+	}
+	cout << "SizeX: " << ptrGrabResult->GetWidth() << endl;
+	cout << "SizeY: " << ptrGrabResult->GetHeight() << endl;
+	const uint8_t *pImageBuffer = (uint8_t *) ptrGrabResult->GetBuffer();
+	cout << "Gray value of first pixel: " << (uint32_t) pImageBuffer[0] << endl << endl;
+
+	int n = ptrGrabResult->GetPayloadSize();
+	if(0<=cam && cam < nfd)
+	  if(count != write(fd[cam],pImageBuffer,count))
+	    *succes_p = -3;
+	else
+	  *success_p = -2;
+      }
+    }
+    catch (GenICam::GenericException& e) {
+      printf( "Exception caught in %s msg=%s\n",__func__, e.what());
+    }
+  }
   // buf is complex double float, fill only real part
-  void pylon_wrapper_grab_cdf(void*cams,int ww,int hh,double * buf,int*camera,int*success_p,int*w,int*h)
+  void pylon_wrapper_grab_cdf(void*cams,int ww,int hh,double * buf,int*camera,int*success_p,int*w,int*h,int*framenr)
   {
     try{
       CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
@@ -469,15 +517,22 @@ extern "C" {
 	intptr_t cameraContextValue = ptrGrabResult->GetCameraContext();
 	*camera = cameraContextValue;
 	cout << "Camera " <<  cameraContextValue << ": " << (*cameras)[ cameraContextValue ].GetDeviceInfo().GetFullName() << endl;
-	cout << "GrabSucceeded: " << ptrGrabResult->GrabSucceeded() << endl;
+	cout << "GrabSucceeded: " << ptrGrabResult->GrabSucceeded() 
+	     << " fnr=" << ptrGrabResult->GetFrameNumber() 
+	     << " ts=" << ptrGrabResult->GetTimeStamp()  
+	     << " id=" << ptrGrabResult->GetID()  
+	     << " inr=" << ptrGrabResult->GetImageNumber()  
+	     << " skip=" << ptrGrabResult->GetNumberOfSkippedImages()  << endl;
+
 	*success_p = ptrGrabResult->GrabSucceeded();
+	*framenr = ptrGrabResult->GetFrameNumber();
 	if(!ptrGrabResult->GrabSucceeded()){
 	  std::cout << "Error: " << ptrGrabResult->GetErrorCode() << " " << ptrGrabResult->GetErrorDescription();
 	  *camera = -1;
 	  *w = -1;
 	  *h = -1;
 	  *success_p = -1;
-	  
+	  *framenr = -1;
 	  return;
 	}
 	cout << "SizeX: " << ptrGrabResult->GetWidth() << endl;

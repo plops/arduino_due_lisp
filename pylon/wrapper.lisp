@@ -67,7 +67,8 @@
   (camera (:pointer :int))
   (success-p (:pointer :int))
   (w (:pointer :int))
-  (h (:pointer :int)))
+  (h (:pointer :int))
+  (frame-nr (:pointer :int)))
 
 (defun grab-cdf (cams buf)
   (declare (type (or (array (complex double-float) 2)
@@ -84,13 +85,16 @@
 	(cffi:with-foreign-objects ((cam :int)
 				    (success-p :int)
 				    (wout :int)
-				    (hout :int))
+				    (hout :int)
+				    (framenr :int))
 	  (%grab-cdf cams w h bufp
-		 cam success-p wout hout)
+		 cam success-p wout hout framenr)
 	  (values (cffi:mem-ref cam :int)
 		  (if (= (cffi:mem-ref success-p :int) 1) t nil)
 		  (cffi:mem-ref wout :int)
-		  (cffi:mem-ref hout :int)))))))
+		  (cffi:mem-ref hout :int)
+		  (cffi:mem-ref framenr :int)
+		  ))))))
 
 
 (cffi:defcfun ("pylon_wrapper_get_max_i" get-max-i) :int
