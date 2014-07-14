@@ -166,10 +166,10 @@ grab-store cams fds => (values cam success-p w h frame-nr)
 Acquire one image and store in one of the filedescriptors in the list
 `fds`. 
 
-example use:
+example use with external trigger:
 
 ```common-lisp
-(defparameter *cams* (pylon:create *fact* 3))
+(defparameter *cams* (pylon:create *fact* 3)) ;; open 3 cameras
 
 (pylon:cams-open *cams*)
 
@@ -183,6 +183,7 @@ example use:
 					#o666)))
 	 (pylon:start-grabbing *cams*)
 	 (dotimes (j 100)
+	   ;; start a thread that waits for the 3 images 
 	   (let ((th (sb-thread:make-thread 
 		      #'(lambda ()
 			  (loop for i below 3 do
@@ -192,8 +193,10 @@ example use:
 				   (format t "acquisition error. ~a~%" success-p)))))
 		      :name "camera-acquisition")))
 	     (sleep .01)
+	     ;; send trigger signal to the cameras
 	     (trigger-all-cameras)
-	     (sleep .01)
+             (sleep .01)
+	     ;; wait for the data to arrive
 	     (sb-thread:join-thread th))))
     (progn (pylon:stop-grabbing *cams*)
 	   (loop for e in fds do
