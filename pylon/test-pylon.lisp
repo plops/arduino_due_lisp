@@ -317,8 +317,10 @@ rectangular, for alpha=1 Hann window."
 	  (setf fds
 		(loop for i below 3 collect
 		     (sb-unix::unix-open (format nil "/dev/shm/raw~a.raw" i) (logior sb-unix:o_creat 
-										     sb-unix:o_trunc) 
+										     sb-unix:o_trunc
+										     sb-unix:o_wronly) 
 					 #o666)))
+	  (defparameter *blaf* fds)
 	  (pylon:start-grabbing *cams*)
 	  (				;let ((yj 2550) (yji 0)) ;
 	   loop for yj from 1800 below 3700 by 100  and yji from 0 collect
@@ -341,6 +343,24 @@ rectangular, for alpha=1 Hann window."
     (progn (pylon:stop-grabbing *cams*)
 	   (loop for e in fds do
 		(sb-unix::unix-close e))))))
+
+(let ((fd (sb-unix::unix-open "/dev/shm/test.dat"
+			      (logior sb-unix:o_creat
+				      sb-unix:o_trunc
+				      sb-unix:o_wronly) 
+			      #o666))
+      (buf (make-array 128 :element-type '(unsigned-byte 8)
+		       :initial-element #x32)))
+  (list 
+   fd
+   (unless (sb-unix::unix-write fd buf 12 128)
+     (sb-unix::get-errno))
+   (sb-unix::unix-close fd)))
+
+
+#+nil
+(require :sb-sprof)
+
 #+nil
 (time
  (progn (format t "~a~%" (multiple-value-list (get-decoded-time)))

@@ -1,5 +1,6 @@
 #include <pylon/PylonIncludes.h>
 #include <unistd.h>
+#include <errno.h>
 
 using namespace Pylon;
 using namespace GenApi;
@@ -494,9 +495,15 @@ extern "C" {
 	cout << "Gray value of first pixel: " << (uint32_t) pImageBuffer[0] << endl << endl;
 
 	int n = ptrGrabResult->GetPayloadSize();
-	if(0<=cameraContextValue && cameraContextValue < nfd)
-	  if(n != write(fd[cameraContextValue],pImageBuffer,n))
+	if(0<=cameraContextValue && cameraContextValue < nfd){
+	  int ret = write(fd[cameraContextValue],pImageBuffer,n);
+	  if(n != ret){
+	    cout << "write error: " << ret << endl;
+	    if(ret==-1)
+	      cout << "errno: " << errno << " " << strerror(errno) << endl;
 	    *success_p = -3;
+	  }
+	}
 	else
 	  *success_p = -2;
       }
