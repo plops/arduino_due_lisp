@@ -128,12 +128,12 @@
 (defparameter *cams* (pylon:create *fact* 3))
 
 (defparameter *cam-parameters*
-  `((21433565    2    2   512 512   249  17 167 478  66   0  8000 "transmission with polrot (top)")
-    (21433566    1    1   580 580   520 215 220  11  66  28 33040 "backreflection with polrot") ;; this one has order on zero line
-    (21433540    2    2   512 512   365   0 101 138  66   0  8000 "transmission same pol"))
+  `((21433565    2    2   512 512   249  17 167 478  66   0  800 "transmission with polrot (top)")
+    (21433566    1    1   580 580   520 215 220  11  66  28 21040 "backreflection with polrot") ;; this one has order on zero line
+    (21433540    2    2   512 512   365   0 101 138  66   0  800 "transmission same pol"))
   "    id      binx  biny  w   h     x    y  kx  ky   d   g   e   name")
 
-
+;; 33040
 
 (eval-when (:compile-toplevel :execute :load-toplevel)
  (let ((a nil))
@@ -162,8 +162,8 @@
 		       "Width" "Height"
 		       "OffsetX" "OffsetY" 
 		       "ExposureTimeRaw" "GainRaw" "GevTimestampTickFrequency") collect
-	   (list (pylon:get-value-i *cams* j e t nil)
-		 (pylon:get-inc-i *cams* j e)))
+	   (pylon:get-value-i *cams* j e t nil)
+	   )
       (list (pylon:get-value-e *cams* j "TriggerMode")
 	    (pylon:get-value-b *cams* j "AcquisitionFrameRateEnable")
 	    (pylon:get-value-f *cams* j "ResultingFrameRateAbs"))))
@@ -326,15 +326,12 @@ rectangular, for alpha=1 Hann window."
 (run)
 (defvar *dark* nil)
 
-#+nil
-(DOTIMES (i 3)
- (write-pgm8 (format nil "/dev/shm/o~d.pgm" i) (.uint8 (.log (.abs (sixth (first (elt *bla* i))))))))
 
 
 (defun run-raw ()
   (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
   (dotimes (i 3)
-    (pylon:set-value-e *cams* i "TriggerMode" 1))
+    (pylon:set-value-e *cams* i "TriggerMode" 0))
   (let ((fds nil))
    (unwind-protect 
 	(progn 
@@ -346,14 +343,12 @@ rectangular, for alpha=1 Hann window."
 					 #o666)))
 	  (defparameter *blaf* fds)
 	  (pylon:start-grabbing *cams*)
-	  (				;let ((yj 2550) (yji 0)) ;
-	   loop for yj from 1800 below 3700 by 100  and yji from 0 collect
-	   (				;let ((j 1550) (ji 0)) ;
-	    loop for j from 400 below 2900 by 100 and ji from 0 collect
+	  (loop for yj from 1800 below 3700 by 100  and yji from 0 collect
+	   (loop for j from 400 below 2900 by 100 and ji from 0 collect
 	    (let ((th (sb-thread:make-thread 
 		       #'(lambda ()
 			   (progn
-			     (tilt-mirror j yj)
+			     ;(tilt-mirror j yj)
 			     (loop for i below 3 do
 				  (destructuring-bind (cam success-p w h framenr) 
 				      (multiple-value-list (pylon::grab-store *cams* fds))
@@ -361,7 +356,7 @@ rectangular, for alpha=1 Hann window."
 				      (format t "acquisition error. ~a~%" success-p))))))
 		       :name "camera-acquisition")))
 	      (sleep .0001)
-	      (trigger-all-cameras)
+	    ;  (trigger-all-cameras)
 	      (sb-thread:join-thread th)))))
     (progn (pylon:stop-grabbing *cams*)
 	   (loop for e in fds do
@@ -381,6 +376,10 @@ rectangular, for alpha=1 Hann window."
 	  (run-raw))
 	(format t "~a~%" (multiple-value-list (get-decoded-time)))))
 
+(reduce #'(lambda (x y) (max (realpart x) (realpart y)))
+	(make-array 128 :element-type '(complex double-float)
+		    :initial-element (complex 1d0)))
+
 (defun run ()
   (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
   (dotimes (i 3)
@@ -388,10 +387,10 @@ rectangular, for alpha=1 Hann window."
   (unwind-protect 
        (progn
 	 (pylon:start-grabbing *cams*)
-	 (let ((yj 2550) (yji 0)) ;
-	  ;loop for yj from 1800 below 3700 by 100  and yji from 0 collect
-	       (let ((j 1550) (ji 0)) ;
-		;loop for j from 400 below 2900 by 100 and ji from 0 collect
+	 (;let ((yj 2550) (yji 0)) ;
+	  loop for yj from 1800 below 3700 by 100  and yji from 0 collect
+	       (;let ((j 1550) (ji 0)) ;
+		loop for j from 400 below 2900 by 100 and ji from 0 collect
 		     (let ((th (sb-thread:make-thread 
 				#'(lambda ()
 				    (progn
@@ -409,6 +408,11 @@ rectangular, for alpha=1 Hann window."
 						     (subtract-bg-and-multiply-window
 						      *buf-c* (elt (first *dark*) cam)
 						      (elt *win* cam)))
+						   
+						   (format t "max ~a~%" (reduce #'(lambda (x y) (max (realpart x) (realpart y)))
+										(make-array (* h w)
+											    :element-type '(complex double-float)
+											    :displaced-to *buf-c*)))
 						   (fftw:ft *buf-c* :out-arg *out-c* :w w :h h :flag fftw::+measure+)
 						   (let* ((q (make-array (list h w)
 									 :element-type '(complex double-float)
@@ -418,8 +422,9 @@ rectangular, for alpha=1 Hann window."
 							  (v 1d0))
 						     (format t "~a~%" (list j yj))
 						     
-						     (push (list j yj ji yji v  ;*out-c*  (extract q :x x :y y :w w :h h)
-								 (adjust-array q (list h w)
+						     (push (list j yj ji yji v  ;*out-c*
+								 (extract q :x x :y y :w d :h d)
+								 #+nil (adjust-array q (list h w)
 									       :element-type '(complex double-float))) 
 							   (aref *bla* cam))))
 						 (format t "acquisition error.~%"))))))
@@ -438,7 +443,12 @@ rectangular, for alpha=1 Hann window."
 	(loop for j from 400 below 2900 by step do
 	     (incf count)))
    count)
- 54.0) ;; => 9.65 fps
+ 27.7) ;; => 17.14  fps with trigger
+
+#+nil
+(DOTIMES (i 3)
+ (write-pgm8 (format nil "/dev/shm/o~d.pgm" i) (.uint8 (.log (.abs (sixth (first (elt *bla* i))))))))
+
  
 #+nil
 (run)
@@ -508,7 +518,7 @@ rectangular, for alpha=1 Hann window."
 
 #+nil
 (time
- (defparameter *dark* (multiple-value-list (capture-dark-images 1000))))
+ (defparameter *dark* (multiple-value-list (capture-dark-images 200))))
 #+nil
 (create-windows (first *dark*))
 
@@ -570,7 +580,7 @@ rectangular, for alpha=1 Hann window."
 #+nil
 (time
  (let* ((date "0714")
-	(ver 1)
+	(ver 3)
 	(h 
 	 (1+ (loop for (j yj ji yji v im) in (aref *bla* 0) maximize yji)))
 	(w
