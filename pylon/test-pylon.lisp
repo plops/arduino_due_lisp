@@ -71,7 +71,8 @@
  (delay 1) 
  (digital-write 11 0)
  (digital-write 12 0) 
- (digital-write 10 0))"))
+ (digital-write 10 0))"
+   :time .00001d0))
 
 #+nil
 (trigger-all-cameras)
