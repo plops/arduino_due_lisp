@@ -109,11 +109,10 @@
 
 (defun grab-store (cams fds)
   "grab one image and write it into one of the file descriptors"
-  (declare (type (or (array (complex double-float) 2)) buf))
-  (let ((n (length fds))
-	(fda (make-array n :element-type '(signed-byte 64)
-			 :initial-contents fds)))
-    (sb-sys:with-pinned-object (fda)
+  (let* ((n (length fds))
+	   (fda (make-array n :element-type '(signed-byte 64)
+			    :initial-contents fds)))
+    (sb-sys:with-pinned-objects (fda)
      (cffi:with-foreign-objects ((cam :int)
 				 (success-p :int)
 				 (wout :int)
