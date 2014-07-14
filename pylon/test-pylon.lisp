@@ -310,7 +310,7 @@ rectangular, for alpha=1 Hann window."
 (defun run-raw ()
   (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
   (dotimes (i 3)
-    (pylon:set-value-e *cams* i "TriggerMode" 1))
+    (pylon:set-value-e *cams* i "TriggerMode" 0))
   (let ((fds nil))
    (unwind-protect 
 	(progn 
@@ -329,16 +329,16 @@ rectangular, for alpha=1 Hann window."
 	    (let ((th (sb-thread:make-thread 
 		       #'(lambda ()
 			   (progn
-			     (tilt-mirror j yj)
+			    ; (tilt-mirror j yj)
 			     (loop for i below 3 do
 				  (destructuring-bind (cam success-p w h framenr) 
 				      (multiple-value-list (pylon::grab-store *cams* fds))
 				    (unless (= 1 success-p)
 				      (format t "acquisition error. ~a~%" success-p))))))
 		       :name "camera-acquisition")))
-	      (sleep .01)
-	      (trigger-all-cameras)
-	      (sleep .01)
+;	      (sleep .01)
+;	      (trigger-all-cameras)
+;	      (sleep .01)
 	      (sb-thread:join-thread th)))))
     (progn (pylon:stop-grabbing *cams*)
 	   (loop for e in fds do
@@ -424,7 +424,7 @@ rectangular, for alpha=1 Hann window."
 	(loop for j from 400 below 2900 by step do
 	     (incf count)))
    count)
- 37.59) ;; => 12.6 fps
+ 12.104) ;; => 39.24 fps
  
 #+nil
 (run)
