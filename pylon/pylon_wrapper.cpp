@@ -494,9 +494,9 @@ extern "C" {
 	cout << "Gray value of first pixel: " << (uint32_t) pImageBuffer[0] << endl << endl;
 
 	int n = ptrGrabResult->GetPayloadSize();
-	if(0<=cam && cam < nfd)
-	  if(count != write(fd[cam],pImageBuffer,count))
-	    *succes_p = -3;
+	if(0<=cameraContextValue && cameraContextValue < nfd)
+	  if(n != write(fd[cameraContextValue],pImageBuffer,n))
+	    *success_p = -3;
 	else
 	  *success_p = -2;
       }
