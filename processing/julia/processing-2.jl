@@ -119,9 +119,9 @@ begin
     camb = 3
     for i=1:25, j=1:19
         car = real(a[:,:,i,j,cama])
-        cbr = real(a[:,:,i,j,camb])
+        cbr = real(a[end-1:1,:,i,j,camb])
         cai = imag(a[:,:,i,j,cama])
-        cbi = imag(a[:,:,i,j,camb])
+        cbi = imag(a[end-1:1,:,i,j,camb])
         pearsonrr[i,j] = sum(car .* cbr)/(norm(car) * norm(cbr));
         pearsonri[i,j] = sum(car .* cbi)/(norm(car) * norm(cbi));
         pearsonir[i,j] = sum(cai .* cbr)/(norm(cai) * norm(cbr));
@@ -129,6 +129,14 @@ begin
     end
     #write_pgm(abs(pearson),"/dev/shm/p$cama$camb.pgm")
 end
+
+
+# note:
+# think about reflection on one camera
+# inverse fourier transform
+# use mask
+# global phase between images, maybe svd of [rr, ir; ri, ii], find rotation
+
 
 show(floor(pearsonrr,2))
 
