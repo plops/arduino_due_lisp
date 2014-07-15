@@ -32,6 +32,79 @@ primitives.
 
 ## usage
 
+### general functions
+
+```quote```
+
+```cond```
+
+```if```
+
+```and```
+
+```or```
+
+```while```
+
+```lambda```
+
+```macro```
+
+```label```
+
+```progn```
+
+```eq```
+
+```atom```
+
+```cons```
+
+```car```
+
+```cdr```
+
+```read```
+
+```eval```
+
+```print```
+
+```set```
+
+```not```
+
+```load```
+
+```symbolp```
+
+```numberp```
+
+```+```
+
+```-```
+
+```*```
+
+```/```
+
+```<```
+
+
+```prog1```
+
+```apply```
+
+```rplaca```
+
+```rplacd```
+
+```boundp```
+
+
+
+### arduino due specific:
+
 ```
 (room)
 ```
@@ -60,4 +133,20 @@ attached to the Arduino Due.
 Read an internal ADC channel of the arduino, returns 32-bit number of
 which only 12 bits are used.  The parameter chan is in the range [0.12].
 
+```(pin-mode port direction)```
 
+example:
+```lisp
+(pin-mode 8 1) ;; set pin 8 to output
+```
+
+```(digital-write port value)```
+
+example generating pulse train on pin 8:
+```lisp 
+(dotimes (i 10)
+  (digitial-write 8 1)
+  (delay 10)
+  (digital-write 8 0)
+  (delay 1))
+```
