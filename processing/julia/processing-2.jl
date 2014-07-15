@@ -110,16 +110,31 @@ run(`scp /dev/shm/m1.jpg /dev/shm/m2.jpg /dev/shm/m3.jpg martin@dr-kielhorn.eu:/
 
 norm(a[:,:,1,4,cama])
 
-pearson = zeros(Complex{Float32},25,19);     
+pearsonrr = zeros(25,19);
+pearsonri = zeros(25,19);
+pearsonir = zeros(25,19);
+pearsonii = zeros(25,19);     
 begin
     cama = 1
     camb = 3
     for i=1:25, j=1:19
-        s = 1/ (norm(a[:,:,i,j,cama]) * norm(a[:,:,i,j,camb]));
-        pearson[i,j] = sum(a[:,:,i,j,cama] .* a[:,:,i,j,camb]); 
+        car = real(a[:,:,i,j,cama])
+        cbr = real(a[:,:,i,j,camb])
+        cai = imag(a[:,:,i,j,cama])
+        cbi = imag(a[:,:,i,j,camb])
+        pearsonrr[i,j] = sum(car .* cbr)/(norm(car) * norm(cbr));
+        pearsonri[i,j] = sum(car .* cbi)/(norm(car) * norm(cbi));
+        pearsonir[i,j] = sum(cai .* cbr)/(norm(cai) * norm(cbr));
+        pearsonii[i,j] = sum(cai .* cbi)/(norm(cai) * norm(cbi)); 
     end
-    write_pgm(abs(pearson),"/dev/shm/p$cama$camb.pgm")
+    #write_pgm(abs(pearson),"/dev/shm/p$cama$camb.pgm")
 end
+
+show(floor(pearsonrr,2))
+
+show(floor(pearsonrr[7:13,7:13],2))
+show(floor(pearsonri[7:13,7:13],2))
+show(floor(pearsonii[7:13,7:13],2))
 
 abs(pearson)
 
