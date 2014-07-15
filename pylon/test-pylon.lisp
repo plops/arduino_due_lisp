@@ -84,7 +84,7 @@
  (digital-write 11 0)
  (digital-write 12 0) 
  (digital-write 10 0))"
-   :time .00001d0))
+   :time .001d0))
 
 (defun trigger-all-cameras-several-times (&key (n 475))
   (unless *trigger-outputs-initialized*
@@ -102,7 +102,7 @@
  (digital-write 10 0)
  (delay 25)
  (print i))" n)
-   :time .00001d0))
+   :time .001d0))
 
 
 #+nil
@@ -144,7 +144,7 @@
  (digital-write 11 0)
  (digital-write 12 0)
  (digital-write 10 0))" x y)
-   :time .0001d0)) 
+   :time .001d0)) 
 
 (defun tilt-mirror (x y)  (arduino-serial-sbcl:talk-arduino
    (second *ard*) 
@@ -454,9 +454,9 @@ rectangular, for alpha=1 Hann window."
        (progn
 	 (pylon:start-grabbing *cams*)
 	 (;let ((yj 2550) (yji 0)) ;
-	  loop for yj from 1800 below 3700 by 100  and yji from 0 collect
+	  loop for yj from 1800 below 3700 by 20  and yji from 0 collect
 	       (;let ((j 1550) (ji 0)) ;
-		loop for j from 400 below 2900 by 100 and ji from 0 collect
+		loop for j from 400 below 2900 by 20 and ji from 0 collect
 		     (let ((th (sb-thread:make-thread 
 				#'(lambda ()
 				    (progn
@@ -502,15 +502,14 @@ rectangular, for alpha=1 Hann window."
     (pylon:stop-grabbing *cams*)))
 
 #+nil
-(/ 
- (progn (let ((count 0)
-	      (step 100))
-	  (loop for yj from 1800 below 3700 by step do
-	       (loop for j from 400 below 2900 by step do
-		    (incf count)))
-	  (format t "~a~%" count)
-	  count))
- 10.6) ;; => 17.14  fps with trigger
+(progn (let ((count 0)
+	     (step 20))
+	 (loop for yj from 1800 below 3700 by step do
+	      (loop for j from 400 below 2900 by step do
+		   (incf count)))
+	 (list count
+	       (/ count 10.6))))
+
 
 #+nil
 (DOTIMES (i 3)

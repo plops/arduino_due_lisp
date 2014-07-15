@@ -85,6 +85,22 @@ for i = 1:3
 end
 run(`scp /dev/shm/a1.jpg /dev/shm/a2.jpg /dev/shm/a3.jpg martin@dr-kielhorn.eu:/var/www/2014`)
 
+for cam = 1:3
+    mosaic = reshape(a[:,:,:,:,cam],66*25,66*19)
+    for i=1:24
+        for j=1:18
+            for u=1:65
+                for v=1:65
+                    mosaic[i*66+u,j*66+v]=a[u,v,i,j,cam]
+                end
+            end
+        end
+    end
+    write_pgm(abs(mosaic),"/dev/shm/m$cam.pgm")
+    #run(`convert /dev/shm/m$cam.pgm /dev/shm/m$cam.jpg`)
+end
+
+run(`scp /dev/shm/m1.jpg /dev/shm/m2.jpg /dev/shm/m3.jpg martin@dr-kielhorn.eu:/var/www/2014`)
 
 @time begin
     kw=66
