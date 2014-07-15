@@ -508,7 +508,7 @@ rectangular, for alpha=1 Hann window."
 	      (loop for j from 400 below 2900 by step do
 		   (incf count)))
 	 (list count
-	       (/ count 10.6))))
+	       (/ count 2012.45)))) ; => 5.9fps
 
 
 #+nil
@@ -645,8 +645,8 @@ rectangular, for alpha=1 Hann window."
 
 #+nil
 (time
- (let* ((date "0714")
-	(ver 3)
+ (let* ((date "0715")
+	(ver 1)
 	(h 
 	 (1+ (loop for (j yj ji yji v im) in (aref *bla* 0) maximize yji)))
 	(w
