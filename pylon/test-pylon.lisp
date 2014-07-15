@@ -60,6 +60,12 @@
 
 #+nil
 (arduino-serial-sbcl:talk-arduino
+   ( second *ard*) 
+   (first *ard*)
+   "(room)")
+
+#+nil
+(arduino-serial-sbcl:talk-arduino
    (second *ard*) 
    (first *ard*)
    "(progn 
@@ -67,6 +73,9 @@
   (while (< i 10) 
     (set i (+ i 1))))"
    :time .1d0)
+
+#+nil
+(arduino-serial-sbcl::upload-lisp-system (second *ard*) (first *ard*))
 
 
 
