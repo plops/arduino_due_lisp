@@ -150,3 +150,10 @@ example generating pulse train on pin 8:
   (digital-write 8 0)
   (delay 1))
 ```
+
+## serial communication
+
+An important part of the development environment is the editor.  I
+communicate with the Arduino Due femtolisp in Emacs using a Common
+Lisp session in Slime using the package:
+https://github.com/plops/arduino_due_lisp/tree/master/arduino-serial-sbcl
