@@ -66,6 +66,10 @@ write_pgm(abs(a[:,:,1]))
 
 a= read_ics("/home/martin/scan0714_3.ics");
 
+# 65 first image transmission w/ polrot (top)
+# 66 second image backreflection w/ polrot
+# 40 third image transmission same pol (left)
+
 size(a)
 
 for i = 1:3 
