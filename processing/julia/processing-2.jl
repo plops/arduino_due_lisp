@@ -103,8 +103,28 @@ for cam = 1:3
     write_pgm(abs(mosaic),"/dev/shm/m$cam.pgm")
     run(`convert /dev/shm/m$cam.pgm /dev/shm/m$cam.jpg`)
 end
+
 run(`scp /dev/shm/m1.jpg /dev/shm/m2.jpg /dev/shm/m3.jpg martin@dr-kielhorn.eu:/var/www/2014`)
 
+
+
+norm(a[:,:,1,4,cama])
+
+pearson = zeros(Complex{Float32},25,19);     
+begin
+    cama = 1
+    camb = 3
+    for i=1:25, j=1:19
+        s = 1/ (norm(a[:,:,i,j,cama]) * norm(a[:,:,i,j,camb]));
+        pearson[i,j] = sum(a[:,:,i,j,cama] .* a[:,:,i,j,camb]); 
+    end
+    write_pgm(abs(pearson),"/dev/shm/p$cama$camb.pgm")
+end
+
+abs(pearson)
+
+
+    
 @time begin
     kw=66
     kh=66
