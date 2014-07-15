@@ -1,5 +1,4 @@
 
-
 # this function opens a file searches from the beginning for the
 # string "end" and returns the position
 function find_ics_raw_start(fn)
@@ -65,33 +64,49 @@ end
 
 write_pgm(abs(a[:,:,1]))
 
+a= read_ics("/home/martin/scan0714_3.ics");
 
-    
+size(a)
+
+for i = 1:3 
+    ds = (squeeze(mean(abs(a[:,:,:,:,i]),[3 4]),[3 4]));
+    write_pgm(ds,"/dev/shm/o$i.pgm")
+    run(`convert /dev/shm/o$i.pgm /dev/shm/o$i.jpg`)
+end
+
+size(ds)
+
 @time extrema(abs(a)) # 4.9s
 
-1-2
+for i = 1:3
+    pt = (squeeze(mean(abs(a[:,:,:,:,i]),[1 2]),[1 2]));
+    write_pgm(pt,"/dev/shm/a$i.pgm")
+    run(`convert /dev/shm/a$i.pgm /dev/shm/a$i.jpg`)
+end
+run(`scp /dev/shm/a1.jpg /dev/shm/a2.jpg /dev/shm/a3.jpg martin@dr-kielhorn.eu:/var/www/2014`)
+
 
 @time begin
     kw=66
     kh=66
     w=25
     h=19
-    n=2
+    n=1
     acam = zeros(kw,kh,n,3)
     acamb = zeros(kw,kh,n,3)
     aang = zeros(w,h,n,3)
     aangb = zeros(w,h,n,3)
-    for (i, file) in [(1,"1")]
+    for (i, file) in [(2,"2")] # (3, "3")]
         ics_file = "/home/martin/scan0714_$file.ics"
         a = read_ics(ics_file);
         for cam=1:3
             acam[:,:,i,cam] = log(squeeze(mean(abs(a[:,:,:,:,cam]),[3 4]),[3 4]));
             #acamb[:,:,i,cam] = (acam[:,:,i,cam] .> quantile(reshape(acam[:,:,i,cam],kw*kh),.5f0));
-            write_pgm(acam[:,:,i,cam],"/dev/shm/acam_$file-$cam.pgm")
+            write_pgm(acam[:,:,i,cam],"/dev/shm/acam$cam.pgm")
             #write_pgm(acamb[:,:,i,cam]*1.0,"/dev/shm/acamb_$i-$cam.pgm")
             aang[:,:,i,cam] = log(squeeze(mean(abs(a[:,:,:,:,cam]),[1 2]),[1 2]));
             #aangb[:,:,i,cam] = (aang[:,:,i,cam] .> quantile(reshape(aang[:,:,i,cam],w*h),.6f0));
-            write_pgm(aang[:,:,i,cam],"/dev/shm/aang_$file-$cam.pgm")
+            ##  write_pgm(aang[:,:,i,cam],"/dev/shm/aang_$file-$cam.pgm")
             #write_pgm(aangb[:,:,i,cam],"/dev/shm/aangb_$i-$cam.pgm")
         end
     end

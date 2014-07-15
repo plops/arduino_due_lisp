@@ -143,12 +143,14 @@ example:
 ```(digital-write port value)```
 
 example generating pulse train on pin 8:
-```lisp 
-(dotimes (i 10)
+```lisp
+(let ((i 0)) 
+ (while (< i 10)
   (digitial-write 8 1)
   (delay 10)
   (digital-write 8 0)
-  (delay 1))
+  (delay 1)
+  (set i (+ i 1))))
 ```
 
 ## serial communication

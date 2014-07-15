@@ -54,9 +54,21 @@
 
 #+nil
 (arduino-serial-sbcl:talk-arduino
-   (second *ard*) 
+   ( second *ard*) 
    (first *ard*)
    "(progn (+ 1 2))")
+
+#+nil
+(arduino-serial-sbcl:talk-arduino
+   (second *ard*) 
+   (first *ard*)
+   "(progn 
+  (set i 0)
+  (while (< i 10) 
+    (set i (+ i 1))))"
+   :time .1d0)
+
+
 
 (defun trigger-all-cameras ()
   (unless *trigger-outputs-initialized*
