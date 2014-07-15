@@ -157,3 +157,28 @@ An important part of the development environment is the editor.  I
 communicate with the Arduino Due femtolisp in Emacs using a Common
 Lisp session in Slime using the package:
 https://github.com/plops/arduino_due_lisp/tree/master/arduino-serial-sbcl
+
+I tested one implementation in SBCL and another one in CCL.
+
+example:
+```common-lisp
+;; this would only work in sbcl
+(setf asdf:*central-registry*
+	'(*default-pathname-defaults* ;; make the directory with the package known:
+	  #p"/home/martin/arduino_due_lisp/arduino-serial-sbcl/"))
+(asdf:load-system "arduino-serial-sbcl")
+
+(defparameter *ard* 
+  (multiple-value-list
+   (arduino-serial-sbcl:open-serial 
+    (first (directory "/dev/ttyACM0")))))
+
+(arduino-serial-sbcl:talk-arduino
+   (second *ard*) 
+   (first *ard*)
+   "(progn (+ 1 2))")
+
+;; this returns:
+;; => "3
+;; > "
+```
