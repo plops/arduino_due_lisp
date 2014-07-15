@@ -88,12 +88,13 @@
  (digital-write 11 0)
  (digital-write 12 0) 
  (digital-write 10 0)
- (delay 25))" n)
+ (delay 25)
+ (print i))" n)
    :time .00001d0))
 
 
 #+nil
-(trigger-all-cameras)
+(trigger-all-cameras-several-times)
 
 (defun block-laser ()
   (arduino-serial-sbcl:talk-arduino
@@ -359,7 +360,6 @@ rectangular, for alpha=1 Hann window."
 										     sb-unix:o_trunc
 										     sb-unix:o_wronly) 
 					 #o666)))
-	  (defparameter *blaf* fds)
 	  (pylon:start-grabbing *cams*)
 	  (loop for yj from 1800 below 3700 by 100  and yji from 0 collect
 	   (loop for j from 400 below 2900 by 100 and ji from 0 collect
@@ -394,20 +394,21 @@ rectangular, for alpha=1 Hann window."
 										     sb-unix:o_trunc
 										     sb-unix:o_wronly) 
 					 #o666)))
-	  (defparameter *blaf* fds)
+	  
 	  (pylon:start-grabbing *cams*)
 	  (let ((th (sb-thread:make-thread 
 		     #'(lambda ()
-			 (loop for yj from 1800 below 3700 by 100  and yji from 0 collect
-			      (loop for j from 400 below 2900 by 100 and ji from 0 collect
+			 (loop for yj from 1800 below 3700 by 100  and yji from 0 do
+			      (loop for j from 400 below 2900 by 100 and ji from 0 do
 					;(tilt-mirror j yj)
+				   (format t "~a/3700 ~a/2900~%" yj j)
 				   (loop for i below 3 do
 					(destructuring-bind (cam success-p w h framenr) 
 					    (multiple-value-list (pylon::grab-store *cams* fds))
 					  (unless (= 1 success-p)
 					    (format t "acquisition error. ~a~%" success-p)))))))
 		     :name "camera-acquisition")))
-	    (sleep .0001)
+	    (sleep .001)
 	    (time
 	     (trigger-all-cameras-several-times))
 	    (sb-thread:join-thread th)))
@@ -416,6 +417,8 @@ rectangular, for alpha=1 Hann window."
 		(sb-unix::unix-close e))))))
 
 
+#+nil
+(time (run-raw-several))
 
 #+nil
 (require :sb-sprof)
@@ -426,12 +429,10 @@ rectangular, for alpha=1 Hann window."
 	(sb-sprof:with-profiling (:max-samples 1000
                                        :report :flat
                                        :loop nil)
-	  (run-raw))
+	  (run-raw-several))
 	(format t "~a~%" (multiple-value-list (get-decoded-time)))))
 
-(reduce #'(lambda (x y) (max (realpart x) (realpart y)))
-	(make-array 128 :element-type '(complex double-float)
-		    :initial-element (complex 1d0)))
+
 
 (defun run ()
   (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
