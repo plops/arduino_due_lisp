@@ -276,6 +276,7 @@
 	   (pylon:get-value-i *cams* j e t nil)
 	   )
       (list (pylon:get-value-e *cams* j "TriggerMode")
+	    (pylon:get-value-e *cams* j "LastError")
 	    (pylon:get-value-b *cams* j "AcquisitionFrameRateEnable")
 	    (pylon:get-value-f *cams* j "ResultingFrameRateAbs"))))
 
