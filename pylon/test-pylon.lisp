@@ -98,16 +98,17 @@
     "(progn
   (set 'i 0)
   (while (< i ~a)
-    (delay 23)
+    (delay 49)
      (digital-write 11 1)
      (digital-write 12 1) 
      (digital-write 10 1) 
-     (delay-microseconds 50) 
+     (delay 1)
      (digital-write 11 0)
      (digital-write 12 0) 
      (digital-write 10 0)
      (set 'i (+ i 1))))" n)
    :time .1d0))
+
 
 #+nil
 (trigger-all-cameras-seq)
@@ -251,10 +252,13 @@
 		       "GevTimestampTickFrequency" "GevSCPSPacketSize") collect
 	   (pylon:get-value-i *cams* j e t nil)
 	   )
-      (list (pylon:get-value-e *cams* j "TriggerMode")
-	    (pylon:get-value-e *cams* j "LastError")
-	    (pylon:get-value-b *cams* j "AcquisitionFrameRateEnable")
-	    (pylon:get-value-f *cams* j "ResultingFrameRateAbs"))))
+      (list :trigger-mode (pylon:get-value-e *cams* j "TriggerMode")
+	    :last-error (pylon:get-value-e *cams* j "LastError")
+	    :rate-p (pylon:get-value-b *cams* j "AcquisitionFrameRateEnable")
+	    :rate (pylon:get-value-f *cams* j "ResultingFrameRateAbs"))))
+
+#+nil
+(pylon:get-symbolics-e *cams* 0 "LastError")
 
 #+nil
 (loop for i below 3 collect
@@ -456,7 +460,7 @@ rectangular, for alpha=1 Hann window."
     (pylon:set-value-e *cams* i "TriggerMode" 1))
   (let* ((fds nil)
 	(step 100)
-	(count (let ((count 0))
+	 (count (let ((count 0))
 		 (loop for yj from 1800 below 3700 by step do
 		      (loop for j from 400 below 2900 by step do
 			   (incf count)))
@@ -564,6 +568,61 @@ rectangular, for alpha=1 Hann window."
 		       (sb-thread:join-thread th)))))
     (pylon:stop-grabbing *cams*)))
 
+(defun run-several ()
+  (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
+  (dotimes (i 3)
+    (pylon:set-value-e *cams* i "TriggerMode" 1))
+  (let* ((step 100)
+	(count (let ((count 0))
+		 (loop for yj from 1800 below 3700 by step do
+		      (loop for j from 400 below 2900 by step do
+			   (incf count)))
+		 count)))
+    (unwind-protect 
+	 (progn
+	   (pylon:start-grabbing *cams*)
+	   (let ((th (sb-thread:make-thread 
+		      #'(lambda ()
+			  (progn
+					;(tilt-mirror j yj)
+			    (loop for yj from 1800 below 3700 by step and yji from 0 collect
+				 (loop for j from 400 below 2900 by step and ji from 0 collect
+				      (loop for i below 3 do
+					   (destructuring-bind (cam success-p w h framenr) 
+					       (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
+					     (declare (ignorable framenr))
+					     (if success-p
+						 (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+						     (get-cam-parameters cam)
+						   (declare (ignorable id binx biny ox oy d g e name))
+						   (assert (= ww w))
+						   (assert (= hh h))
+						   (when (and *dark* *win*)
+						     (subtract-bg-and-multiply-window
+						      *buf-c* (elt (first *dark*) cam)
+						      (elt *win* cam)))
+						   #+nil
+						   (format t "max ~a~%" (reduce #'(lambda (x y) (max (realpart x) (realpart y)))
+										(make-array (* h w)
+											    :element-type '(complex double-float)
+											    :displaced-to *buf-c*)))
+						   (fftw:ft *buf-c* :out-arg *out-c* :w w :h h :flag fftw::+measure+)
+						   (let* ((q (make-array (list h w)
+									 :element-type '(complex double-float)
+									 :displaced-to *out-c*))
+							  (v 1d0))
+						     (format t "~a~%" (list j yj))
+						     (push (list j yj ji yji v
+								 (extract q :x x :y y :w d :h d)) 
+							   (aref *bla* cam))))
+						 (format t "acquisition error.~%"))))))))
+		      :name "camera-acquisition")))
+	     (sleep .001)
+	     (time
+	      (trigger-all-cameras-seq count))
+	     (sb-thread:join-thread th)))
+      (pylon:stop-grabbing *cams*))))
+
 #+nil
 (progn (let ((count 0)
 	     (step 100))
@@ -571,7 +630,7 @@ rectangular, for alpha=1 Hann window."
 	      (loop for j from 400 below 2900 by step do
 		   (incf count)))
 	 (list count
-	       (/ count 11.098)))) ; => 5.9fps
+	       (/ count 3.004))))
 
 
 #+nil
@@ -595,7 +654,7 @@ rectangular, for alpha=1 Hann window."
 	(sb-sprof:with-profiling (:max-samples 1000
                                        :report :flat
                                        :loop nil)
-	  (run))
+	  (run-several))
 	(format t "~a~%" (multiple-value-list (get-decoded-time)))))
 
 (defun make-camera-buffer (cam) 
