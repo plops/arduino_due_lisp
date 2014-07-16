@@ -88,15 +88,16 @@
 #+nil
 (arduino-serial-sbcl::upload-lisp-system (second *ard*) (first *ard*))
 
-(defun trigger-all-cameras-seq ()
+(defun trigger-all-cameras-seq (n)
   (unless *trigger-outputs-initialized*
     (initialize-trigger-outputs))
   (arduino-serial-sbcl:talk-arduino
    (second *ard*) 
    (first *ard*)
-   "(progn
+   (format nil 
+    "(progn
   (set 'i 0)
-  (while (< i 100)
+  (while (< i ~a)
     (delay 23)
      (digital-write 11 1)
      (digital-write 12 1) 
@@ -105,7 +106,7 @@
      (digital-write 11 0)
      (digital-write 12 0) 
      (digital-write 10 0)
-     (set 'i (+ i 1))))"
+     (set 'i (+ i 1))))" n)
    :time .1d0))
 
 #+nil
@@ -113,7 +114,6 @@
 #+nil
 (trigger-all-cameras)
 
-(/ 1000 45.378228)
 
 (defun trigger-all-cameras ()
   (unless *trigger-outputs-initialized*
@@ -132,30 +132,6 @@
    :time .001d0))
 
 
-(defun bla (binds body)
- (cons (list 'lambda (map car binds) body (map cadr binds))))
-
-(bla ((a 3) (b 4)) blub)
-
-(set 'list (lambda args args))
-(set 'setq (macro (name val)
-                  (list set (list quote name) val)))
-(setq f-body (lambda (e)
-               (cond ((atom e)        e)
-                     ((eq (cdr e) ()) (car e))
-                     (t               (cons progn e)))))
-(setq defmacro
-      (macro (name args . body)
-             (list 'setq name (list 'macro args (f-body body)))))
-(defmacro defun (name args . body)
-  (list 'setq name (list 'lambda args (f-body body))))
-(defun map (f lst)
-  (if (atom lst) lst
-    (cons (f (car lst)) (map f (cdr lst)))))
-
-
-(while (< v 10)
-  (setq v (+ v 1)))
 
 #+nil
 (loop for i below 1000 do
@@ -478,7 +454,13 @@ rectangular, for alpha=1 Hann window."
   (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
   (dotimes (i 3)
     (pylon:set-value-e *cams* i "TriggerMode" 1))
-  (let ((fds nil))
+  (let* ((fds nil)
+	(step 100)
+	(count (let ((count 0))
+		 (loop for yj from 1800 below 3700 by step do
+		      (loop for j from 400 below 2900 by step do
+			   (incf count)))
+		 count)))
    (unwind-protect 
 	(progn 
 	  (setf fds
@@ -491,8 +473,8 @@ rectangular, for alpha=1 Hann window."
 	  (pylon:start-grabbing *cams*)
 	  (let ((th (sb-thread:make-thread 
 		     #'(lambda ()
-			 (loop for yj from 1800 below 3700 by 100  and yji from 0 do
-			      (loop for j from 400 below 2900 by 100 and ji from 0 do
+			 (loop for yj from 1800 below 3700 by step and yji from 0 do
+			      (loop for j from 400 below 2900 by step and ji from 0 do
 					;(tilt-mirror j yj)
 				   (format t "~a/3700 ~a/2900~%" yj j)
 				   (loop for i below 3 do
@@ -503,7 +485,7 @@ rectangular, for alpha=1 Hann window."
 		     :name "camera-acquisition")))
 	    (sleep .001)
 	    (time
-	     (trigger-all-cameras-several-times))
+	     (trigger-all-cameras-seq count))
 	    (sb-thread:join-thread th)))
     (progn (pylon:stop-grabbing *cams*)
 	   (loop for e in fds do
@@ -535,9 +517,9 @@ rectangular, for alpha=1 Hann window."
        (progn
 	 (pylon:start-grabbing *cams*)
 	 (;let ((yj 2550) (yji 0)) ;
-	  loop for yj from 1800 below 3700 by 20  and yji from 0 collect
+	  loop for yj from 1800 below 3700 by 100  and yji from 0 collect
 	       (;let ((j 1550) (ji 0)) ;
-		loop for j from 400 below 2900 by 20 and ji from 0 collect
+		loop for j from 400 below 2900 by 100 and ji from 0 collect
 		     (let ((th (sb-thread:make-thread 
 				#'(lambda ()
 				    (progn
@@ -584,12 +566,12 @@ rectangular, for alpha=1 Hann window."
 
 #+nil
 (progn (let ((count 0)
-	     (step 20))
+	     (step 100))
 	 (loop for yj from 1800 below 3700 by step do
 	      (loop for j from 400 below 2900 by step do
 		   (incf count)))
 	 (list count
-	       (/ count 2012.45)))) ; => 5.9fps
+	       (/ count 11.098)))) ; => 5.9fps
 
 
 #+nil
@@ -665,7 +647,7 @@ rectangular, for alpha=1 Hann window."
 
 #+nil
 (time
- (defparameter *dark* (multiple-value-list (capture-dark-images 200))))
+ (defparameter *dark* (multiple-value-list (capture-dark-images 100))))
 #+nil
 (create-windows (first *dark*))
 
