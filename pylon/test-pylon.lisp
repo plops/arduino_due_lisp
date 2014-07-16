@@ -255,10 +255,14 @@
       (list :trigger-mode (pylon:get-value-e *cams* j "TriggerMode")
 	    :last-error (pylon:get-value-e *cams* j "LastError")
 	    :rate-p (pylon:get-value-b *cams* j "AcquisitionFrameRateEnable")
-	    :rate (pylon:get-value-f *cams* j "ResultingFrameRateAbs"))))
+	    :rate (pylon:get-value-f *cams* j "ResultingFrameRateAbs")
+	    :temp (pylon:get-value-f *cams* j "TemperatureAbs"))))
+
 
 #+nil
-(pylon:get-symbolics-e *cams* 0 "LastError")
+(pylon::command-execute *cams* 1 "ClearLastError")
+#+nil
+(pylon::command-isdone *cams* 1 "ClearLastError")
 
 #+nil
 (loop for i below 3 collect
@@ -706,7 +710,10 @@ rectangular, for alpha=1 Hann window."
 
 #+nil
 (time
- (defparameter *dark* (multiple-value-list (capture-dark-images 100))))
+ (progn
+   (dotimes (i 3)
+     (pylon::command-execute *cams* i "GevTimestampControlReset"))
+   (defparameter *dark* (multiple-value-list (capture-dark-images 3)))))
 #+nil
 (create-windows (first *dark*))
 

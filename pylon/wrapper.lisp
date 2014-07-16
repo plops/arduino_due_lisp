@@ -190,6 +190,16 @@
   (cam :int)
   (node :string))
 
+(cffi:defcfun ("pylon_wrapper_command_isdone" command-isdone) :int
+  (cams :pointer)
+  (cam :int)
+  (node :string))
+
+(cffi:defcfun ("pylon_wrapper_command_execute" command-execute) :int
+  (cams :pointer)
+  (cam :int)
+  (node :string))
+
 (cffi:defcfun ("pylon_wrapper_to_string_e" to-string-e) :void
   (cams :pointer)
   (cam :int)

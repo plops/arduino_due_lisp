@@ -134,6 +134,16 @@ corresponding integer identifier.
 `value`, e.g. the node "PixelFormat" to value "Mono8".
 
 ```
+command-execute handle cam node => int
+command-isdone  handle cam node => int
+```
+
+Execute a command on the device. E.g.:
+```(pylon::command-execute *cams* 1 "ClearLastError")```
+
+
+
+```
 start-grabbing handle
 stop-grabbing  handle
 ```
