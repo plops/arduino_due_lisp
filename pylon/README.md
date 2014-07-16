@@ -140,9 +140,6 @@ command-isdone  handle cam node => int
 
 Execute a command on the device. E.g.:
 ```(pylon::command-execute *cams* 1 "ClearLastError")```
-
-
-
 ```
 start-grabbing handle
 stop-grabbing  handle

@@ -88,7 +88,7 @@
 #+nil
 (arduino-serial-sbcl::upload-lisp-system (second *ard*) (first *ard*))
 
-(defun trigger-all-cameras-seq (n)
+(defun trigger-all-cameras-seq (n &key (delay-ms 24))
   (unless *trigger-outputs-initialized*
     (initialize-trigger-outputs))
   (arduino-serial-sbcl:talk-arduino
@@ -98,7 +98,7 @@
     "(progn
   (set 'i 0)
   (while (< i ~a)
-    (delay 49)
+    (delay ~a)
      (digital-write 11 1)
      (digital-write 12 1) 
      (digital-write 10 1) 
@@ -106,7 +106,7 @@
      (digital-write 11 0)
      (digital-write 12 0) 
      (digital-write 10 0)
-     (set 'i (+ i 1))))" n)
+     (set 'i (+ i 1))))" n delay-ms)
    :time .1d0))
 
 
@@ -623,7 +623,7 @@ rectangular, for alpha=1 Hann window."
 		      :name "camera-acquisition")))
 	     (sleep .001)
 	     (time
-	      (trigger-all-cameras-seq count))
+	      (trigger-all-cameras-seq count :delay-ms 99))
 	     (sb-thread:join-thread th)))
       (pylon:stop-grabbing *cams*))))
 
@@ -634,7 +634,7 @@ rectangular, for alpha=1 Hann window."
 	      (loop for j from 400 below 2900 by step do
 		   (incf count)))
 	 (list count
-	       (/ count 3.004))))
+	       (/ count 62.727)))) ; => 7.5 fps
 
 
 #+nil
@@ -713,7 +713,7 @@ rectangular, for alpha=1 Hann window."
  (progn
    (dotimes (i 3)
      (pylon::command-execute *cams* i "GevTimestampControlReset"))
-   (defparameter *dark* (multiple-value-list (capture-dark-images 3)))))
+   (defparameter *dark* (multiple-value-list (capture-dark-images 300)))))
 #+nil
 (create-windows (first *dark*))
 
