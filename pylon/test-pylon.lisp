@@ -57,6 +57,17 @@
    ( second *ard*) 
    (first *ard*)
    "(progn (+ 1 2))")
+#+nil
+(arduino-serial-sbcl:talk-arduino
+   ( second *ard*) 
+   (first *ard*)
+   "(set 'list (lambda args args))")
+#+nil
+(arduino-serial-sbcl:talk-arduino
+   ( second *ard*) 
+   (first *ard*)
+   "(set 'setq (macro (name val)
+                  (list set (list quote name) val)))")
 
 #+nil
 (arduino-serial-sbcl:talk-arduino
@@ -77,7 +88,32 @@
 #+nil
 (arduino-serial-sbcl::upload-lisp-system (second *ard*) (first *ard*))
 
+(defun trigger-all-cameras-seq ()
+  (unless *trigger-outputs-initialized*
+    (initialize-trigger-outputs))
+  (arduino-serial-sbcl:talk-arduino
+   (second *ard*) 
+   (first *ard*)
+   "(progn
+  (set 'i 0)
+  (while (< i 100)
+    (delay 23)
+     (digital-write 11 1)
+     (digital-write 12 1) 
+     (digital-write 10 1) 
+     (delay-microseconds 50) 
+     (digital-write 11 0)
+     (digital-write 12 0) 
+     (digital-write 10 0)
+     (set 'i (+ i 1))))"
+   :time .1d0))
 
+#+nil
+(trigger-all-cameras-seq)
+#+nil
+(trigger-all-cameras)
+
+(/ 1000 45.378228)
 
 (defun trigger-all-cameras ()
   (unless *trigger-outputs-initialized*
@@ -94,6 +130,40 @@
  (digital-write 12 0) 
  (digital-write 10 0))"
    :time .001d0))
+
+
+(defun bla (binds body)
+ (cons (list 'lambda (map car binds) body (map cadr binds))))
+
+(bla ((a 3) (b 4)) blub)
+
+(set 'list (lambda args args))
+(set 'setq (macro (name val)
+                  (list set (list quote name) val)))
+(setq f-body (lambda (e)
+               (cond ((atom e)        e)
+                     ((eq (cdr e) ()) (car e))
+                     (t               (cons progn e)))))
+(setq defmacro
+      (macro (name args . body)
+             (list 'setq name (list 'macro args (f-body body)))))
+(defmacro defun (name args . body)
+  (list 'setq name (list 'lambda args (f-body body))))
+(defun map (f lst)
+  (if (atom lst) lst
+    (cons (f (car lst)) (map f (cdr lst)))))
+
+
+(while (< v 10)
+  (setq v (+ v 1)))
+
+#+nil
+(loop for i below 1000 do
+     (format t "~a~%" i)
+     ;(sleep (/ 60d0))
+     (trigger-all-cameras))
+#+nil
+(tilt-mirror 1550 2500)
 
 (defun trigger-all-cameras-several-times (&key (n 475))
   (unless *trigger-outputs-initialized*
@@ -201,7 +271,8 @@
       (loop for e in '("BinningHorizontal" "BinningVertical" 
 		       "Width" "Height"
 		       "OffsetX" "OffsetY" 
-		       "ExposureTimeRaw" "GainRaw" "GevTimestampTickFrequency") collect
+		       "ExposureTimeRaw" "GainRaw" 
+		       "GevTimestampTickFrequency" "GevSCPSPacketSize") collect
 	   (pylon:get-value-i *cams* j e t nil)
 	   )
       (list (pylon:get-value-e *cams* j "TriggerMode")

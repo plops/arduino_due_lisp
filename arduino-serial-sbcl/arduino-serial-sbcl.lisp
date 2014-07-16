@@ -148,13 +148,6 @@
  (set 'setq (macro (name val)
                   (list set (list quote name) val)))
 
- (setq sp '| |)
- (setq nl '|
- |)
-
- ; convert a sequence of body statements to a single expression. ;
- ; this allows define, defun, defmacro, let, etc. to contain multiple ;
- ; body expressions as in Common Lisp.	;
   (setq f-body (lambda (e)
                (cond ((atom e)        e)
                      ((eq (cdr e) ()) (car e))
@@ -164,7 +157,6 @@
       (macro (name args . body)
              (list 'setq name (list 'macro args (f-body body)))))
 
-					; support both CL defun and Scheme-style define
  (defmacro defun (name args . body)
   (list 'setq name (list 'lambda args (f-body body))))
 
@@ -220,7 +212,6 @@
 	(if f (macroapply f (cdr e))
 	    e))))
 
-					; convert to proper list, i.e. remove dots, and append
  (defun append.2 (l tail)
   (cond ((null l)  tail)
         ((atom l)  (cons l tail))
@@ -246,28 +237,18 @@
 		  e))))
    e nil nil))
 
-					; uncomment this to macroexpand functions at definition time.
-					; makes typical code ~25% faster, but only works for defun expressions
-					; at the top level.
-					;(defmacro defun (name args . body)
-					;  (list 'setq name (list 'lambda args (macroexpand (f-body body)))))
-
-					; same thing for macros. enabled by default because macros are usually
-					; defined at the top level.
  (defmacro defmacro (name args . body)
   (list 'setq name (list 'macro args (macroexpand (f-body body)))))
 
  (setq =   eq)
  (setq eql eq)
- (define (/= a b) (not (eq a b)))
- (define != /=)
  (define (>  a b) (< b a))
  (define (<= a b) (not (< b a)))
  (define (>= a b) (not (< a b)))
  (define (mod x y) (- x (* (/ x y) y)))
  (define (abs x)   (if (< x 0) (- x) x))
  (define (truncate x) x)
- (setq K prog1)  ; K combinator ;)
+ (setq K prog1) 
  (define (funcall f . args) (apply f args))
  (define (symbol-function sym) (eval sym))
  (define (symbol-value    sym) (eval sym))
@@ -290,281 +271,272 @@
 	(and (equal (car a) (car b))
 	     (equal (cdr a) (cdr b)))
 	(eq a b)))
+"
+ ;; (defun compare (a b)
+ ;;  (cond ((eq a b) 0)
+ ;;        ((or (atom a) (atom b)) (if (< a b) -1 1))
+ ;;        (t (let ((c (compare (car a) (car b))))
+ ;;             (if (not (eq c 0))
+ ;;                 c
+ ;; 		 (compare (cdr a) (cdr b)))))))
 
-					; compare imposes an ordering on all values. yields -1 for a<b,
-					; 0 for a==b, and 1 for a>b. lists are compared up to the first
-					; point of difference.
- (defun compare (a b)
-  (cond ((eq a b) 0)
-        ((or (atom a) (atom b)) (if (< a b) -1 1))
-        (t (let ((c (compare (car a) (car b))))
-             (if (not (eq c 0))
-                 c
-		 (compare (cdr a) (cdr b)))))))
+ ;; (defun every (pred lst)
+ ;;  (or (atom lst)
+ ;;      (and (pred (car lst))
+ ;;           (every pred (cdr lst)))))
 
- (defun every (pred lst)
-  (or (atom lst)
-      (and (pred (car lst))
-           (every pred (cdr lst)))))
+ ;; (defun any (pred lst)
+ ;;  (and (consp lst)
+ ;;       (or (pred (car lst))
+ ;;           (any pred (cdr lst)))))
 
- (defun any (pred lst)
-  (and (consp lst)
-       (or (pred (car lst))
-           (any pred (cdr lst)))))
+ ;; (defun listp (a) (or (eq a ()) (consp a)))
 
- (defun listp (a) (or (eq a ()) (consp a)))
+ ;; (defun length (l)
+ ;;  (if (null l) 0
+ ;;      (+ 1 (length (cdr l)))))
 
- (defun length (l)
-  (if (null l) 0
-      (+ 1 (length (cdr l)))))
+ ;;  (defun nthcdr (n lst)
+ ;;  (if (<= n 0) lst
+ ;;      (nthcdr (- n 1) (cdr lst))))
 
-  (defun nthcdr (n lst)
-  (if (<= n 0) lst
-      (nthcdr (- n 1) (cdr lst))))
+ ;; (defun list-ref (lst n)
+ ;;  (car (nthcdr n lst)))
 
- (defun list-ref (lst n)
-  (car (nthcdr n lst)))
+ ;; (defun list* l
+ ;;  (if (atom (cdr l))
+ ;;      (car l)
+ ;;      (cons (car l) (apply list* (cdr l)))))
 
- (defun list* l
-  (if (atom (cdr l))
-      (car l)
-      (cons (car l) (apply list* (cdr l)))))
+ ;; (defun nlist* l
+ ;;  (if (atom (cdr l))
+ ;;      (car l)
+ ;;      (rplacd l (apply nlist* (cdr l)))))
 
- (defun nlist* l
-  (if (atom (cdr l))
-      (car l)
-      (rplacd l (apply nlist* (cdr l)))))
+ ;; (defun lastcdr (l)
+ ;;  (if (atom l) l
+ ;;      (lastcdr (cdr l))))
 
- (defun lastcdr (l)
-  (if (atom l) l
-      (lastcdr (cdr l))))
+ ;; (defun last (l)
+ ;;  (cond ((atom l)        l)
+ ;;        ((atom (cdr l))  l)
+ ;;        (t               (last (cdr l)))))
 
- (defun last (l)
-  (cond ((atom l)        l)
-        ((atom (cdr l))  l)
-        (t               (last (cdr l)))))
+ ;; (defun map! (f lst)
+ ;;  (prog1 lst
+ ;;    (while (consp lst)
+ ;;      (rplaca lst (f (car lst)))
+ ;;      (set 'lst (cdr lst)))))
 
- (defun map! (f lst)
-  (prog1 lst
-    (while (consp lst)
-      (rplaca lst (f (car lst)))
-      (set 'lst (cdr lst)))))
+ ;; (defun mapcar (f . lsts)
+ ;;  ((label mapcar-
+ ;;          (lambda (lsts)
+ ;;            (cond ((null lsts) (f))
+ ;;                  ((atom (car lsts)) (car lsts))
+ ;;                  (t (cons (apply f (map car lsts))
+ ;;                           (mapcar- (map cdr lsts)))))))
+ ;;   lsts))
 
- (defun mapcar (f . lsts)
-  ((label mapcar-
-          (lambda (lsts)
-            (cond ((null lsts) (f))
-                  ((atom (car lsts)) (car lsts))
-                  (t (cons (apply f (map car lsts))
-                           (mapcar- (map cdr lsts)))))))
-   lsts))
+ ;; (defun transpose (M) (apply mapcar (cons list M)))
 
- (defun transpose (M) (apply mapcar (cons list M)))
+ ;; (defun filter (pred lst)
+ ;;  (cond ((null lst) ())
+ ;;        ((not (pred (car lst))) (filter pred (cdr lst)))
+ ;;        (t (cons (car lst) (filter pred (cdr lst))))))
 
- (defun filter (pred lst)
-  (cond ((null lst) ())
-        ((not (pred (car lst))) (filter pred (cdr lst)))
-        (t (cons (car lst) (filter pred (cdr lst))))))
+ ;; (define (foldr f zero lst)
+ ;;    (if (null lst) zero
+ ;; 	(f (car lst) (foldr f zero (cdr lst)))))
 
- (define (foldr f zero lst)
-    (if (null lst) zero
-	(f (car lst) (foldr f zero (cdr lst)))))
+ ;; (define (foldl f zero lst)
+ ;;    (if (null lst) zero
+ ;; 	(foldl f (f (car lst) zero) (cdr lst))))
 
- (define (foldl f zero lst)
-    (if (null lst) zero
-	(foldl f (f (car lst) zero) (cdr lst))))
+ ;; (define (reverse lst) (foldl cons nil lst))
 
- (define (reverse lst) (foldl cons nil lst))
+ ;; (define (reduce0 f zero lst)
+ ;;    (if (null lst) zero
+ ;; 	(reduce0 f (f zero (car lst)) (cdr lst))))
 
- (define (reduce0 f zero lst)
-    (if (null lst) zero
-	(reduce0 f (f zero (car lst)) (cdr lst))))
+ ;; (defun reduce (f lst)
+ ;;  (reduce0 f (car lst) (cdr lst)))
 
- (defun reduce (f lst)
-  (reduce0 f (car lst) (cdr lst)))
+ ;; (define (copy-list l) (map identity l))
+ ;; (define (copy-tree l)
+ ;;    (if (atom l) l
+ ;; 	(cons (copy-tree (car l))
+ ;; 	      (copy-tree (cdr l)))))
 
- (define (copy-list l) (map identity l))
- (define (copy-tree l)
-    (if (atom l) l
-	(cons (copy-tree (car l))
-	      (copy-tree (cdr l)))))
+ ;; (define (assoc item lst)
+ ;;    (cond ((atom lst) ())
+ ;; 	  ((eq (caar lst) item) (car lst))
+ ;; 	  (t (assoc item (cdr lst)))))
 
- (define (assoc item lst)
-    (cond ((atom lst) ())
-	  ((eq (caar lst) item) (car lst))
-	  (t (assoc item (cdr lst)))))
+ ;; (define (nreverse l)
+ ;;    (let ((prev nil))
+ ;;      (while (consp l)
+ ;; 	(set 'l (prog1 (cdr l)
+ ;; 		  (rplacd l (prog1 prev
+ ;; 			      (set 'prev l))))))
+ ;;      prev))
 
- (define (nreverse l)
-    (let ((prev nil))
-      (while (consp l)
-	(set 'l (prog1 (cdr l)
-		  (rplacd l (prog1 prev
-			      (set 'prev l))))))
-      prev))
+ ;; (defmacro let* (binds . body)
+ ;;  (cons (list 'lambda (map car binds)
+ ;;              (cons progn
+ ;;                    (nconc (map (lambda (b) (cons 'setq b)) binds)
+ ;;                           body)))
+ ;;        (map (lambda (x) nil) binds)))
 
- (defmacro let* (binds . body)
-  (cons (list 'lambda (map car binds)
-              (cons progn
-                    (nconc (map (lambda (b) (cons 'setq b)) binds)
-                           body)))
-        (map (lambda (x) nil) binds)))
+ ;; (defmacro labels (binds . body)
+ ;;  (cons (list 'lambda (map car binds)
+ ;;              (cons progn
+ ;;                    (nconc (map (lambda (b)
+ ;;                                  (list 'setq (car b) (cons 'lambda (cdr b))))
+ ;;                                binds)
+ ;;                           body)))
+ ;;        (map (lambda (x) nil) binds)))
 
- (defmacro labels (binds . body)
-  (cons (list 'lambda (map car binds)
-              (cons progn
-                    (nconc (map (lambda (b)
-                                  (list 'setq (car b) (cons 'lambda (cdr b))))
-                                binds)
-                           body)))
-        (map (lambda (x) nil) binds)))
+ ;;  (defmacro when   (c . body) (list if c (f-body body) nil))
+ ;;  (defmacro unless (c . body) (list if c nil (f-body body)))
 
-  (defmacro when   (c . body) (list if c (f-body body) nil))
-  (defmacro unless (c . body) (list if c nil (f-body body)))
+ ;; (defmacro dotimes (var . body)
+ ;;  (let ((v (car var))
+ ;;        (cnt (cadr var)))
+ ;;    (list 'let (list (list v 0))
+ ;;          (list while (list < v cnt)
+ ;;                (list prog1 (f-body body) (list 'setq v (list + v 1)))))))
 
- (defmacro dotimes (var . body)
-  (let ((v (car var))
-        (cnt (cadr var)))
-    (list 'let (list (list v 0))
-          (list while (list < v cnt)
-                (list prog1 (f-body body) (list 'setq v (list + v 1)))))))
+ ;; (defun map-int (f n)
+ ;;  (let ((acc nil))
+ ;;    (dotimes (i n)
+ ;;      (setq acc (cons (f i) acc)))
+ ;;    (nreverse acc)))
 
- (defun map-int (f n)
-  (let ((acc nil))
-    (dotimes (i n)
-      (setq acc (cons (f i) acc)))
-    (nreverse acc)))
+ ;; (setq *plists* nil)
 
-					; property lists
- (setq *plists* nil)
+ ;; (defun symbol-plist (sym)
+ ;;  (cdr (or (assoc sym *plists*) '(()))))
 
- (defun symbol-plist (sym)
-  (cdr (or (assoc sym *plists*) '(()))))
+ ;; (defun set-symbol-plist (sym lst)
+ ;;  (let ((p (assoc sym *plists*)))
+ ;;    (if (null p) 
+ ;;        (setq *plists* (cons (cons sym lst) *plists*))
+ ;; 	(rplacd p lst))))
 
- (defun set-symbol-plist (sym lst)
-  (let ((p (assoc sym *plists*)))
-    (if (null p)  ; sym has no plist yet
-        (setq *plists* (cons (cons sym lst) *plists*))
-	(rplacd p lst))))
+ ;; (defun get (sym prop)
+ ;;  (let ((pl (symbol-plist sym)))
+ ;;    (if pl
+ ;;        (let ((pr (member prop pl)))
+ ;;          (if pr (cadr pr) nil))
+ ;; 	nil)))
 
- (defun get (sym prop)
-  (let ((pl (symbol-plist sym)))
-    (if pl
-        (let ((pr (member prop pl)))
-          (if pr (cadr pr) nil))
-	nil)))
+ ;; (defun put (sym prop val)
+ ;;  (let ((p (assoc sym *plists*)))
+ ;;    (if (null p)  
+ ;;        (setq *plists* (cons (list sym prop val) *plists*))
+ ;; 	(let ((pr (member prop p)))
+ ;; 	  (if (null pr) 
+ ;; 	      (rplacd p (cons prop (cons val (cdr p))))
+ ;; 	      (rplaca (cdr pr) val)))))
+ ;;  val)
+ ;; (setq *setf-place-list*
+ ;;      '((car     rplaca   identity)
+ ;;        (cdr     rplacd   identity)
+ ;;        (caar    rplaca   car)
+ ;;        (cadr    rplaca   cdr)
+ ;;        (cdar    rplacd   car)
+ ;;        (cddr    rplacd   cdr)
+ ;;        (caaar   rplaca   caar)
+ ;;        (caadr   rplaca   cadr)
+ ;;        (cadar   rplaca   cdar)
+ ;;        (caddr   rplaca   cddr)
+ ;;        (cdaar   rplacd   caar)
+ ;;        (cdadr   rplacd   cadr)
+ ;;        (cddar   rplacd   cdar)
+ ;;        (cdddr   rplacd   cddr)
+ ;;        (get     put      identity)
+ ;;        (aref    aset     identity)
+ ;;        (symbol-function   set                identity)
+ ;;        (symbol-value      set                identity)
+ ;;        (symbol-plist      set-symbol-plist   identity)))
 
- (defun put (sym prop val)
-  (let ((p (assoc sym *plists*)))
-    (if (null p)  ; sym has no plist yet
-        (setq *plists* (cons (list sym prop val) *plists*))
-	(let ((pr (member prop p)))
-	  (if (null pr)  ; sym doesn't have this property yet
-	      (rplacd p (cons prop (cons val (cdr p))))
-	      (rplaca (cdr pr) val)))))
-  val)
+ ;; (defun setf-place-mutator (place val)
+ ;;  (if (symbolp place)
+ ;;      (list 'setq place val)
+ ;;      (let ((mutator (assoc (car place) *setf-place-list*)))
+ ;; 	(if (null mutator)
+ ;; 	    (error '|setf: error: unknown place | (car place))
+ ;; 	    (if (eq (caddr mutator) 'identity)
+ ;; 		(cons (cadr mutator) (append (cdr place) (list val)))
+ ;; 		(list (cadr mutator)
+ ;; 		      (cons (caddr mutator) (cdr place))
+ ;; 		      val))))))
 
-					; setf
-					; expands (setf (place x ...) v) to (mutator (f x ...) v)
-					; (mutator (identity x ...) v) is interpreted as (mutator x ... v)
- (setq *setf-place-list*
-					; place   mutator  f
-      '((car     rplaca   identity)
-        (cdr     rplacd   identity)
-        (caar    rplaca   car)
-        (cadr    rplaca   cdr)
-        (cdar    rplacd   car)
-        (cddr    rplacd   cdr)
-        (caaar   rplaca   caar)
-        (caadr   rplaca   cadr)
-        (cadar   rplaca   cdar)
-        (caddr   rplaca   cddr)
-        (cdaar   rplacd   caar)
-        (cdadr   rplacd   cadr)
-        (cddar   rplacd   cdar)
-        (cdddr   rplacd   cddr)
-        (get     put      identity)
-        (aref    aset     identity)
-        (symbol-function   set                identity)
-        (symbol-value      set                identity)
-        (symbol-plist      set-symbol-plist   identity)))
+ ;; (defmacro setf args
+ ;;  (f-body
+ ;;   ((label setf-
+ ;;           (lambda (args)
+ ;;             (if (null args)
+ ;;                 nil
+ ;; 		 (cons (setf-place-mutator (car args) (cadr args))
+ ;; 		       (setf- (cddr args))))))
+ ;;    args)))
 
- (defun setf-place-mutator (place val)
-  (if (symbolp place)
-      (list 'setq place val)
-      (let ((mutator (assoc (car place) *setf-place-list*)))
-	(if (null mutator)
-	    (error '|setf: error: unknown place | (car place))
-	    (if (eq (caddr mutator) 'identity)
-		(cons (cadr mutator) (append (cdr place) (list val)))
-		(list (cadr mutator)
-		      (cons (caddr mutator) (cdr place))
-		      val))))))
+ ;; (defun revappend (l1 l2) (nconc (reverse l1) l2))
+ ;; (defun nreconc   (l1 l2) (nconc (nreverse l1) l2))
 
- (defmacro setf args
-  (f-body
-   ((label setf-
-           (lambda (args)
-             (if (null args)
-                 nil
-		 (cons (setf-place-mutator (car args) (cadr args))
-		       (setf- (cddr args))))))
-    args)))
+ ;; (defun builtinp (x)
+ ;;  (and (atom x)
+ ;;       (not (symbolp x))
+ ;;       (not (numberp x))))
 
- (defun revappend (l1 l2) (nconc (reverse l1) l2))
- (defun nreconc   (l1 l2) (nconc (nreverse l1) l2))
+ ;; (defun self-evaluating-p (x)
+ ;;  (or (eq x nil)
+ ;;      (eq x t)
+ ;;      (and (atom x)
+ ;;           (not (symbolp x)))))
 
- (defun builtinp (x)
-  (and (atom x)
-       (not (symbolp x))
-       (not (numberp x))))
+ ;; (defmacro backquote (x) (bq-process x))
 
- (defun self-evaluating-p (x)
-  (or (eq x nil)
-      (eq x t)
-      (and (atom x)
-           (not (symbolp x)))))
+ ;; (defun splice-form-p (x)
+ ;;  (or (and (consp x) (or (eq (car x) '*comma-at*)
+ ;;                         (eq (car x) '*comma-dot*)))
+ ;;      (eq x '*comma*)))
 
-					; backquote
- (defmacro backquote (x) (bq-process x))
+ ;; (defun bq-process (x)
+ ;;  (cond ((self-evaluating-p x)        x)
+ ;;        ((atom x)                     (list quote x))
+ ;;        ((eq (car x) 'backquote)      (bq-process (bq-process (cadr x))))
+ ;;        ((eq (car x) '*comma*)        (cadr x))
+ ;;        ((not (any splice-form-p x))
+ ;;         (let ((lc    (lastcdr x))
+ ;;               (forms (map bq-bracket1 x)))
+ ;;           (if (null lc)
+ ;;               (cons 'list forms)
+ ;; 	       (nconc (cons 'nlist* forms) (list (bq-process lc))))))
+ ;;        (t (let ((p x) (q '()))
+ ;;             (while (and (consp p)
+ ;;                         (not (eq (car p) '*comma*)))
+ ;;               (setq q (cons (bq-bracket (car p)) q))
+ ;;               (setq p (cdr p)))
+ ;;             (cons 'nconc
+ ;;                   (cond ((consp p) (nreconc q (list (cadr p))))
+ ;;                         ((null p)  (nreverse q))
+ ;;                         (t         (nreconc q (list (bq-process p))))))))))
 
- (defun splice-form-p (x)
-  (or (and (consp x) (or (eq (car x) '*comma-at*)
-                         (eq (car x) '*comma-dot*)))
-      (eq x '*comma*)))
+ ;; (defun bq-bracket (x)
+ ;;  (cond ((atom x)                   (list cons (bq-process x) nil))
+ ;;        ((eq (car x) '*comma*)      (list cons (cadr x)       nil))
+ ;;        ((eq (car x) '*comma-at*)   (list 'copy-list (cadr x)))
+ ;;        ((eq (car x) '*comma-dot*)  (cadr x))
+ ;;        (t                          (list cons (bq-process x) nil))))
 
- (defun bq-process (x)
-  (cond ((self-evaluating-p x)        x)
-        ((atom x)                     (list quote x))
-        ((eq (car x) 'backquote)      (bq-process (bq-process (cadr x))))
-        ((eq (car x) '*comma*)        (cadr x))
-        ((not (any splice-form-p x))
-         (let ((lc    (lastcdr x))
-               (forms (map bq-bracket1 x)))
-           (if (null lc)
-               (cons 'list forms)
-	       (nconc (cons 'nlist* forms) (list (bq-process lc))))))
-        (t (let ((p x) (q '()))
-             (while (and (consp p)
-                         (not (eq (car p) '*comma*)))
-               (setq q (cons (bq-bracket (car p)) q))
-               (setq p (cdr p)))
-             (cons 'nconc
-                   (cond ((consp p) (nreconc q (list (cadr p))))
-                         ((null p)  (nreverse q))
-                         (t         (nreconc q (list (bq-process p))))))))))
-
- (defun bq-bracket (x)
-  (cond ((atom x)                   (list cons (bq-process x) nil))
-        ((eq (car x) '*comma*)      (list cons (cadr x)       nil))
-        ((eq (car x) '*comma-at*)   (list 'copy-list (cadr x)))
-        ((eq (car x) '*comma-dot*)  (cadr x))
-        (t                          (list cons (bq-process x) nil))))
-
-					; bracket without splicing
- (defun bq-bracket1 (x)
-  (if (and (consp x) (eq (car x) '*comma*))
-      (cadr x)
-      (bq-process x)))")
+ ;; (defun bq-bracket1 (x)
+ ;;  (if (and (consp x) (eq (car x) '*comma*))
+ ;;      (cadr x)
+ ;;     (bq-process x)
+ ;;)) "
+ )
 
 
 
@@ -584,7 +556,8 @@
 	       s
 	       (talk-arduino tty-fd tty-stream
 			     (format nil "~a" s)
-			     :time 0.01d0))))))
+			     :time 0.01d0)))
+      (sleep .03))))
 
 
 (let ((sys (let* ((*readtable* (copy-readtable nil))
@@ -596,5 +569,5 @@
 		      (read-from-string *femto-lisp-system* nil nil :start start))))))
     (dolist (s sys)
       (terpri)
-     (format t "~a" s)
+      (format t "~a" s)
      ))
