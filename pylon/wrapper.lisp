@@ -97,6 +97,43 @@
 		  (cffi:mem-ref framenr :int)
 		  ))))))
 
+(cffi:defcfun ("pylon_wrapper_grab_sf" %grab-sf) :void
+  (cams :pointer)
+  (ww :int)
+  (hh :int)
+  (buf (:pointer :float))
+  (camera (:pointer :int))
+  (success-p (:pointer :int))
+  (w (:pointer :int))
+  (h (:pointer :int))
+  (frame-nr (:pointer :int)))
+
+(defun grab-sf (cams buf)
+  (declare (type (or (array single-float 2)
+		     (simple-array single-float 2)) buf))
+  ;; buf must be displaced to a 1d simple-array or a simple
+  ;; multi-dimensional array
+  (destructuring-bind (h w) (array-dimensions buf)
+    (sb-sys:with-pinned-objects (buf)
+      (let ((bufp (sb-sys:vector-sap 
+		   (handler-case
+		       (sb-ext:array-storage-vector buf)
+		     (simple-error ()
+		       (array-displacement buf))))))
+	(cffi:with-foreign-objects ((cam :int)
+				    (success-p :int)
+				    (wout :int)
+				    (hout :int)
+				    (framenr :int))
+	  (%grab-cdf cams w h bufp
+		 cam success-p wout hout framenr)
+	  (values (cffi:mem-ref cam :int)
+		  (if (= (cffi:mem-ref success-p :int) 1) t nil)
+		  (cffi:mem-ref wout :int)
+		  (cffi:mem-ref hout :int)
+		  (cffi:mem-ref framenr :int)
+		  ))))))
+
 (cffi:defcfun ("pylon_wrapper_grab_store" %grab-store) :void
   (cams :pointer)
   (nfd :int)

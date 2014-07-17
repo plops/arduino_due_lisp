@@ -629,4 +629,67 @@ extern "C" {
       *success_p = -1;
     }
   }
+  void pylon_wrapper_grab_sf(void*cams,int ww,int hh,float * buf,int*camera,int*success_p,int*w,int*h,int*framenr)
+  {
+    try{
+      CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
+      if(cameras->IsGrabbing()){
+	CGrabResultPtr ptrGrabResult;
+	cameras->RetrieveResult( 5000, ptrGrabResult, TimeoutHandling_ThrowException);
+	// context allows to determine which camera produced the grab result
+	intptr_t cameraContextValue = ptrGrabResult->GetCameraContext();
+	*camera = cameraContextValue;
+	cout << "Camera " <<  cameraContextValue << ": " << (*cameras)[ cameraContextValue ].GetDeviceInfo().GetFullName() << endl;
+	cout << "GrabSucceeded: " << ptrGrabResult->GrabSucceeded() 
+	     << " fnr=" << ptrGrabResult->GetFrameNumber() 
+	     << " ts=" << ptrGrabResult->GetTimeStamp()  
+	     << " id=" << ptrGrabResult->GetID()  
+	     << " inr=" << ptrGrabResult->GetImageNumber()  
+	     << " skip=" << ptrGrabResult->GetNumberOfSkippedImages()  << endl;
+
+	*success_p = ptrGrabResult->GrabSucceeded();
+	*framenr = ptrGrabResult->GetFrameNumber();
+	if(!ptrGrabResult->GrabSucceeded()){
+	  std::cout << "Error: " << ptrGrabResult->GetErrorCode() << " " << ptrGrabResult->GetErrorDescription();
+	  *camera = -1;
+	  *w = -1;
+	  *h = -1;
+	  *success_p = -1;
+	  *framenr = -1;
+	  return;
+	}
+	cout << "SizeX: " << ptrGrabResult->GetWidth() << endl;
+	cout << "SizeY: " << ptrGrabResult->GetHeight() << endl;
+	const uint8_t *pImageBuffer = (uint8_t *) ptrGrabResult->GetBuffer();
+	cout << "Gray value of first pixel: " << (uint32_t) pImageBuffer[0] << endl << endl;
+
+	*w = ptrGrabResult->GetWidth();
+	*h = ptrGrabResult->GetHeight();
+	if (ww<*w)
+	  printf("width of input array not sufficient");
+	if (hh<*h)
+	  printf("height of input array not sufficient");
+	int i,j;
+	// convert mono12p into real part of complex double float
+	// i .. index for byte
+	// j .. index for 12bit
+	for(i=0,j=0;j< (*w)*(*h);i+=3,j+=2) {
+	  unsigned char 
+	    ab = pImageBuffer[i],
+	    c = pImageBuffer[i+1] & 0x0f,
+	    d = (pImageBuffer[i+1] & 0xf0)>>4,
+	    ef = pImageBuffer[i+2];
+	  buf[j] = 1.0*((ab<<4)+d);
+	  buf[j+1] = 1.0*((ef<<4)+c);
+	}
+      }
+    }
+    catch (GenICam::GenericException& e) {
+      printf( "Exception caught in %s msg=%s\n",__func__, e.what());
+      *camera = -1;
+      *w = -1;
+      *h = -1;
+      *success_p = -1;
+    }
+  }
 }
