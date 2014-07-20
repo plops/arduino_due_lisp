@@ -704,22 +704,21 @@ rectangular, for alpha=1 Hann window."
 								(d (.linear (elt (first *dark*) cam)))
 								(s (.linear *buf-s*)))
 							    (declare (type (simple-array single-float 1) s w d))
-							    (bla s d w (length d))
-							    #+nil (subtract-bg-and-multiply-window1 s d w)))
+							    (subtract-bg-and-multiply-window1 s d w)))
 							#+nil
 							(format t "max ~a~%" (reduce #'(lambda (x y) (max (realpart x) (realpart y)))
 										     (make-array (* h w)
 												 :element-type '(complex double-float)
 												 :displaced-to *buf-cs*)))
-							#+nil (fftw::rftf *buf-s* :out-arg *out-cs* :w w :h h :flag fftw::+measure+)
-							#+nil (let* ((q (make-array (list h w)
+							(fftw::rftf *buf-s* :out-arg *out-cs* :w w :h h :flag fftw::+measure+)
+							(let* ((q (make-array (list h w)
 										    :element-type '(complex single-float)
 										    :displaced-to *out-cs*))
-								     (v 1d0))
-								#+nil (format t "~a~%" (list j yj))
-								(push (list j yj ji yji v
-									    (extract q :x x :y y :w d :h d)) 
-								      (aref *bla* cam)))))
+							       (v 1d0))
+							  #+nil (format t "~a~%" (list j yj))
+							  (push (list j yj ji yji v
+								      (extract q :x x :y y :w d :h d)) 
+								(aref *bla* cam)))))
 					;(format t "acquisition error.~%")
 						    ))))))
  ;			       )
@@ -739,7 +738,7 @@ rectangular, for alpha=1 Hann window."
 	      (loop for j from 400 below 2900 by step do
 		   (incf count)))
 	 (list count
-	       (/ count 3.9)))) ; => 121 fps
+	       (/ count 7.06)))) ; => 67 fps
 #+nil
 (time (run-several-s))
 
@@ -760,29 +759,6 @@ rectangular, for alpha=1 Hann window."
 
 #+nil
 (/ (* 475 3 512 512) 17.29)
-
-
-(defun bla (a b c n)
-  (declare (type (simple-array single-float 1) a b c)
-	   (type fixnum n)
-	   (optimize (speed 3) (safety 1) (debug 0))
-	   (values (simple-array single-float 1) &optional))
-  (dotimes (i n)
-    (setf (aref a i) (* (aref c i)
-			(- (aref a i) (aref b i)))))
-  a)
-
-#+nil
-(let* ((n (* 512 512))
-       (a (make-array n :element-type 'single-float))
-       (b (make-array n :element-type 'single-float))
-       (c (make-array n :element-type 'single-float)))
-  (declare (type (simple-array single-float 1) a b c))
-  (time (sb-sprof:with-profiling (:max-samples 1000
-					  :report :flat
-					  :loop nil)
-     (dotimes (i (* 3 475)) (bla a b c n))))
-  nil)
 
 #+nil
 (time
