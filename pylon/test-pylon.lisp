@@ -659,7 +659,7 @@ rectangular, for alpha=1 Hann window."
 		 count)))
     (unwind-protect 
 	 (progn
-	   (pylon:start-grabbing *cams*)
+	   ;(pylon:start-grabbing *cams*)
 	   (let ((th (sb-thread:make-thread 
 		      #'(lambda ()
 			  (progn
@@ -667,40 +667,43 @@ rectangular, for alpha=1 Hann window."
 			    (loop for yj from 1800 below 3700 by step and yji from 0 collect
 				 (loop for j from 400 below 2900 by step and ji from 0 collect
 				      (loop for i below 3 do
-					   (destructuring-bind (cam success-p w h framenr) 
-					       (multiple-value-list (pylon::grab-sf *cams* *buf-s*))
-					     (declare (ignorable framenr))
-					     (if success-p
-						 (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
-						     (get-cam-parameters cam)
-						   (declare (ignorable id binx biny ox oy d g e name))
-						   (assert (= ww w))
-						   (assert (= hh h))
-						   (when (and *dark* *win*)
-						     (subtract-bg-and-multiply-window
-						      *buf-s* (elt (first *dark*) cam)
-						      (elt *win* cam)))
-						   #+nil
-						   (format t "max ~a~%" (reduce #'(lambda (x y) (max (realpart x) (realpart y)))
-										(make-array (* h w)
-											    :element-type '(complex double-float)
-											    :displaced-to *buf-cs*)))
-						   (fftw::rftf *buf-s* :out-arg *out-cs* :w w :h h :flag fftw::+measure+)
-						   (let* ((q (make-array (list h w)
-									 :element-type '(complex single-float)
-									 :displaced-to *out-cs*))
-							  (v 1d0))
-						     (format t "~a~%" (list j yj))
-						     (push (list j yj ji yji v
-								 (extract q :x x :y y :w d :h d)) 
-							   (aref *bla* cam))))
-						 (format t "acquisition error.~%"))))))))
+					   (progn ;destructuring-bind (cam success-p w h framenr) 
+					       ; (multiple-value-list (pylon::grab-sf *cams* *buf-s*))
+					     ;(declare (ignorable framenr))
+					     (progn ;if success-p
+					       (let ((cam 0) (w 512) (h 512))
+						(destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+						    (get-cam-parameters cam)
+						  (declare (ignorable id binx biny ox oy d g e name))
+						  (assert (= ww w))
+						  (assert (= hh h))
+						  (when (and *dark* *win*)
+						    (subtract-bg-and-multiply-window
+						     *buf-s* (elt (first *dark*) cam)
+						     (elt *win* cam)))
+						  #+nil
+						  (format t "max ~a~%" (reduce #'(lambda (x y) (max (realpart x) (realpart y)))
+									       (make-array (* h w)
+											   :element-type '(complex double-float)
+											   :displaced-to *buf-cs*)))
+						  (fftw::rftf *buf-s* :out-arg *out-cs* :w w :h h :flag fftw::+measure+)
+						  (let* ((q (make-array (list h w)
+									:element-type '(complex single-float)
+									:displaced-to *out-cs*))
+							 (v 1d0))
+						    (format t "~a~%" (list j yj))
+						    (push (list j yj ji yji v
+								(extract q :x x :y y :w d :h d)) 
+							  (aref *bla* cam)))))
+						 ;(format t "acquisition error.~%")
+					       )))))))
 		      :name "camera-acquisition")))
 	     (sleep .001)
-	     (time
+ #+nil	     (time
 	      (trigger-all-cameras-seq count :delay-ms 59))
 	     (sb-thread:join-thread th)))
-      (pylon:stop-grabbing *cams*))))
+   ;   (pylon:stop-grabbing *cams*)
+      )))
 
 #+nil
 (progn (let ((count 0)
@@ -709,7 +712,7 @@ rectangular, for alpha=1 Hann window."
 	      (loop for j from 400 below 2900 by step do
 		   (incf count)))
 	 (list count
-	       (/ count 28s0)))) ; => 16.9 fps
+	       (/ count 18.5s0)))) ; => 16.9 fps
 #+nil
 (time (run-several-s))
 
