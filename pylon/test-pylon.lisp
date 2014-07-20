@@ -287,28 +287,26 @@
 (dotimes (i 3)
   (pylon:set-value-e *cams* i "TriggerMode" 0))
 
-(defparameter *buf-c1* nil)
-(defparameter *buf-c* nil)
-(defparameter *out-cs1* nil)
-(defparameter *out-cs* nil)
-(defparameter *out-c1* nil)
-(defparameter *out-c* nil)
-(defparameter *buf-s1* nil)
-(defparameter *buf-s* nil)
 
 (let ((w 580)
       (h 580))
-  (setf *buf-c1* (make-array (* w h) :element-type '(complex double-float)))
-  (setf *out-cs1* (make-array (* w h) :element-type '(complex single-float)))
-  (setf *buf-c* (make-array (list h w) :element-type '(complex double-float)
+  (defparameter *buf-c1* (make-array (* w h) :element-type '(complex double-float)))
+  (defparameter *out-cs1* (make-array (* w h) :element-type '(complex single-float)))
+  (defparameter *buf-c* (make-array (list h w) :element-type '(complex double-float)
 				    :displaced-to *buf-c1*))
-  (setf *out-c* (make-array (list h w) :element-type '(complex double-float)
+  (defparameter *out-c* (make-array (list h w) :element-type '(complex double-float)
 				    :displaced-to *out-c1*))
-  (setf *out-cs* (make-array (list h w) :element-type '(complex single-float)
+  (defparameter *out-cs* (make-array (list h w) :element-type '(complex single-float)
 			    :displaced-to *out-cs1*))
-  (setf *buf-s1* (make-array (* w h) :element-type 'single-float))
-  (setf *buf-s* (make-array (list h w) :element-type 'single-float))
+  (defparameter *buf-s1* (make-array (* w h) :element-type 'single-float))
+  (defparameter *buf-s* (make-array (list h w) :element-type 'single-float))
   nil)
+
+(declaim (type (simple-array (complex single-float) 1) *out-cs1*)
+	 (type (simple-array single-float 1) *out-s1*)
+	 (type (array (complex single-float) 2) *out-cs*)
+	 (type (array single-float 2) *out-s*))
+
 
 #+nil
 (pylon:start-grabbing *cams*)
@@ -660,8 +658,7 @@ rectangular, for alpha=1 Hann window."
 	     (sb-thread:join-thread th)))
       (pylon:stop-grabbing *cams*))))
 
-#+nil
-(time (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 512 :h 512 :flag fftw::+measure+) nil))
+#+nil(time (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 512 :h 512 :flag fftw::+measure+) nil))
 
 #+nil
 (defun run-several-s ()
@@ -707,7 +704,8 @@ rectangular, for alpha=1 Hann window."
 								(d (.linear (elt (first *dark*) cam)))
 								(s (.linear *buf-s*)))
 							    (declare (type (simple-array single-float 1) s w d))
-							    (subtract-bg-and-multiply-window1 s d w)))
+							    (bla s d w (length d))
+							    #+nil (subtract-bg-and-multiply-window1 s d w)))
 							#+nil
 							(format t "max ~a~%" (reduce #'(lambda (x y) (max (realpart x) (realpart y)))
 										     (make-array (* h w)
@@ -718,7 +716,7 @@ rectangular, for alpha=1 Hann window."
 										    :element-type '(complex single-float)
 										    :displaced-to *out-cs*))
 								     (v 1d0))
-								(format t "~a~%" (list j yj))
+								#+nil (format t "~a~%" (list j yj))
 								(push (list j yj ji yji v
 									    (extract q :x x :y y :w d :h d)) 
 								      (aref *bla* cam)))))
@@ -741,7 +739,7 @@ rectangular, for alpha=1 Hann window."
 	      (loop for j from 400 below 2900 by step do
 		   (incf count)))
 	 (list count
-	       (/ count 9.719)))) ; => 34 fps
+	       (/ count 3.9)))) ; => 121 fps
 #+nil
 (time (run-several-s))
 
