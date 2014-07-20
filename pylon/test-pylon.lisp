@@ -393,8 +393,7 @@ rectangular, for alpha=1 Hann window."
 
 (declaim (optimize (speed 3)))
 
-(defun subtract-bg-and-mul
-tiply-window (a bg win)
+(defun subtract-bg-and-multiply-window (a bg win)
   "calculate win*(a-bg) and return result in a"
   (declare (type (array single-float 2) a bg win)
 	   (values (array single-float 2) &optional)
@@ -410,6 +409,17 @@ tiply-window (a bg win)
       (setf (aref a1 i) (* (aref w1 i)
 			   (- (aref a1 i) (aref b1 i)))))
     a))
+
+(defun subtract-bg-and-multiply-window1 (a bg win)
+  "calculate win*(a-bg) and return result in a"
+  (declare (type (simple-array single-float 1) a bg win)
+	   (values (simple-array single-float 1) &optional)
+	   (optimize (speed 3)))
+  (let ((n (min (length a) (length bg) (length win))))
+   (dotimes (i n)
+     (setf (aref a i) (* (aref win i)
+			 (- (aref a i) (aref bg i))))))
+  a)
 
 (defparameter *win* nil)
 
@@ -624,9 +634,10 @@ tiply-window (a bg win)
 						   (assert (= ww w))
 						   (assert (= hh h))
 						   (when (and *dark* *win*)
-						     (subtract-bg-and-multiply-window
-						      *buf-c* (elt (first *dark*) cam)
-						      (elt *win* cam)))
+						     (subtract-bg-and-multiply-window1
+						      (.linear *buf-c*)
+						      (.linear (elt (first *dark*) cam))
+						      (.linear (elt *win* cam))))
 						   #+nil
 						   (format t "max ~a~%" (reduce #'(lambda (x y) (max (realpart x) (realpart y)))
 										(make-array (* h w)
@@ -672,48 +683,54 @@ tiply-window (a bg win)
     (unwind-protect 
 	 (progn
 	 ;  (pylon:start-grabbing *cams*)
-	   (let ((th (sb-thread:make-thread 
-		      #'(lambda ()
-			  (progn
+	   (let ((th (progn ;sb-thread:make-thread 
+			    
+			    
+			    ;#'(lambda ()
+			       (progn
 					;(tilt-mirror j yj)
-			    (loop for yj from 1800 below 3700 by step and yji from 0 collect
-				 (loop for j from 400 below 2900 by step and ji from 0 collect
-				      (loop for i below 3 do
-					   (progn ;destructuring-bind (cam success-p w h framenr) 
-					       ; (multiple-value-list (pylon::grab-sf *cams* *buf-s*))
-					     ;(declare (ignorable framenr))
-					     (progn ;if success-p
-					       (let ((cam 0) (w 512) (h 512))
-						(destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
-						    (get-cam-parameters cam)
-						  (declare (ignorable id binx biny ox oy d g e name))
-						  (assert (= ww w))
-						  (assert (= hh h))
-						  (when (and *dark* *win*)
-						    (subtract-bg-and-multiply-window
-						     *buf-s* (elt (first *dark*) cam)
-						     (elt *win* cam)))
-						  #+nil
-						  (format t "max ~a~%" (reduce #'(lambda (x y) (max (realpart x) (realpart y)))
-									       (make-array (* h w)
-											   :element-type '(complex double-float)
-											   :displaced-to *buf-cs*)))
-						  (fftw::rftf *buf-s* :out-arg *out-cs* :w w :h h :flag fftw::+measure+)
-						  (let* ((q (make-array (list h w)
-									:element-type '(complex single-float)
-									:displaced-to *out-cs*))
-							 (v 1d0))
-						    (format t "~a~%" (list j yj))
-						    (push (list j yj ji yji v
-								(extract q :x x :y y :w d :h d)) 
-							  (aref *bla* cam)))))
-						 ;(format t "acquisition error.~%")
-					       )))))))
-		      :name "camera-acquisition")))
-	     (sleep .001)
+				 (loop for yj from 1800 below 3700 by step and yji from 0 collect
+				      (loop for j from 400 below 2900 by step and ji from 0 collect
+					   (loop for i below 3 do
+						(progn ;destructuring-bind (cam success-p w h framenr) 
+					; (multiple-value-list (pylon::grab-sf *cams* *buf-s*))
+					;(declare (ignorable framenr))
+						  (progn ;if success-p
+						    (let ((cam 0) (w 512) (h 512))
+						      (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+							  (get-cam-parameters cam)
+							(declare (ignorable id binx biny ox oy d g e name))
+							(assert (= ww w))
+							(assert (= hh h))
+							(when (and *dark* *win*)
+							  (let ((w (.linear (elt *win* cam)))
+								(d (.linear (elt (first *dark*) cam)))
+								(s (.linear *buf-s*)))
+							    (declare (type (simple-array single-float 1) s w d))
+							    (subtract-bg-and-multiply-window1 s d w)))
+							#+nil
+							(format t "max ~a~%" (reduce #'(lambda (x y) (max (realpart x) (realpart y)))
+										     (make-array (* h w)
+												 :element-type '(complex double-float)
+												 :displaced-to *buf-cs*)))
+							#+nil (fftw::rftf *buf-s* :out-arg *out-cs* :w w :h h :flag fftw::+measure+)
+							#+nil (let* ((q (make-array (list h w)
+										    :element-type '(complex single-float)
+										    :displaced-to *out-cs*))
+								     (v 1d0))
+								(format t "~a~%" (list j yj))
+								(push (list j yj ji yji v
+									    (extract q :x x :y y :w d :h d)) 
+								      (aref *bla* cam)))))
+					;(format t "acquisition error.~%")
+						    ))))))
+ ;			       )
+			    :name "camera-acquisition")))
+	;     (sleep .001)
  #+nil	     (time
 	      (trigger-all-cameras-seq count :delay-ms 59))
-	     (sb-thread:join-thread th)))
+ ;	     (sb-thread:join-thread th)
+ ))
    ;   (pylon:stop-grabbing *cams*)
       )))
 
@@ -724,7 +741,7 @@ tiply-window (a bg win)
 	      (loop for j from 400 below 2900 by step do
 		   (incf count)))
 	 (list count
-	       (/ count 13.85)))) ; => 34 fps
+	       (/ count 9.719)))) ; => 34 fps
 #+nil
 (time (run-several-s))
 
@@ -742,6 +759,32 @@ tiply-window (a bg win)
 
 #+nil
 (require :sb-sprof)
+
+#+nil
+(/ (* 475 3 512 512) 17.29)
+
+
+(defun bla (a b c n)
+  (declare (type (simple-array single-float 1) a b c)
+	   (type fixnum n)
+	   (optimize (speed 3) (safety 1) (debug 0))
+	   (values (simple-array single-float 1) &optional))
+  (dotimes (i n)
+    (setf (aref a i) (* (aref c i)
+			(- (aref a i) (aref b i)))))
+  a)
+
+#+nil
+(let* ((n (* 512 512))
+       (a (make-array n :element-type 'single-float))
+       (b (make-array n :element-type 'single-float))
+       (c (make-array n :element-type 'single-float)))
+  (declare (type (simple-array single-float 1) a b c))
+  (time (sb-sprof:with-profiling (:max-samples 1000
+					  :report :flat
+					  :loop nil)
+     (dotimes (i (* 3 475)) (bla a b c n))))
+  nil)
 
 #+nil
 (time
