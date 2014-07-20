@@ -210,6 +210,9 @@
 
 (fftw:prepare-threads)
 
+#+nil
+(fftw::%fftwf_plan_with_nthreads 6)
+
 (pylon:initialize)
 (defparameter *fact* (pylon::factory))
 (defparameter *cams* (pylon:create *fact* 3))
@@ -388,10 +391,14 @@ rectangular, for alpha=1 Hann window."
 #+nil
 (write-pgm8 "/dev/shm/tukey.pgm" (.uint8 (tukey-window2 :w 512)))
 
-(defun subtract-bg-and-multiply-window (a bg win)
+(declaim (optimize (speed 3)))
+
+(defun subtract-bg-and-mul
+tiply-window (a bg win)
   "calculate win*(a-bg) and return result in a"
   (declare (type (array single-float 2) a bg win)
-	   (values (array single-float 2) &optional))
+	   (values (array single-float 2) &optional)
+	   (optimize (speed 3)))
   (let* ((a1 (.linear a))
 	 (b1 (.linear bg))
 	 (w1 (.linear win))
@@ -648,8 +655,11 @@ rectangular, for alpha=1 Hann window."
 #+nil
 (defun run-several-s ()
   ;; make sure the fft can has an optimized plan
-  (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 580 :h 580 :flag fftw::+measure+) nil)
-  (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 512 :h 512 :flag fftw::+measure+) nil)
+  (time
+   (progn 
+     (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 580 :h 580 :flag fftw::+measure+) nil)
+     (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 512 :h 512 :flag fftw::+measure+) nil)))
+  
   (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
   (dotimes (i 3)
     (pylon:set-value-e *cams* i "TriggerMode" 1))
@@ -661,7 +671,7 @@ rectangular, for alpha=1 Hann window."
 		 count)))
     (unwind-protect 
 	 (progn
-	   ;(pylon:start-grabbing *cams*)
+	 ;  (pylon:start-grabbing *cams*)
 	   (let ((th (sb-thread:make-thread 
 		      #'(lambda ()
 			  (progn
@@ -679,7 +689,7 @@ rectangular, for alpha=1 Hann window."
 						  (declare (ignorable id binx biny ox oy d g e name))
 						  (assert (= ww w))
 						  (assert (= hh h))
-						  #+nil (when (and *dark* *win*)
+						  (when (and *dark* *win*)
 						    (subtract-bg-and-multiply-window
 						     *buf-s* (elt (first *dark*) cam)
 						     (elt *win* cam)))
@@ -714,7 +724,7 @@ rectangular, for alpha=1 Hann window."
 	      (loop for j from 400 below 2900 by step do
 		   (incf count)))
 	 (list count
-	       (/ count 3.025)))) ; => 16.9 fps
+	       (/ count 13.85)))) ; => 34 fps
 #+nil
 (time (run-several-s))
 
