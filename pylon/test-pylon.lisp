@@ -734,7 +734,7 @@ rectangular, for alpha=1 Hann window."
 	(sb-sprof:with-profiling (:max-samples 1000
                                        :report :flat
                                        :loop nil)
-	  (run-several))
+	  (run-several-s))
 	(format t "~a~%" (multiple-value-list (get-decoded-time)))))
 
 (defun make-camera-buffer (cam) 
