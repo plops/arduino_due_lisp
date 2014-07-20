@@ -364,7 +364,8 @@ rectangular, for alpha=1 Hann window."
 		   (* .5s0 (+ 1s0 (cos (* (coerce pi 'single-float) (+ (/ (* 2s0 n)
 						     (* alpha n-1))
 						  (/ -2.0s0 alpha)
-						  1s0)))))))))
+						  1s0))))))
+		  (t 0s0))))
     w))
 #+nil
 (step (tukey-window 64))
@@ -458,6 +459,7 @@ rectangular, for alpha=1 Hann window."
 			     (loop for i below 3 do
 				  (destructuring-bind (cam success-p w h framenr) 
 				      (multiple-value-list (pylon::grab-store *cams* fds))
+				   (declare (ignorable w h framenr))
 				    (unless (= 1 success-p)
 				      (format t "acquisition error. ~a~%" success-p))))))
 		       :name "camera-acquisition")))
@@ -677,7 +679,7 @@ rectangular, for alpha=1 Hann window."
 						  (declare (ignorable id binx biny ox oy d g e name))
 						  (assert (= ww w))
 						  (assert (= hh h))
-						  (when (and *dark* *win*)
+						  #+nil (when (and *dark* *win*)
 						    (subtract-bg-and-multiply-window
 						     *buf-s* (elt (first *dark*) cam)
 						     (elt *win* cam)))
@@ -712,7 +714,7 @@ rectangular, for alpha=1 Hann window."
 	      (loop for j from 400 below 2900 by step do
 		   (incf count)))
 	 (list count
-	       (/ count 18.5s0)))) ; => 16.9 fps
+	       (/ count 3.025)))) ; => 16.9 fps
 #+nil
 (time (run-several-s))
 
