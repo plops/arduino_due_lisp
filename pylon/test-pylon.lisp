@@ -22,7 +22,15 @@
   (asdf:load-system "pylon")
   (asdf:load-system "ics")
   (asdf:load-system "arduino-serial-sbcl")
-  (asdf:load-system "image-processing"))
+  (asdf:load-system "image-processing")
+  
+
+  (ql:quickload "eager-future2")
+  )
+
+#+nil
+(eager-future2:yield (eager-future2:pcall  #'(lambda () (+ 3 4))
+					 :eager))
 
 (defpackage :pylon-test
   (:use :cl :cffi :image-processing))
@@ -690,37 +698,36 @@ rectangular, for alpha=1 Hann window."
 					       (multiple-value-list (pylon::grab-sf *cams* *buf-s*))
 					     (declare (ignorable framenr))
 					     (if success-p
-						 (let ((cam 0) (w 512) (h 512))
-						   (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
-						       (get-cam-parameters cam)
-						     (declare (ignorable id binx biny ox oy d g e name))
-						     (assert (= ww w))
-						     (assert (= hh h))
-						     (when (and *dark* *win*)
-						       (let ((w (.linear (elt *win* cam)))
-							     (d (.linear (elt (first *dark*) cam)))
-							     (s (.linear *buf-s*)))
-							 (declare (type (simple-array single-float 1) s w d))
-							 (subtract-bg-and-multiply-window1 s d w)))
-						     #+nil
-						     (format t "max ~a~%" (reduce #'(lambda (x y) (max (realpart x) (realpart y)))
-										  (make-array (* h w)
-											      :element-type '(complex double-float)
-											      :displaced-to *buf-cs*)))
-						     (fftw::rftf *buf-s* :out-arg *out-cs* :w w :h h :flag fftw::+measure+)
-						     (let* ((q (make-array (list h w)
-									   :element-type '(complex single-float)
-									   :displaced-to *out-cs*))
-							    (v 1d0))
-						       #+nil (format t "~a~%" (list j yj))
-						       (push (list j yj ji yji v
-								   (extract q :x x :y y :w d :h d)) 
-							     (aref *bla* cam)))))
+						 (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+						     (get-cam-parameters cam)
+						   (declare (ignorable id binx biny ox oy d g e name))
+						   (assert (= ww w))
+						   (assert (= hh h))
+						   (when (and *dark* *win*)
+						     (let ((w (.linear (elt *win* cam)))
+							   (d (.linear (elt (first *dark*) cam)))
+							   (s (.linear *buf-s*)))
+						       (declare (type (simple-array single-float 1) s w d))
+						       (subtract-bg-and-multiply-window1 s d w)))
+						   #+nil
+						   (format t "max ~a~%" (reduce #'(lambda (x y) (max (realpart x) (realpart y)))
+										(make-array (* h w)
+											    :element-type '(complex double-float)
+											    :displaced-to *buf-cs*)))
+						   (fftw::rftf *buf-s* :out-arg *out-cs* :w w :h h :flag fftw::+measure+)
+						   (let* ((q (make-array (list h w)
+									 :element-type '(complex single-float)
+									 :displaced-to *out-cs*))
+							  (v 1d0))
+						     #+nil (format t "~a~%" (list j yj))
+						     (push (list j yj ji yji v
+								 (extract q :x x :y y :w d :h d)) 
+							   (aref *bla* cam))))
 						 (format t "acquisition error.~%")
 						 )))))))
 		      :name "camera-acquisition")))
 	     (sleep .001)
-	     (trigger-all-cameras-seq count :delay-ms 39)
+	     (trigger-all-cameras-seq count :delay-ms 29)
 	     (sb-thread:join-thread th)))
       (pylon:stop-grabbing *cams*))))
 
@@ -734,6 +741,8 @@ rectangular, for alpha=1 Hann window."
 	       (/ count 19.164)))) ; => 24.8 fps
 #+nil
 (time (run-several-s))
+
+(/ 1000 40)
 
 #+nil
 (DOTIMES (i 3)
