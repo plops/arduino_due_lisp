@@ -125,7 +125,7 @@
 				    (wout :int)
 				    (hout :int)
 				    (framenr :int))
-	  (%grab-cdf cams w h bufp
+	  (%grab-sf cams w h bufp
 		 cam success-p wout hout framenr)
 	  (values (cffi:mem-ref cam :int)
 		  (if (= (cffi:mem-ref success-p :int) 1) t nil)

@@ -286,18 +286,26 @@
 
 (defparameter *buf-c1* nil)
 (defparameter *buf-c* nil)
+(defparameter *out-cs1* nil)
+(defparameter *out-cs* nil)
 (defparameter *out-c1* nil)
 (defparameter *out-c* nil)
+(defparameter *buf-s1* nil)
+(defparameter *buf-s* nil)
 
 (let ((w 580)
       (h 580))
   (setf *buf-c1* (make-array (* w h) :element-type '(complex double-float)))
-  (setf *out-c1* (make-array (* w h) :element-type '(complex double-float)))
+  (setf *out-cs1* (make-array (* w h) :element-type '(complex single-float)))
   (setf *buf-c* (make-array (list h w) :element-type '(complex double-float)
 				    :displaced-to *buf-c1*))
   (setf *out-c* (make-array (list h w) :element-type '(complex double-float)
 				    :displaced-to *out-c1*))
-  )
+  (setf *out-cs* (make-array (list h w) :element-type '(complex single-float)
+			    :displaced-to *out-cs1*))
+  (setf *buf-s1* (make-array (* w h) :element-type 'single-float))
+  (setf *buf-s* (make-array (list h w) :element-type 'single-float))
+  nil)
 
 #+nil
 (pylon:start-grabbing *cams*)
@@ -335,36 +343,39 @@
 
 
 
-(defun tukey-window (nn &key (alpha .9d0))
+(defun tukey-window (nn &key (alpha .9s0))
   "The Tukey window,[8][39] also known as the tapered cosine window,
 can be regarded as a cosine lobe of width alpha N/2 that is convolved
 with a rectangular window of width (1 - alpha/2)N. For alpha=0
 rectangular, for alpha=1 Hann window."
   (declare (type (unsigned-byte 32) nn)
-	   (type double-float alpha)
-	   (values (simple-array double-float 1) &optional))
-  (let ((w (make-array nn :element-type 'double-float))
+	   (type single-float alpha)
+	   (values (simple-array single-float 1) &optional))
+  (let ((w (make-array nn :element-type 'single-float :initial-element 0s0))
 	(n-1 (- nn 1)))
     (dotimes (n nn)
       (setf (aref w n)
-	    (cond ((<= 0 n (* alpha .5 n-1))
-		   (* .5 (+ 1 (cos (* pi (- (/ (* 2 n)
-					       (* alpha n-1)) 1))))))
-		  ((<= (* alpha .5 n-1) n (* n-1 (- 1 (* .5 alpha))))
-		   1d0)
-		  ((<= (* n-1 (- 1 (* .5 alpha))) n n-1)
-		   (* .5 (+ 1 (cos (* pi (+ (/ (* 2 n)
-					       (* alpha n-1))
-					    (/ -2d0 alpha)
-					    1)))))))))
+	    (cond ((<= 0s0 n (* alpha .5s0 n-1))
+		   (* .5s0 (+ 1s0 (cos (* (coerce pi 'single-float) (- (/ (* 2s0 n)
+						     (* alpha n-1)) 1s0))))))
+		  ((<= (* alpha .5s0 n-1) n (* n-1 (- 1s0 (* .5s0 alpha))))
+		   1.0s0)
+		  ((<= (* n-1 (- 1 (* .5s0 alpha))) n n-1)
+		   (* .5s0 (+ 1s0 (cos (* (coerce pi 'single-float) (+ (/ (* 2s0 n)
+						     (* alpha n-1))
+						  (/ -2.0s0 alpha)
+						  1s0)))))))))
     w))
+#+nil
+(step (tukey-window 64))
 
 
 
-(defun tukey-window2 (&key (w 100) (h w) (alpha-x .2d0) (alpha-y alpha-x))
+
+(defun tukey-window2 (&key (w 100) (h w) (alpha-x .2s0) (alpha-y alpha-x))
   (declare (type (unsigned-byte 32) w h)
-	   (values (simple-array double-float 2) &optional))
-  (let ((b (make-array (list h w) :element-type 'double-float))
+	   (values (simple-array single-float 2) &optional))
+  (let ((b (make-array (list h w) :element-type 'single-float))
 	(wh (tukey-window h :alpha alpha-y))
 	(ww (tukey-window w :alpha alpha-x)))
     (dotimes (j h)
@@ -372,23 +383,21 @@ rectangular, for alpha=1 Hann window."
 	(setf (aref b j i) (* (aref wh j)
 			      (aref ww i)))))
     b))
-
+ 
 #+nil
 (write-pgm8 "/dev/shm/tukey.pgm" (.uint8 (tukey-window2 :w 512)))
 
 (defun subtract-bg-and-multiply-window (a bg win)
   "calculate win*(a-bg) and return result in a"
-  (declare (type (array (complex double-float) 2) a)
-	   (type (array double-float 2) bg win)
-	   (values (array (complex double-float) 2) &optional))
+  (declare (type (array single-float 2) a bg win)
+	   (values (array single-float 2) &optional))
   (let* ((a1 (.linear a))
 	 (b1 (.linear bg))
 	 (w1 (.linear win))
 	 (n (min (array-total-size a)
 		 (array-total-size bg)
 		 (array-total-size win))))
-    (declare (type (simple-array (complex double-float) 1) a1)
-	     (type (simple-array double-float 1) b1 w1))
+    (declare (type (simple-array single-float 1) a1 b1 w1))
     (dotimes (i n)
       (setf (aref a1 i) (* (aref w1 i)
 			   (- (aref a1 i) (aref b1 i)))))
@@ -396,12 +405,14 @@ rectangular, for alpha=1 Hann window."
 
 (defparameter *win* nil)
 
-(defun create-windows (darks &key (alpha-x .2d0) (alpha-y alpha-x))
+(defun create-windows (darks &key (alpha-x .2) (alpha-y alpha-x))
   (setf *win*
 	(loop for e in darks collect
 	     (destructuring-bind (h w) (array-dimensions e)
 	       (tukey-window2 :w w :h h :alpha-x alpha-x :alpha-y alpha-y))))
   nil)
+
+(declaim (optimize (speed 0) (debug 3) (safety 3)))
 
 #+nil
 (create-windows (first *dark*))
@@ -488,6 +499,7 @@ rectangular, for alpha=1 Hann window."
 				   (loop for i below 3 do
 					(destructuring-bind (cam success-p w h framenr) 
 					    (multiple-value-list (pylon::grab-store *cams* fds))
+					  (declare (ignorable cam w h framenr))
 					  (unless (= 1 success-p)
 					    (format t "acquisition error. ~a~%" success-p)))))))
 		     :name "camera-acquisition")))
@@ -535,6 +547,7 @@ rectangular, for alpha=1 Hann window."
 				      (loop for i below 3 do
 					   (destructuring-bind (cam success-p w h framenr) 
 					       (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
+					     (declare (ignorable framenr))
 					     (if success-p
 						 (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
 						     (get-cam-parameters cam)
@@ -628,14 +641,77 @@ rectangular, for alpha=1 Hann window."
       (pylon:stop-grabbing *cams*))))
 
 #+nil
+(time (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 512 :h 512 :flag fftw::+measure+) nil))
+
+#+nil
+(defun run-several-s ()
+  ;; make sure the fft can has an optimized plan
+  (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 580 :h 580 :flag fftw::+measure+) nil)
+  (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 512 :h 512 :flag fftw::+measure+) nil)
+  (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
+  (dotimes (i 3)
+    (pylon:set-value-e *cams* i "TriggerMode" 1))
+  (let* ((step 100)
+	(count (let ((count 0))
+		 (loop for yj from 1800 below 3700 by step do
+		      (loop for j from 400 below 2900 by step do
+			   (incf count)))
+		 count)))
+    (unwind-protect 
+	 (progn
+	   (pylon:start-grabbing *cams*)
+	   (let ((th (sb-thread:make-thread 
+		      #'(lambda ()
+			  (progn
+					;(tilt-mirror j yj)
+			    (loop for yj from 1800 below 3700 by step and yji from 0 collect
+				 (loop for j from 400 below 2900 by step and ji from 0 collect
+				      (loop for i below 3 do
+					   (destructuring-bind (cam success-p w h framenr) 
+					       (multiple-value-list (pylon::grab-sf *cams* *buf-s*))
+					     (declare (ignorable framenr))
+					     (if success-p
+						 (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+						     (get-cam-parameters cam)
+						   (declare (ignorable id binx biny ox oy d g e name))
+						   (assert (= ww w))
+						   (assert (= hh h))
+						   (when (and *dark* *win*)
+						     (subtract-bg-and-multiply-window
+						      *buf-s* (elt (first *dark*) cam)
+						      (elt *win* cam)))
+						   #+nil
+						   (format t "max ~a~%" (reduce #'(lambda (x y) (max (realpart x) (realpart y)))
+										(make-array (* h w)
+											    :element-type '(complex double-float)
+											    :displaced-to *buf-cs*)))
+						   (fftw::rftf *buf-s* :out-arg *out-cs* :w w :h h :flag fftw::+measure+)
+						   (let* ((q (make-array (list h w)
+									 :element-type '(complex single-float)
+									 :displaced-to *out-cs*))
+							  (v 1d0))
+						     (format t "~a~%" (list j yj))
+						     (push (list j yj ji yji v
+								 (extract q :x x :y y :w d :h d)) 
+							   (aref *bla* cam))))
+						 (format t "acquisition error.~%"))))))))
+		      :name "camera-acquisition")))
+	     (sleep .001)
+	     (time
+	      (trigger-all-cameras-seq count :delay-ms 99))
+	     (sb-thread:join-thread th)))
+      (pylon:stop-grabbing *cams*))))
+
+#+nil
 (progn (let ((count 0)
 	     (step 100))
 	 (loop for yj from 1800 below 3700 by step do
 	      (loop for j from 400 below 2900 by step do
 		   (incf count)))
 	 (list count
-	       (/ count 62.727)))) ; => 7.5 fps
-
+	       (/ count 47.676)))) ; => 9.96 fps
+#+nil
+(time (run-several-s))
 
 #+nil
 (DOTIMES (i 3)
@@ -663,7 +739,8 @@ rectangular, for alpha=1 Hann window."
 
 (defun make-camera-buffer (cam) 
   (destructuring-bind (id binx biny ww hh ox oy x y d g e name) (get-cam-parameters cam)
-    (make-array (list hh ww) :element-type 'double-float :initial-element 0d0)))
+    (declare (ignorable id binx biny ox oy x y d g e name))
+    (make-array (list hh ww) :element-type 'single-float :initial-element 0s0)))
 
 (defun capture-dark-images (&optional (n 10))
   (block-laser)
@@ -679,16 +756,17 @@ rectangular, for alpha=1 Hann window."
 	    (loop for j below n do
 		 (loop for i below 3 do
 		      (destructuring-bind (cam success-p w h framenr) 
-			  (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
+			  (multiple-value-list (pylon::grab-sf *cams* *buf-s*))
+			(declare (ignorable framenr))
 			(if success-p
 			    (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
 				(get-cam-parameters cam)
+			      (declare (ignorable id binx biny ox oy x y d g e name))
 			      (assert (= ww w))
 			      (assert (= hh h))
-			      (let* ((q (.realpart
-					 (make-array (list h w)
-						     :element-type '(complex double-float)
-						     :displaced-to (.linear *buf-c*))))
+			      (let* ((q (make-array (list h w)
+						    :element-type 'single-float
+						    :displaced-to *buf-s1*))
 					;(v (.mean q))
 				     )
 				(.accum (elt cambuf cam) q)
@@ -701,6 +779,9 @@ rectangular, for alpha=1 Hann window."
     (progn (pylon:stop-grabbing *cams*)
 	    (unblock-laser))))
 
+
+#+nil
+(capture-dark-images 300)
 
 #+nil
 (sb-sprof:with-profiling (:max-samples 1000
