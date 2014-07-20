@@ -720,7 +720,7 @@ rectangular, for alpha=1 Hann window."
 						 )))))))
 		      :name "camera-acquisition")))
 	     (sleep .001)
-	     (trigger-all-cameras-seq count :delay-ms 59)
+	     (trigger-all-cameras-seq count :delay-ms 39)
 	     (sb-thread:join-thread th)))
       (pylon:stop-grabbing *cams*))))
 
@@ -731,7 +731,7 @@ rectangular, for alpha=1 Hann window."
 	      (loop for j from 400 below 2900 by step do
 		   (incf count)))
 	 (list count
-	       (/ count 28.67)))) ; => 16.5 fps
+	       (/ count 19.164)))) ; => 24.8 fps
 #+nil
 (time (run-several-s))
 
