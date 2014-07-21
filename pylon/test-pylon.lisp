@@ -24,8 +24,6 @@
   (asdf:load-system "arduino-serial-sbcl")
   (asdf:load-system "image-processing")
   
-
-  (ql:quickload "eager-future2")
   )
 
 
@@ -694,7 +692,7 @@ rectangular, for alpha=1 Hann window."
 		  count)))
     (unwind-protect 
 	 (progn
-	   #+gige (pylon:start-grabbing *cams*)
+	    (pylon:start-grabbing *cams*)
 	   (let ((th (sb-thread:make-thread 
 		      #'(lambda ()
 			  (let ((buf-s (loop for i below 3 collect
@@ -707,9 +705,9 @@ rectangular, for alpha=1 Hann window."
 			     (loop for yj from 1800 below 3700 by step and yji from 0 collect
 				  (loop for j from 400 below 2900 by step and ji from 0 collect
 				       (loop for i below 3 do
-					    (let ((cam i) (w 512) (h 512) (success-p t))
-					;destructuring-bind (cam success-p w h framenr) 
-					      #+gige (multiple-value-list (pylon::grab-sf *cams* *buf-s*))
+					    (;let ((cam i) (w 512) (h 512) (success-p t))
+					     destructuring-bind (cam success-p w h framenr) 
+					       (multiple-value-list (pylon::grab-sf *cams* *buf-s*))
 					      (declare (ignorable framenr))
 					      (if success-p
 						  (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
@@ -756,11 +754,11 @@ rectangular, for alpha=1 Hann window."
 						  (format t "acquisition error.~%")
 						  ))))))))
 		      :name "camera-acquisition")))
-	     #+gige (sleep .001)
-	     #+gige (trigger-all-cameras-seq count :delay-ms 29)
+	      (sleep .001)
+	      (trigger-all-cameras-seq count :delay-ms 29)
 	     (sb-thread:join-thread th)))
-      #+gige (pylon:stop-grabbing *cams*))))
-
+       (pylon:stop-grabbing *cams*))))
+ 
 
 #+nil 
 (setf *features* (union *features* (list :gige)))
@@ -774,7 +772,7 @@ rectangular, for alpha=1 Hann window."
 	      (loop for j from 400 below 2900 by step do
 		   (incf count)))
 	 (list count
-	       (/ count 6.0)))) ; => 79 fps
+	       (/ count 14.4)))) ; => 32 fps
 #+nil
 (time (progn (run-several-s) nil))
 
