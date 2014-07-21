@@ -793,7 +793,7 @@ rectangular, for alpha=1 Hann window."
   (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
   (dotimes (i 3)
     (pylon:set-value-e *cams* i "TriggerMode" 1))
-  (let* ((step 100)
+  (let* ((step 20)
 	 (count (let ((count 0))
 		  (loop for yj from 1800 below 3700 by step do
 		       (loop for j from 400 below 2900 by step do
@@ -848,11 +848,10 @@ rectangular, for alpha=1 Hann window."
 							  (declare (ignorable id binx biny ox oy d g e name))
 							  (fftw::%fftwf_execute (elt plan cam))
 							  
-							  #+nil
-							  (fftw::rftf (elt buf-s cam) :out-arg (elt buf-cs cam)
-								      :w ww :h hh :flag fftw::+measure+)
-							  
-							  #+nil (pylon::%helper-extract-csf )
+									  
+							  (pylon::%helper-extract-csf (sb-sys:vector-sap (sb-ext:array-storage-vector (elt buf-cs cam)))
+										      (sb-sys:vector-sap (sb-ext:array-storage-vector (elt ext-cs cam)))
+										      x y w h 66 66)
 							  #+nil (let* ((q (make-array (list hh ww)
 										      :element-type '(complex single-float)
 										      :displaced-to (elt buf-cs cam)))
@@ -905,7 +904,7 @@ rectangular, for alpha=1 Hann window."
 	      (loop for j from 400 below 2900 by step do
 		   (incf count)))
 	 (list count
-	       (/ count 16.37)))) ; => 29 fps
+	       (/ count 297.17)))) ; => 39.9 fps
 #+nil
 (time (progn (run-several-s) nil))
 
