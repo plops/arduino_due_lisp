@@ -629,8 +629,14 @@ extern "C" {
       *success_p = -1;
     }
   }
-  void pylon_wrapper_grab_sf(void*cams,int ww,int hh,float * buf,int*camera,int*success_p,int*w,int*h,int*framenr)
+  void pylon_wrapper_grab_sf(void*cams,int ww,int hh,float * buf,int*camera,int*success_p,int*w,int*h,int64_t*imagenr,int64_t*timestamp)
   {
+    *camera = -1;
+    *w = -1;
+    *h = -1;
+    *success_p = -1;
+    *imagenr = -1;
+    *timestamp = -1;
     try{
       CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
       if(cameras->IsGrabbing()){
@@ -647,15 +653,13 @@ extern "C" {
 	     << " inr=" << ptrGrabResult->GetImageNumber()  
 	     << " skip=" << ptrGrabResult->GetNumberOfSkippedImages()  << endl;
 
+	*imagenr = ptrGrabResult->GetImageNumber();
+	*timestamp = ptrGrabResult->GetTimeStamp();
+
 	*success_p = ptrGrabResult->GrabSucceeded();
-	*framenr = ptrGrabResult->GetFrameNumber();
+	*imagenr = ptrGrabResult->GetFrameNumber();
 	if(!ptrGrabResult->GrabSucceeded()){
 	  std::cout << "Error: " << ptrGrabResult->GetErrorCode() << " " << ptrGrabResult->GetErrorDescription();
-	  *camera = -1;
-	  *w = -1;
-	  *h = -1;
-	  *success_p = -1;
-	  *framenr = -1;
 	  return;
 	}
 	cout << "SizeX: " << ptrGrabResult->GetWidth() << endl;

@@ -106,7 +106,8 @@
   (success-p (:pointer :int))
   (w (:pointer :int))
   (h (:pointer :int))
-  (frame-nr (:pointer :int)))
+  (image-nr :pointer)
+  (timestamp :pointer))
 
 (defun grab-sf (cams buf)
   (declare (type (or (array single-float 2)
@@ -124,14 +125,16 @@
 				    (success-p :int)
 				    (wout :int)
 				    (hout :int)
-				    (framenr :int))
+				    (imagenr :int64)
+				    (timestamp :int64))
 	  (%grab-sf cams w h bufp
-		 cam success-p wout hout framenr)
+		 cam success-p wout hout imagenr timestamp)
 	  (values (cffi:mem-ref cam :int)
 		  (if (= (cffi:mem-ref success-p :int) 1) t nil)
 		  (cffi:mem-ref wout :int)
 		  (cffi:mem-ref hout :int)
-		  (cffi:mem-ref framenr :int)
+		  (cffi:mem-ref imagenr :int64)
+		  (cffi:mem-ref timestamp :int64)
 		  ))))))
 
 (cffi:defcfun ("pylon_wrapper_grab_store" %grab-store) :void

@@ -765,7 +765,7 @@ rectangular, for alpha=1 Hann window."
 											    :element-type '(complex double-float)
 											    :displaced-to *buf-c*)))
 						   (fftw:ft *buf-c* :out-arg *out-c* :w w :h h :flag fftw::+measure+)
-						   (let* ((q (make-array (list h w)
+						   #+nil (let* ((q (make-array (list h w)
 									 :element-type '(complex double-float)
 									 :displaced-to *out-c*))
 							  (v 1d0))
@@ -803,56 +803,56 @@ rectangular, for alpha=1 Hann window."
 	   (pylon:start-grabbing *cams*)
 	   (let ((buf-s (loop for i below 3 collect  (make-array (list 580 580) :element-type 'single-float)))
 		 (buf-cs (loop for i below 3 collect (make-array (list 580 580) :element-type '(complex single-float)))))
-	     (loop for yj from 1800 below 3700 by step and yji from 0 do
-		  (progn ;sb-sys:without-gcing
-		   (let ((th (sb-thread:make-thread 
-			      #'(lambda ()
-				  (loop for j from 400 below 2900 by step and ji from 0 collect
-				       (loop for i below 3 do
-					    (multiple-value-bind (cam success-p w h framenr) 
-						(pylon::grab-sf *cams* *buf-s*)
-					      (declare (ignorable framenr))
-					      (if success-p
-						  (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
-						      (get-cam-parameters cam)
-						    (declare (ignorable id binx biny ox oy d g e name))
-						    (assert (= ww w))
-						    (assert (= hh h))
-						   
-						    (when (and *dark* *win*)
-						      (let ((win (.linear (elt *win* cam)))
-							    (d (.linear (elt (first *dark*) cam)))
-							    (s (.linear (elt buf-s cam))))
-							(declare (type (simple-array single-float 1) s win d))
-							(sb-sys:with-pinned-objects (win d s)
-							  (pylon::helper-subtract-bg-multiply-window (sb-sys:vector-sap s)
-												     (sb-sys:vector-sap d)
-												     (sb-sys:vector-sap win)
-												     (* w h)))))
-						    (progn
-						      (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
-							  (get-cam-parameters cam)
-							(declare (ignorable id binx biny ox oy d g e name))
-						       
-							(fftw::rftf (elt buf-s cam) :out-arg (elt buf-cs cam)
-								    :w ww :h hh :flag fftw::+measure+)
-							(let* ((q (make-array (list hh ww)
-									      :element-type '(complex single-float)
-									      :displaced-to (elt buf-cs cam)))
-							       (v 1d0))
-							  #+nil (format t "~a~%" (list j yj))
-							  (push 
-							   (list j yj ji yji v
-								 (extract q :x x :y y :w d :h d))
-							   (aref *bla* cam))))
+	     (progn ;sb-sys:without-gcing
+	       (let ((th (sb-thread:make-thread 
+			  #'(lambda ()
+			      (loop for yj from 1800 below 3700 by step and yji from 0 collect
+				   (loop for j from 400 below 2900 by step and ji from 0 collect
+					(loop for i below 3 do
+					     (multiple-value-bind (cam success-p w h framenr) 
+						 (pylon::grab-sf *cams* *buf-s*)
+					       (declare (ignorable framenr))
+					       (if success-p
+						   (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+						       (get-cam-parameters cam)
+						     (declare (ignorable id binx biny ox oy d g e name))
+						     (assert (= ww w))
+						     (assert (= hh h))
 						     
-						      ))
-						  (format t "acquisition error.~%"))))))
-			      :name "camera-acquisition")))
-		     (sleep .001)
-		     (trigger-all-cameras-seq-1d-scan yj :stepi step :delay-ms 24)
-		     (sb-thread:join-thread th)))
-		  (sb-ext:gc :full t))))
+						     #+nil (when (and *dark* *win*)
+						       (let ((win (.linear (elt *win* cam)))
+							     (d (.linear (elt (first *dark*) cam)))
+							     (s (.linear (elt buf-s cam))))
+							 (declare (type (simple-array single-float 1) s win d))
+							 (sb-sys:with-pinned-objects (win d s)
+							   (pylon::helper-subtract-bg-multiply-window (sb-sys:vector-sap s)
+												      (sb-sys:vector-sap d)
+												      (sb-sys:vector-sap win)
+												      (* w h)))))
+						     #+nil (progn
+						       (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+							   (get-cam-parameters cam)
+							 (declare (ignorable id binx biny ox oy d g e name))
+							 
+							 (fftw::rftf (elt buf-s cam) :out-arg (elt buf-cs cam)
+								     :w ww :h hh :flag fftw::+measure+)
+							 (let* ((q (make-array (list hh ww)
+									       :element-type '(complex single-float)
+									       :displaced-to (elt buf-cs cam)))
+								(v 1d0))
+							   #+nil (format t "~a~%" (list j yj))
+							   (push 
+							    (list j yj ji yji v
+								  (extract q :x x :y y :w d :h d))
+							    (aref *bla* cam))))
+						       
+						       ))
+						   (format t "acquisition error.~%")))))))
+			  :name "camera-acquisition")))
+		 (sleep .001)
+		 (trigger-all-cameras-seq-2d-scan :stepj step :stepi step :delay-ms 24)
+		 (sb-thread:join-thread th)))
+	     (sb-ext:gc :full t)))
       (pylon:stop-grabbing *cams*))))
  
 
@@ -907,7 +907,7 @@ rectangular, for alpha=1 Hann window."
 (time
  (progn 
    (fftw::%fftwf_import_wisdom_from_filename "fiberholo.fftwf.wisdom")
-   (format t "~a~%" (multiple-value-list (get-decoded-time)))
+   (format t "~a~%" (multiple-value-list (get-decoded-time)b))
    (sb-sprof:with-profiling (:max-samples 1000
 					  :report :flat
 					  :loop nil)
