@@ -83,9 +83,10 @@
    (second *ard*) 
    (first *ard*)
    "(progn 
-  (set i 0)
-  (while (< i 10) 
-    (set i (+ i 1))))"
+  (set 'i 0)
+  (while (< i 1000) 
+    (print i)
+    (set 'i (+ i 1))))"
    :time .1d0)
 
 #+nil
@@ -141,18 +142,52 @@
       (digital-write 12 0) 
       (digital-write 10 0)
       (set 'i (+ i ~a)))
+    (set 'i ~a)
     (set 'j (+ j ~a))))"
 	   starti startj
 	   maxj maxi
 	   delay-ms
-	   stepi stepj)
-   :time .1d0))
+	   stepi starti stepj)
+   :time 8d0))
 
+
+#+nil
+(trigger-all-cameras-seq-2d-scan)
+
+(defun trigger-all-cameras-seq-2d-scan** ( &key 
+					   (starti 400) (startj 1800)
+					   (maxi 2900) (maxj 3700)
+					   (stepi 100)
+					   (stepj 100)
+					   (delay-ms 24))
+  
+  (format nil 
+	  "(progn
+  (set 'i ~a)
+  (set 'j ~a)
+  (while (< j ~a)
+    (while (< i ~a)
+      (dac i j)
+      (delay ~a)
+      (digital-write 11 1)
+      (digital-write 12 1) 
+      (digital-write 10 1) 
+      (delay 1)
+      (digital-write 11 0)
+      (digital-write 12 0) 
+      (digital-write 10 0)
+      (set 'i (+ i ~a)))
+    (set 'j (+ j ~a))))"
+	  starti startj
+	  maxj maxi
+	  delay-ms
+	  stepi stepj)
+  )
 
 
 
 #+nil
-(trigger-all-cameras-seq)
+(trigger-all-cameras-seq-2d-scan)
 #+nil
 (trigger-all-cameras)
 
@@ -303,7 +338,8 @@
 
 
 #+nil
-(pylon::command-execute *cams* 1 "ClearLastError")
+(loop for i below 3 do 
+     (pylon::command-execute *cams* i "ClearLastError"))
 #+nil
 (pylon::command-isdone *cams* 1 "ClearLastError")
 
@@ -744,26 +780,26 @@ rectangular, for alpha=1 Hann window."
 				  (loop for j from 400 below 2900 by step and ji from 0 collect
 				       (loop for i below 3 do
 					    (;let ((cam i) (w 512) (h 512) (success-p t))
-					     destructuring-bind (cam success-p w h framenr) 
-					       (multiple-value-list (pylon::grab-sf *cams* *buf-s*))
+					     multiple-value-bind (cam success-p w h framenr) 
+					       (pylon::grab-sf *cams* *buf-s*)
 					      (declare (ignorable framenr))
 					      (if success-p
 						  (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
 						      (get-cam-parameters cam)
 						    (declare (ignorable id binx biny ox oy d g e name))
-					;	(assert (= ww w))
-					;		(assert (= hh h))
+						    (assert (= ww w))
+						    (assert (= hh h))
 						    (when (and *dark* *win*)
 							    (let ((win (.linear (elt *win* cam)))
 								  (d (.linear (elt (first *dark*) cam)))
 								  (s (.linear (elt buf-s cam))))
-							      (declare (type (simple-array single-float 1) s w d))
+							      (declare (type (simple-array single-float 1) s win d))
 							      
 							      (sb-sys:with-pinned-objects (win d s)
 								(pylon::helper-subtract-bg-multiply-window (sb-sys:vector-sap s)
 													   (sb-sys:vector-sap d)
 													   (sb-sys:vector-sap win)
-													   (* ww hh)))
+													   (* w h)))
 							      #+nil (subtract-bg-and-multiply-window1 s d win)))
 						    #+nil
 						    (format t "max ~a~%" (reduce #'(lambda (x y) (max (realpart x) (realpart y)))
@@ -793,7 +829,7 @@ rectangular, for alpha=1 Hann window."
 						  ))))))))
 		      :name "camera-acquisition")))
 	      (sleep .001)
-	      (trigger-all-cameras-seq-2d-scan :stepi step :stepj step :delay-ms 24)
+	      (trigger-all-cameras-seq-2d-scan :stepi step :stepj step :delay-ms 99)
 	     (sb-thread:join-thread th)))
        (pylon:stop-grabbing *cams*))))
  
@@ -802,6 +838,11 @@ rectangular, for alpha=1 Hann window."
 (setf *features* (union *features* (list :gige)))
 
 
+#+nil
+(fftw::%fftwf_export_wisdom_to_filename "fiberholo.fftwf.wisdom")
+
+#+nil
+(fftw::%fftwf_import_wisdom_from_filename "fiberholo.fftwf.wisdom")
 
 #+nil
 (progn (let ((count 0)
@@ -836,13 +877,15 @@ rectangular, for alpha=1 Hann window."
 
 #+nil
 (time
-  (progn (format t "~a~%" (multiple-value-list (get-decoded-time)))
-	(sb-sprof:with-profiling (:max-samples 1000
-                                       :report :flat
-                                       :loop nil)
-	  (run-several-s))
-	nil
-	(format t "~a~%" (multiple-value-list (get-decoded-time)))))
+ (progn 
+   (fftw::%fftwf_import_wisdom_from_filename "fiberholo.fftwf.wisdom")
+   (format t "~a~%" (multiple-value-list (get-decoded-time)))
+   (sb-sprof:with-profiling (:max-samples 1000
+					  :report :flat
+					  :loop nil)
+     (run-several-s))
+   nil
+   (format t "~a~%" (multiple-value-list (get-decoded-time)))))
 
 (defun make-camera-buffer (cam) 
   (destructuring-bind (id binx biny ww hh ox oy x y d g e name) (get-cam-parameters cam)
