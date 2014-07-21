@@ -781,9 +781,12 @@ rectangular, for alpha=1 Hann window."
 	     (sb-thread:join-thread th)))
       (pylon:stop-grabbing *cams*))))
 
+;(make-array (list 2 3) :initial-contents (loop for i below 2 collect (loop for j below 3 collect (list i j))))
+
 #+nil(time (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 512 :h 512 :flag fftw::+measure+) nil))
 (defparameter *diff* nil)
 (defun run-several-s ()
+  (defparameter *diff* nil)
   ;; make sure the fft can has an optimized plan
   (time
    (progn 
@@ -793,19 +796,31 @@ rectangular, for alpha=1 Hann window."
   (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
   (dotimes (i 3)
     (pylon:set-value-e *cams* i "TriggerMode" 1))
-  (let* ((step 20)
+  (let* ((step 100)
 	 (count (let ((count 0))
 		  (loop for yj from 1800 below 3700 by step do
 		       (loop for j from 400 below 2900 by step do
 			    (incf count))) 
-		  count)))
+		  count))
+	 (count-first (let ((count 0))
+			(loop for j from 400 below 2900 by step do
+			     (incf count)) 
+			count))
+	 (count-second (let ((count 0))
+			 (loop for yj from 1800 below 3700 by step do
+			      (incf count)) 
+			 count)))
     (unwind-protect 
 	 (let ((old 0))
 	  (progn
 	    (pylon:start-grabbing *cams*)
 	    (let* ((buf-s (loop for i below 3 collect  (make-array (list 580 580) :element-type 'single-float)))
 		   (buf-cs (loop for i below 3 collect (make-array (list 580 580) :element-type '(complex single-float))))
-		   (ext-cs (loop for i below 3 collect (make-array (list 66 66) :element-type '(complex single-float))))
+		   (ext-cs (make-array (list count-second count-first 3)
+				       :initial-contents 
+				       (loop for j below count-second collect
+					    (loop for i below count-first collect
+						 (loop for i below 3 collect (make-array (list 66 66) :element-type '(complex single-float)))))))
 		   (plan (loop for i below 3 collect 
 			      (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
 				  (get-cam-parameters i)
@@ -814,8 +829,8 @@ rectangular, for alpha=1 Hann window."
 	      (progn			;sb-sys:without-gcing
 		(let ((th (sb-thread:make-thread 
 			   #'(lambda ()
-			       (loop for yj from 1800 below 3700 by step and yji from 0 collect
-				    (loop for j from 400 below 2900 by step and ji from 0 collect
+			       (loop for yj from 1800 below 3700 by step and yji from 0 collect ;; second
+				    (loop for j from 400 below 2900 by step and ji from 0 collect ;; first
 					 (loop for i below 3 do
 					      (multiple-value-bind (cam success-p w h framenr timestamp) 
 						  (pylon::grab-sf *cams* *buf-s*)
@@ -827,7 +842,7 @@ rectangular, for alpha=1 Hann window."
 						      (assert (= ww w))
 						      (assert (= hh h))
 						     
-						      #+nil (when (= 0 cam)
+						      (when (= 0 cam)
 							(format t "ts ~a~%" (/ (- timestamp old   ) 125e6)
 								)
 							(push (list yji ji (/ (- timestamp old) 125e6)) *diff*)
@@ -850,7 +865,7 @@ rectangular, for alpha=1 Hann window."
 							  
 									  
 							  (pylon::%helper-extract-csf (sb-sys:vector-sap (sb-ext:array-storage-vector (elt buf-cs cam)))
-										      (sb-sys:vector-sap (sb-ext:array-storage-vector (elt ext-cs cam)))
+										      (sb-sys:vector-sap (sb-ext:array-storage-vector (aref ext-cs yji ji cam)))
 										      x y w h 66 66)
 							  #+nil (let* ((q (make-array (list hh ww)
 										      :element-type '(complex single-float)
