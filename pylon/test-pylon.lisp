@@ -151,6 +151,40 @@
    :time 8d0))
 
 
+(defun trigger-all-cameras-seq-1d-scan (j &key 
+					   (starti 400)
+					   (maxi 2900) 
+					   (stepi 100)
+					   (delay-ms 24))
+  (unless *trigger-outputs-initialized*
+    (initialize-trigger-outputs))
+  (arduino-serial-sbcl:talk-arduino
+   (second *ard*) 
+   (first *ard*)
+   (format nil 
+	   "(progn
+  (set 'i ~a)
+  (while (< i ~a)
+    (dac i ~a)
+    (delay ~a)
+    (digital-write 11 1)
+    (digital-write 12 1) 
+    (digital-write 10 1) 
+    (delay 1)
+    (digital-write 11 0)
+    (digital-write 12 0) 
+    (digital-write 10 0)
+    (set 'i (+ i ~a))))"
+	   starti
+	   maxi
+	   j
+	   delay-ms
+	   stepi)
+   :time 8d0))
+
+
+
+
 #+nil
 (trigger-all-cameras-seq-2d-scan)
 
@@ -758,7 +792,7 @@ rectangular, for alpha=1 Hann window."
   (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
   (dotimes (i 3)
     (pylon:set-value-e *cams* i "TriggerMode" 1))
-  (let* ((step 100)
+  (let* ((step 20)
 	 (count (let ((count 0))
 		  (loop for yj from 1800 below 3700 by step do
 		       (loop for j from 400 below 2900 by step do
@@ -829,7 +863,7 @@ rectangular, for alpha=1 Hann window."
 						  ))))))))
 		      :name "camera-acquisition")))
 	      (sleep .001)
-	      (trigger-all-cameras-seq-2d-scan :stepi step :stepj step :delay-ms 22)
+	      (trigger-all-cameras-seq-2d-scan :stepi step :stepj step :delay-ms 29)
 	      (sb-thread:join-thread th)))
        (pylon:stop-grabbing *cams*))))
  
@@ -846,7 +880,7 @@ rectangular, for alpha=1 Hann window."
 
 #+nil
 (progn (let ((count 0)
-	     (step 100))
+	     (step 20))
 	 (loop for yj from 1800 below 3700 by step do
 	      (loop for j from 400 below 2900 by step do
 		   (incf count)))
@@ -948,7 +982,7 @@ rectangular, for alpha=1 Hann window."
  (progn
    (dotimes (i 3)
      (pylon::command-execute *cams* i "GevTimestampControlReset"))
-   (defparameter *dark* (multiple-value-list (capture-dark-images 30)))
+   (defparameter *dark* (multiple-value-list (capture-dark-images 300)))
    (create-windows (first *dark*))))
 
 
