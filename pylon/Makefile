@@ -10,7 +10,7 @@ CXX				?= g++
 LD				:= $(CXX)
 CPPFLAGS		:= -I$(GENICAM_ROOT)/library/CPP/include \
 				   -I$(PYLON_ROOT)/include -DUSE_GIGE
-CXXFLAGS		:= -ggdb -O0 #e.g., CXXFLAGS=-g -O0 for debugging
+CXXFLAGS		:= -ggdb -O3 -march=native #e.g., CXXFLAGS=-g -O0 for debugging
 LDFLAGS			:= -L$(PYLON_ROOT)/lib64 \
 				   -L$(GENICAM_ROOT)/bin/Linux64_x64 \
 				   -L$(GENICAM_ROOT)/bin/Linux64_x64/GenApi/Generic \

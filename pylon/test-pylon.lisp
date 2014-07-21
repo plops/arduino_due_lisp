@@ -28,9 +28,6 @@
   (ql:quickload "eager-future2")
   )
 
-#+nil
-(eager-future2:yield (eager-future2:pcall  #'(lambda () (+ 3 4))
-					 :eager))
 
 (defpackage :pylon-test
   (:use :cl :cffi :image-processing))
@@ -218,7 +215,6 @@
 
 (fftw:prepare-threads)
 
-#+nil
 (fftw::%fftwf_plan_with_nthreads 6)
 
 (pylon:initialize)
@@ -296,10 +292,24 @@
   (pylon:set-value-e *cams* i "TriggerMode" 0))
 
 
+(defparameter *buf-c1* (make-array (* 1 1) :element-type '(complex double-float)))
+(defparameter *out-cs1* (make-array (* 1 1) :element-type '(complex single-float)))
+(defparameter *out-c1* (make-array (* 1 1) :element-type '(complex double-float)))
+(defparameter *buf-c* (make-array (list 1 1) :element-type '(complex double-float)
+				  :displaced-to *buf-c1*))
+(defparameter *out-c* (make-array (list 1 1) :element-type '(complex double-float)
+				  :displaced-to *out-c1*))
+(defparameter *out-cs* (make-array (list 1 1) :element-type '(complex single-float)
+			    :displaced-to *out-cs1*))
+(defparameter *buf-s1* (make-array (* 1 1 ) :element-type 'single-float))
+(defparameter *buf-s* (make-array (list 1 1) :element-type 'single-float))
+ 
+
 (let ((w 580)
       (h 580))
   (defparameter *buf-c1* (make-array (* w h) :element-type '(complex double-float)))
   (defparameter *out-cs1* (make-array (* w h) :element-type '(complex single-float)))
+  (defparameter *out-c1* (make-array (* w h) :element-type '(complex double-float)))
   (defparameter *buf-c* (make-array (list h w) :element-type '(complex double-float)
 				    :displaced-to *buf-c1*))
   (defparameter *out-c* (make-array (list h w) :element-type '(complex double-float)
@@ -482,7 +492,7 @@ rectangular, for alpha=1 Hann window."
 			     (loop for i below 3 do
 				  (destructuring-bind (cam success-p w h framenr) 
 				      (multiple-value-list (pylon::grab-store *cams* fds))
-				   (declare (ignorable w h framenr))
+				   (declare (ignorable w h framenr cam))
 				    (unless (= 1 success-p)
 				      (format t "acquisition error. ~a~%" success-p))))))
 		       :name "camera-acquisition")))
@@ -500,8 +510,7 @@ rectangular, for alpha=1 Hann window."
     (pylon:set-value-e *cams* i "TriggerMode" 1))
   (let* ((fds nil)
 	(step 100)
-	 (count (let ((count 0))
-		 (loop for yj from 1800 below 3700 by step do
+	 (count (let ((count 0))		 (loop for yj from 1800 below 3700 by step do
 		      (loop for j from 400 below 2900 by step do
 			   (incf count)))
 		 count)))
@@ -667,14 +676,13 @@ rectangular, for alpha=1 Hann window."
       (pylon:stop-grabbing *cams*))))
 
 #+nil(time (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 512 :h 512 :flag fftw::+measure+) nil))
-
 (defun run-several-s ()
   ;; make sure the fft can has an optimized plan
   (time
    (progn 
-     (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 580 :h 580 :flag fftw::+measure+) nil)
-     (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 512 :h 512 :flag fftw::+measure+) nil)))
-  
+     (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 580 :h 580 :flag fftw::+patient+) nil)
+     (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 512 :h 512 :flag fftw::+patient+) nil)))
+ 
   (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
   (dotimes (i 3)
     (pylon:set-value-e *cams* i "TriggerMode" 1))
@@ -682,54 +690,88 @@ rectangular, for alpha=1 Hann window."
 	 (count (let ((count 0))
 		  (loop for yj from 1800 below 3700 by step do
 		       (loop for j from 400 below 2900 by step do
-			    (incf count)))
+			    (incf count))) 
 		  count)))
     (unwind-protect 
 	 (progn
-	   (pylon:start-grabbing *cams*)
+	   #+gige (pylon:start-grabbing *cams*)
 	   (let ((th (sb-thread:make-thread 
 		      #'(lambda ()
-			  (progn
+			  (progn  
 					;(tilt-mirror j yj)
 			    (loop for yj from 1800 below 3700 by step and yji from 0 collect
 				 (loop for j from 400 below 2900 by step and ji from 0 collect
-				      (loop for i below 3 do
-					   (destructuring-bind (cam success-p w h framenr) 
-					       (multiple-value-list (pylon::grab-sf *cams* *buf-s*))
-					     (declare (ignorable framenr))
-					     (if success-p
-						 (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
-						     (get-cam-parameters cam)
-						   (declare (ignorable id binx biny ox oy d g e name))
-						   (assert (= ww w))
-						   (assert (= hh h))
-						   (when (and *dark* *win*)
-						     (let ((w (.linear (elt *win* cam)))
-							   (d (.linear (elt (first *dark*) cam)))
-							   (s (.linear *buf-s*)))
-						       (declare (type (simple-array single-float 1) s w d))
-						       (subtract-bg-and-multiply-window1 s d w)))
-						   #+nil
-						   (format t "max ~a~%" (reduce #'(lambda (x y) (max (realpart x) (realpart y)))
-										(make-array (* h w)
-											    :element-type '(complex double-float)
-											    :displaced-to *buf-cs*)))
-						   (fftw::rftf *buf-s* :out-arg *out-cs* :w w :h h :flag fftw::+measure+)
-						   (let* ((q (make-array (list h w)
-									 :element-type '(complex single-float)
-									 :displaced-to *out-cs*))
-							  (v 1d0))
-						     #+nil (format t "~a~%" (list j yj))
-						     (push (list j yj ji yji v
-								 (extract q :x x :y y :w d :h d)) 
-							   (aref *bla* cam))))
-						 (format t "acquisition error.~%")
-						 )))))))
+				      (let* ((buf-s (loop for i below 3 collect
+							 (make-array (list 580 580) :element-type 'single-float)))
+					     (buf-cs (loop for i below 3 collect
+							  (make-array (list 580 580) :element-type '(complex single-float))))
+					     (futures
+					      (loop for i below 3 collect
+						   (let ((cam i) (w 512) (h 512) (success-p t))
+						    ;destructuring-bind (cam success-p w h framenr) 
+						    #+gige (multiple-value-list (pylon::grab-sf *cams* *buf-s*))
+						     (declare (ignorable framenr))
+						     (eager-future2:pcall 
+						      #'(lambda () 
+							  (if success-p
+							      (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+								  (get-cam-parameters cam)
+								(declare (ignorable id binx biny ox oy d g e name))
+							;	(assert (= ww w))
+						;		(assert (= hh h))
+								(when (and *dark* *win*)
+								  (let ((win (.linear (elt *win* cam)))
+									(d (.linear (elt (first *dark*) cam)))
+									(s (.linear (elt buf-s cam))))
+								    (declare (type (simple-array single-float 1) s w d))
+								    
+								    (sb-sys:with-pinned-objects (win d s)
+								      (pylon::helper-subtract-bg-multiply-window (sb-sys:vector-sap s)
+														 (sb-sys:vector-sap d)
+														 (sb-sys:vector-sap win)
+														 (* ww hh)))
+								    #+nil (subtract-bg-and-multiply-window1 s d win)))
+								#+nil
+								(format t "max ~a~%" (reduce #'(lambda (x y) (max (realpart x) (realpart y)))
+											     (make-array (* h w)
+													 :element-type '(complex double-float)
+													 :displaced-to *buf-cs*)))
+								
+								)
+							      (format t "acquisition error.~%")
+							      )))))))
+					(dolist (f futures)
+					  (eager-future2:yield f)
+					  )
+					(loop for cam below 3 do
+					     (progn
+					       (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+						   (get-cam-parameters cam)
+						 (declare (ignorable id binx biny ox oy d g e name))
+						 
+						 (fftw::rftf (elt buf-s cam) :out-arg (elt buf-cs cam)
+							     :w ww :h hh :flag fftw::+measure+)
+						 (let* ((q (make-array (list hh ww)
+								       :element-type '(complex single-float)
+								       :displaced-to (elt buf-cs cam)))
+							(v 1d0))
+						   #+nil (format t "~a~%" (list j yj))
+						   (push 
+						    (list j yj ji yji v
+							  (extract q :x x :y y :w d :h d))
+						    (aref *bla* cam))))
+					       
+					       )))))))
 		      :name "camera-acquisition")))
-	     (sleep .001)
-	     (trigger-all-cameras-seq count :delay-ms 29)
+	     #+gige (sleep .001)
+	     #+gige (trigger-all-cameras-seq count :delay-ms 29)
 	     (sb-thread:join-thread th)))
-      (pylon:stop-grabbing *cams*))))
+      #+gige (pylon:stop-grabbing *cams*))))
+
+#+nil 
+(setf *features* (union *features* (list :gige)))
+
+
 
 #+nil
 (progn (let ((count 0)
@@ -738,12 +780,12 @@ rectangular, for alpha=1 Hann window."
 	      (loop for j from 400 below 2900 by step do
 		   (incf count)))
 	 (list count
-	       (/ count 19.164)))) ; => 24.8 fps
+	       (/ count 8.84)))) ; => 53 fps
 #+nil
-(time (run-several-s))
+(time (progn (run-several-s) nil))
 
 (/ 1000 40)
-
+ 
 #+nil
 (DOTIMES (i 3)
  (write-pgm8 (format nil "/dev/shm/o~d.pgm" i) (.uint8 (.log (.abs (sixth (first (elt *bla* i))))))))
@@ -769,6 +811,7 @@ rectangular, for alpha=1 Hann window."
                                        :report :flat
                                        :loop nil)
 	  (run-several-s))
+	nil
 	(format t "~a~%" (multiple-value-list (get-decoded-time)))))
 
 (defun make-camera-buffer (cam) 
@@ -828,9 +871,9 @@ rectangular, for alpha=1 Hann window."
  (progn
    (dotimes (i 3)
      (pylon::command-execute *cams* i "GevTimestampControlReset"))
-   (defparameter *dark* (multiple-value-list (capture-dark-images 300)))))
-#+nil
-(create-windows (first *dark*))
+   (defparameter *dark* (multiple-value-list (capture-dark-images 30)))
+   (create-windows (first *dark*))))
+
 
 #+nil
 (dotimes (i 3)

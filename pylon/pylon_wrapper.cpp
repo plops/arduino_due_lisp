@@ -692,4 +692,10 @@ extern "C" {
       *success_p = -1;
     }
   }
+  void helper_subtract_bg_multiply_window(float* __restrict__ a, const float* __restrict__ b, const float* __restrict__ w, int n)
+  { // __restrict__ tells the compiler that a, b and w are in non-overlapping memory locations. this prevents reloads
+    int i;
+    for (i = 0; i < n; ++i)
+      a[i] = (a[i] - b[i]) * w[i];
+  }
 }

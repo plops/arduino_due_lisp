@@ -272,4 +272,10 @@
   (cams :pointer)
   (cam :int))
 
+(cffi:defcfun ("helper_subtract_bg_multiply_window" helper-subtract-bg-multiply-window) :void
+  (a :pointer)
+  (bg :pointer)
+  (win :pointer)
+  (n :int))
+
 
