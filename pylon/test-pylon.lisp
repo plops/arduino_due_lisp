@@ -796,7 +796,7 @@ rectangular, for alpha=1 Hann window."
   (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
   (dotimes (i 3)
     (pylon:set-value-e *cams* i "TriggerMode" 1))
-  (let* ((step 100)
+  (let* ((step 20)
 	 (count (let ((count 0))
 		  (loop for yj from 1800 below 3700 by step do
 		       (loop for j from 400 below 2900 by step do
@@ -888,19 +888,23 @@ rectangular, for alpha=1 Hann window."
       (pylon:stop-grabbing *cams*))))
  
 #+nil
-(let* ((v (mapcar #'third *diff*))
+(let* ((v (loop for e across (let ((s (sort *bsdl* #'<)))
+			       (subseq s 0 (1- (length s)))
+			      )
+	       collect e))
        (mean (/ (reduce #'+ v)
 		(length v)))
        (var (/ 
 	     (loop for e in v sum (- (expt e 2) (expt mean 2)))
-	     (length v))))
-  (list mean (sqrt var) (reduce #'max v) (reduce #'min v))) ;; => 25.00 0.43
+	     (length v)))) 
+  (list (* 1000 mean) (* 1000 (sqrt var)) (* 1000 (- (reduce #'max v) (reduce #'min v))))) ;; => 25.00 0.43
 
 #+nil
 (defparameter *bsdl*  (make-array (length *diff*) :element-type 'single-float :initial-contents  (mapcar #'third *diff*)))
 
 #+nil
-(sort *bsdl* #'<)
+(let ((s (sort *bsdl* #'<)))
+ (subseq s 0 (1- (length s))))
 
 #+nil 
 (sectf *features* (union *features* (list :gige)))
