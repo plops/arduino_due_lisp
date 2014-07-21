@@ -829,13 +829,13 @@ rectangular, for alpha=1 Hann window."
 						  ))))))))
 		      :name "camera-acquisition")))
 	      (sleep .001)
-	      (trigger-all-cameras-seq-2d-scan :stepi step :stepj step :delay-ms 24)
-	     (sb-thread:join-thread th)))
+	      (trigger-all-cameras-seq-2d-scan :stepi step :stepj step :delay-ms 22)
+	      (sb-thread:join-thread th)))
        (pylon:stop-grabbing *cams*))))
  
 
 #+nil 
-(setf *features* (union *features* (list :gige)))
+(sectf *features* (union *features* (list :gige)))
 
 
 #+nil
@@ -855,7 +855,11 @@ rectangular, for alpha=1 Hann window."
 #+nil
 (time (progn (run-several-s) nil))
 
-(/ 1000 40)
+(/
+ (/ (- 1288674299061 1288671173986)
+    125e6))
+
+(/ (/ (- 1325445558296 1325442558192) 125e6))
  
 #+nil
 (DOTIMES (i 3)
