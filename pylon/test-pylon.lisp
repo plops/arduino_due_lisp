@@ -717,7 +717,7 @@ rectangular, for alpha=1 Hann window."
 						    (declare (ignorable id binx biny ox oy d g e name))
 					;	(assert (= ww w))
 					;		(assert (= hh h))
-						    #+nil (when (and *dark* *win*)
+						    (when (and *dark* *win*)
 							    (let ((win (.linear (elt *win* cam)))
 								  (d (.linear (elt (first *dark*) cam)))
 								  (s (.linear (elt buf-s cam))))
@@ -735,7 +735,7 @@ rectangular, for alpha=1 Hann window."
 											     :element-type '(complex double-float)
 											     :displaced-to *buf-cs*)))
 						    
-						    #+nil (progn
+						     (progn
 							    (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
 								(get-cam-parameters cam)
 							      (declare (ignorable id binx biny ox oy d g e name))
@@ -774,7 +774,7 @@ rectangular, for alpha=1 Hann window."
 	      (loop for j from 400 below 2900 by step do
 		   (incf count)))
 	 (list count
-	       (/ count 8.0)))) ; => 53 fps
+	       (/ count 6.0)))) ; => 79 fps
 #+nil
 (time (progn (run-several-s) nil))
 
