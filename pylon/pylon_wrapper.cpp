@@ -1,6 +1,7 @@
 #include <pylon/PylonIncludes.h>
 #include <unistd.h>
 #include <errno.h>
+#include <complex>
 
 using namespace Pylon;
 using namespace GenApi;
@@ -701,5 +702,12 @@ extern "C" {
     int i;
     for (i = 0; i < n; ++i)
       a[i] = (a[i] - b[i]) * w[i];
+  }
+  void helper_extract_csf(std::complex<float>* __restrict__ in, std::complex<float> * __restrict out, int x, int y, int iw, int ih, int w, int h)
+  {
+    int i,j, ox=x-w/2, oy=y-h/2;
+    for(j=0;j<h;j++)
+      for(i=0;i<w;i++)
+	out[i+w*j] = in[((i+ox)%iw) + ((j+oy)%ih)*iw];
   }
 }

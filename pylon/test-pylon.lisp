@@ -836,13 +836,13 @@ rectangular, for alpha=1 Hann window."
 													     (sb-sys:vector-sap d)
 													     (sb-sys:vector-sap win)
 													     (* w h)))))
-						      #+nil (progn
-							      (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
-								  (get-cam-parameters cam)
-								(declare (ignorable id binx biny ox oy d g e name))
-							 
-								(fftw::rftf (elt buf-s cam) :out-arg (elt buf-cs cam)
-									    :w ww :h hh :flag fftw::+measure+)
+						      (progn
+							(destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+							    (get-cam-parameters cam)
+							  (declare (ignorable id binx biny ox oy d g e name))
+							  
+							  (fftw::rftf (elt buf-s cam) :out-arg (elt buf-cs cam)
+								      :w ww :h hh :flag fftw::+measure+)
 								(let* ((q (make-array (list hh ww)
 										      :element-type '(complex single-float)
 										      :displaced-to (elt buf-cs cam)))

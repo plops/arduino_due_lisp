@@ -281,4 +281,14 @@
   (win :pointer)
   (n :int))
 
+(cffi:defcfun ("helper_extract_csf" %helper-extract-csf) :void
+  (in :pointer)
+  (out :pointer)
+  (x :int)
+  (y :int)
+  (iw :int)
+  (ih :int)
+  (w :int)
+  (h :int))
+
 
