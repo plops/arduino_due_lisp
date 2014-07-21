@@ -98,19 +98,57 @@
    (second *ard*) 
    (first *ard*)
    (format nil 
-    "(progn
+	   "(progn
   (set 'i 0)
   (while (< i ~a)
     (delay ~a)
-     (digital-write 11 1)
-     (digital-write 12 1) 
-     (digital-write 10 1) 
-     (delay 1)
-     (digital-write 11 0)
-     (digital-write 12 0) 
-     (digital-write 10 0)
-     (set 'i (+ i 1))))" n delay-ms)
+    (digital-write 11 1)
+    (digital-write 12 1) 
+    (digital-write 10 1) 
+    (delay 1)
+    (digital-write 11 0)
+    (digital-write 12 0) 
+    (digital-write 10 0)
+    (set 'i (+ i 1))))
+"	   n delay-ms)
    :time .1d0))
+
+
+(defun trigger-all-cameras-seq-2d-scan ( &key 
+					   (starti 400) (startj 1800)
+					   (maxi 2900) (maxj 3700)
+					   (stepi 100)
+					   (stepj 100)
+					   (delay-ms 24))
+  (unless *trigger-outputs-initialized*
+    (initialize-trigger-outputs))
+  (arduino-serial-sbcl:talk-arduino
+   (second *ard*) 
+   (first *ard*)
+   (format nil 
+	   "(progn
+  (set 'i ~a)
+  (set 'j ~a)
+  (while (< j ~a)
+    (while (< i ~a)
+      (dac i j)
+      (delay ~a)
+      (digital-write 11 1)
+      (digital-write 12 1) 
+      (digital-write 10 1) 
+      (delay 1)
+      (digital-write 11 0)
+      (digital-write 12 0) 
+      (digital-write 10 0)
+      (set 'i (+ i ~a)))
+    (set 'j (+ j ~a))))"
+	   starti startj
+	   maxj maxi
+	   delay-ms
+	   stepi stepj)
+   :time .1d0))
+
+
 
 
 #+nil
@@ -755,7 +793,7 @@ rectangular, for alpha=1 Hann window."
 						  ))))))))
 		      :name "camera-acquisition")))
 	      (sleep .001)
-	      (trigger-all-cameras-seq count :delay-ms 24)
+	      (trigger-all-cameras-seq-2d-scan :stepi step :stepj step :delay-ms 24)
 	     (sb-thread:join-thread th)))
        (pylon:stop-grabbing *cams*))))
  
