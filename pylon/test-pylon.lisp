@@ -682,7 +682,7 @@ rectangular, for alpha=1 Hann window."
    (progn 
      (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 580 :h 580 :flag fftw::+patient+) nil)
      (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 512 :h 512 :flag fftw::+patient+) nil)))
- 
+  
   (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
   (dotimes (i 3)
     (pylon:set-value-e *cams* i "TriggerMode" 1))
@@ -697,76 +697,70 @@ rectangular, for alpha=1 Hann window."
 	   #+gige (pylon:start-grabbing *cams*)
 	   (let ((th (sb-thread:make-thread 
 		      #'(lambda ()
-			  (progn  
+			  (let ((buf-s (loop for i below 3 collect
+					    (make-array (list 580 580) :element-type 'single-float)))
+				(buf-cs (loop for i below 3 collect
+					     (make-array (list 580 580) :element-type '(complex single-float))))
+				)
+			    (progn  
 					;(tilt-mirror j yj)
-			    (loop for yj from 1800 below 3700 by step and yji from 0 collect
-				 (loop for j from 400 below 2900 by step and ji from 0 collect
-				      (let* ((buf-s (loop for i below 3 collect
-							 (make-array (list 580 580) :element-type 'single-float)))
-					     (buf-cs (loop for i below 3 collect
-							  (make-array (list 580 580) :element-type '(complex single-float))))
-					     (futures
-					      (loop for i below 3 collect
-						   (let ((cam i) (w 512) (h 512) (success-p t))
-						    ;destructuring-bind (cam success-p w h framenr) 
-						    #+gige (multiple-value-list (pylon::grab-sf *cams* *buf-s*))
-						     (declare (ignorable framenr))
-						     (eager-future2:pcall 
-						      #'(lambda () 
-							  (if success-p
-							      (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
-								  (get-cam-parameters cam)
-								(declare (ignorable id binx biny ox oy d g e name))
-							;	(assert (= ww w))
-						;		(assert (= hh h))
-								(when (and *dark* *win*)
-								  (let ((win (.linear (elt *win* cam)))
-									(d (.linear (elt (first *dark*) cam)))
-									(s (.linear (elt buf-s cam))))
-								    (declare (type (simple-array single-float 1) s w d))
-								    
-								    (sb-sys:with-pinned-objects (win d s)
-								      (pylon::helper-subtract-bg-multiply-window (sb-sys:vector-sap s)
-														 (sb-sys:vector-sap d)
-														 (sb-sys:vector-sap win)
-														 (* ww hh)))
-								    #+nil (subtract-bg-and-multiply-window1 s d win)))
-								#+nil
-								(format t "max ~a~%" (reduce #'(lambda (x y) (max (realpart x) (realpart y)))
-											     (make-array (* h w)
-													 :element-type '(complex double-float)
-													 :displaced-to *buf-cs*)))
-								
-								)
-							      (format t "acquisition error.~%")
-							      )))))))
-					(dolist (f futures)
-					  (eager-future2:yield f)
-					  )
-					(loop for cam below 3 do
-					     (progn
-					       (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
-						   (get-cam-parameters cam)
-						 (declare (ignorable id binx biny ox oy d g e name))
-						 
-						 (fftw::rftf (elt buf-s cam) :out-arg (elt buf-cs cam)
-							     :w ww :h hh :flag fftw::+measure+)
-						 (let* ((q (make-array (list hh ww)
-								       :element-type '(complex single-float)
-								       :displaced-to (elt buf-cs cam)))
-							(v 1d0))
-						   #+nil (format t "~a~%" (list j yj))
-						   (push 
-						    (list j yj ji yji v
-							  (extract q :x x :y y :w d :h d))
-						    (aref *bla* cam))))
-					       
-					       )))))))
+			     (loop for yj from 1800 below 3700 by step and yji from 0 collect
+				  (loop for j from 400 below 2900 by step and ji from 0 collect
+				       (loop for i below 3 do
+					    (let ((cam i) (w 512) (h 512) (success-p t))
+					;destructuring-bind (cam success-p w h framenr) 
+					      #+gige (multiple-value-list (pylon::grab-sf *cams* *buf-s*))
+					      (declare (ignorable framenr))
+					      (if success-p
+						  (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+						      (get-cam-parameters cam)
+						    (declare (ignorable id binx biny ox oy d g e name))
+					;	(assert (= ww w))
+					;		(assert (= hh h))
+						    #+nil (when (and *dark* *win*)
+							    (let ((win (.linear (elt *win* cam)))
+								  (d (.linear (elt (first *dark*) cam)))
+								  (s (.linear (elt buf-s cam))))
+							      (declare (type (simple-array single-float 1) s w d))
+							      
+							      (sb-sys:with-pinned-objects (win d s)
+								(pylon::helper-subtract-bg-multiply-window (sb-sys:vector-sap s)
+													   (sb-sys:vector-sap d)
+													   (sb-sys:vector-sap win)
+													   (* ww hh)))
+							      #+nil (subtract-bg-and-multiply-window1 s d win)))
+						    #+nil
+						    (format t "max ~a~%" (reduce #'(lambda (x y) (max (realpart x) (realpart y)))
+										 (make-array (* h w)
+											     :element-type '(complex double-float)
+											     :displaced-to *buf-cs*)))
+						    
+						    #+nil (progn
+							    (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+								(get-cam-parameters cam)
+							      (declare (ignorable id binx biny ox oy d g e name))
+							      
+							      (fftw::rftf (elt buf-s cam) :out-arg (elt buf-cs cam)
+									  :w ww :h hh :flag fftw::+measure+)
+							      (let* ((q (make-array (list hh ww)
+										    :element-type '(complex single-float)
+										    :displaced-to (elt buf-cs cam)))
+								     (v 1d0))
+								#+nil (format t "~a~%" (list j yj))
+								(push 
+								 (list j yj ji yji v
+								       (extract q :x x :y y :w d :h d))
+								 (aref *bla* cam))))
+							    
+							    ))
+						  (format t "acquisition error.~%")
+						  ))))))))
 		      :name "camera-acquisition")))
 	     #+gige (sleep .001)
 	     #+gige (trigger-all-cameras-seq count :delay-ms 29)
 	     (sb-thread:join-thread th)))
       #+gige (pylon:stop-grabbing *cams*))))
+
 
 #+nil 
 (setf *features* (union *features* (list :gige)))
@@ -780,7 +774,7 @@ rectangular, for alpha=1 Hann window."
 	      (loop for j from 400 below 2900 by step do
 		   (incf count)))
 	 (list count
-	       (/ count 8.84)))) ; => 53 fps
+	       (/ count 8.0)))) ; => 53 fps
 #+nil
 (time (progn (run-several-s) nil))
 
