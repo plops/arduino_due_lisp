@@ -22,5 +22,6 @@
    #:.realpart
    #:.accum
    #:^.-
-   #:.abs2))
+   #:.abs2
+   #:extract-csf*))
 

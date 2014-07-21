@@ -160,6 +160,26 @@
 	       (aref a (mod (+ j oy) hh) (mod (+ i ox) ww))))))
     b))
 
+(defun extract-csf* (a out &key
+                (x (floor (array-dimension a 1) 2))
+                (y (floor (array-dimension a 0) 2))
+                (w (next-power-of-two (min x y
+                                           (- (array-dimension a 1) x)
+                                           (- (array-dimension a 0) y))))
+                (h w))
+  (declare (type (array (complex single-float)) a)
+	   (type (simple-array (complex single-float) 2) out)
+	   (values (simple-array (complex single-float) 2) &optional))
+  (let* ((ox (- x (floor w 2)))
+         (oy (- y (floor h 2))))
+    (declare (type (array (complex single-float) 2) out))
+    (destructuring-bind (hh ww) (array-dimensions a)
+     (dotimes (j h)
+       (dotimes (i w)
+	 (setf (aref out j i)
+	       (aref a (mod (+ j oy) hh) (mod (+ i ox) ww))))))
+    out))
+
 (defun extract-cdf* (a &key
 		     (x (floor (array-dimension a 1) 2))
 		     (y (floor (array-dimension a 0) 2))
