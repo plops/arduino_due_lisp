@@ -131,7 +131,7 @@
 
 
 (defun extract (a &key
-                (x (floor (arraqy-dimension a 1) 2))
+                (x (floor (array-dimension a 1) 2))
                 (y (floor (array-dimension a 0) 2))
                 (w (next-power-of-two (min x y
                                            (- (array-dimension a 1) x)

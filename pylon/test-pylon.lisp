@@ -922,6 +922,35 @@ rectangular, for alpha=1 Hann window."
 		      (.uint8 (.abs a)))))))
 
 #+nil
+(loop for i below 3 collect (get-cam-parameters i))
+
+#+nil
+(time
+ (let ((hh 66)
+       (ww 66))
+  (destructuring-bind (h w cams) (array-dimensions *result*)
+    (loop for k below cams do
+	 (let ((a (make-array (list (* h hh)
+				    (* w ww))
+			      :element-type '(complex single-float))))
+	   (loop for j from 10 below h do
+		(loop for i from 10 below w do 
+		     (let ((b #+nil (extract (aref *result* j i k) :w ww :h hh)
+			      (fftw::ftf (aref *result* j i k) :sign fftw::+backward+ :flag fftw::+patient+)
+			     ))
+		       (dotimes (jj hh)
+			 (dotimes (ii ww)
+			   (setf (aref a (+ (* hh (- j 10)) jj) (+ (* ww (- i 10)) (if (= k 0) (- (1- ww) ii)
+										       ii)))
+				 (aref b jj ii)))))))
+	   (write-pgm8 (format nil "/dev/shm/o~1,'0d.pgm" k)
+		       (.uint8 (.abs a))))))))
+
+#+nil
+(time
+ (fftw::ftf (aref *result* 12 12 0) :sign fftw::+backward+ :flag fftw::+patient+))
+
+#+nil
 (write-pgm8 "/dev/shm/o.pgm" (.uint8 (.abs *result-mosaic*)))
 
 #+nil
