@@ -1,3 +1,4 @@
+#include <sys/types.h>
 void pylon_wrapper_initialize();
 void pylon_wrapper_terminate(void*cams);
 void*pylon_wrapper_factory();

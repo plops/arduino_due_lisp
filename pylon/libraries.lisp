@@ -7,6 +7,9 @@
    (cffi:close-foreign-library lib)))
 
 #+nil
+(load-pylon-libraries)
+
+#+nil
 (cffi:list-foreign-libraries)
 #+nil
 (cffi:close-foreign-library (first (cffi:list-foreign-libraries)))
