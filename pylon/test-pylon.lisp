@@ -950,7 +950,11 @@ rectangular, for alpha=1 Hann window."
 (let ((j 9) (i 2) (cam 0) (w 66) (h 66))
   (let ((a (make-array (list h w) :element-type '(complex single-float))))
     (destructuring-bind (id binx biny ww hh ox oy x y d g e name) (get-cam-parameters cam)
-      (extract-csf* (aref *result* j i 0) a :x x :y y :w w :h h)
+   #+nil      (extract-csf* (aref *result* j i 0) a :x x :y y :w w :h h)
+      (pylon::%helper-extract-csf 
+       (sb-sys:vector-sap (sb-ext:array-storage-vector (aref *result* j i 0)))
+       (sb-sys:vector-sap (sb-ext:array-storage-vector a))
+       x y 257 512 w h)
       (write-pgm8 (format nil "/dev/shm/eo-~3,'0d-~3,'0d.pgm" j i) (.uint8 (.abs a)))
       (list x y))))
 
