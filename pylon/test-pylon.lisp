@@ -327,9 +327,9 @@
 (defparameter *cams* (pylon:create *fact* 3))
 
 (defparameter *cam-parameters*
-  `((21433565    2    2   512 512   249  17 167 478  66   0  800 "transmission with polrot (top)")
+  `((21433565    2    2   512 512   249  17 167 478  66   0  3000 "transmission with polrot (top)")
     (21433566    1    1   580 580   520 215 220  11  66  28 21040 "backreflection with polrot") ;; this one has order on zero line
-    (21433540    2    2   512 512   365   0 101 138  66   0  800 "transmission same pol"))
+    (21433540    2    2   512 512   365   0 101 138  66   0  3000 "transmission same pol"))
   "    id      binx  biny  w   h     x    y  kx  ky   d   g   e   name")
 
 ;; 33040
@@ -811,8 +811,17 @@ rectangular, for alpha=1 Hann window."
     (unwind-protect 
 	 (let ((old 0))
 	  (progn
+	    (dotimes (i 3)
+	      (pylon::command-execute *cams* i "GevTimestampControlReset"))
 	    (pylon:start-grabbing *cams*)
 	    (let* ((buf-s (make-array (list 580 580) :element-type 'single-float))
+		   (store-s (make-array (list count-second count-first 3)
+					:initial-contents 
+					(loop for j below count-second collect
+					     (loop for i below count-first collect
+						  (loop for i below 3 collect
+						       (make-array (list 512 512) 
+								   :element-type 'single-float))))))
 		   (buf-cs (make-array (list 580 (+ 1 (floor 580 2))) :element-type '(complex single-float)))
 		   (ext-cs (make-array (list count-second count-first 3)
 				       :initial-contents 
@@ -856,7 +865,19 @@ rectangular, for alpha=1 Hann window."
 							     (sb-sys:vector-sap s)
 							     (sb-sys:vector-sap d)
 							     (sb-sys:vector-sap win) (* w h)))))
-						      (progn
+						      (let ((e (aref store-s yji ji cam))
+							    (f (make-array 
+								(list hh ww)
+								:element-type 'single-float
+								:displaced-to buf-s)))
+							(declare (type (simple-array single-float 2) e)
+								 ;(type (array single-float 2) f)
+								 )
+							(dotimes (i 512)
+							  (dotimes (j 512)
+							      (setf (aref e j i) (aref f j i)))))
+
+						      #+nil (progn
 							(fftw::%fftwf_execute (elt plan cam))
 							
 							(let ((e (aref ext-cs yji ji cam))
@@ -869,6 +890,7 @@ rectangular, for alpha=1 Hann window."
 							  (dotimes (i 257)
 							    (dotimes (j 512)
 							      (setf (aref e j i) (aref f j i)))))
+							
 							#+nil
 							(extract-csf* (make-array 
 								       (list hh (1+ (floor ww 2)))
@@ -890,6 +912,7 @@ rectangular, for alpha=1 Hann window."
 		  (sb-thread:join-thread th)))
 	      (loop for p in plan do (fftw::%fftwf_destroy_plan p))
 	      (defparameter *result* ext-cs)
+	      (defparameter *result2* store-s)
 	      (sb-ext:gc :full t))))
       (pylon:stop-grabbing *cams*))))
 #+nil
@@ -923,8 +946,19 @@ rectangular, for alpha=1 Hann window."
 #+nil
 (time
  (loop for j below 19 do
-      (loop for i below 19 do
+      (loop for i below 25 do
 	   (write-pgm8 (format nil "/dev/shm/o-~3,'0d-~3,'0d.pgm" j i) (.uint8 (.log (.abs (aref *result* j i 2))))))))
+
+#+nil
+(time
+ (loop for j below 19 do
+      (loop for i below 25 do
+	   (write-pgm8 (format nil "/dev/shm/o-~3,'0d-~3,'0d.pgm" j i) (.uint8 (aref *result2* j i 2))))))
+
+#+nil
+(let ((j 15)
+      (i 8))
+ (write-pgm8 (format nil "/dev/shm/o-~3,'0d-~3,'0d.pgm" j i) (.uint8 (.log (.abs (aref *result* j i 2))))))
 
 #+nil
 (room) 
