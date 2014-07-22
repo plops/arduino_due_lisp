@@ -318,6 +318,10 @@
 ;; delay waits ms
    (format nil "(dac ~a ~a)" x y)))
 
+
+#+nil
+(tilt-mirror 0 0)
+
 (fftw:prepare-threads)
 
 (fftw::%fftwf_plan_with_nthreads 6)
@@ -327,9 +331,9 @@
 (defparameter *cams* (pylon:create *fact* 3))
 
 (defparameter *cam-parameters*
-  `((21433565    2    2   512 512   249  17 167 478  66   0  800 "transmission with polrot (top)")
+  `((21433565    2    2   512 512   249  17 167 478  66   0  2800 "transmission with polrot (top)")
     (21433566    1    1   580 580   520 215 220  11  66  28 21040 "backreflection with polrot") ;; this one has order on zero line
-    (21433540    2    2   512 512   365   0 101 138  66   0  800 "transmission same pol"))
+    (21433540    2    2   512 512   365   0 101 138  66   0  2800 "transmission same pol"))
   "    id      binx  biny  w   h     x    y  kx  ky   d   g   e   name")
 
 ;; 33040
@@ -865,10 +869,19 @@ rectangular, for alpha=1 Hann window."
 						    (progn
 						      (fftw::%fftwf_execute (elt plan cam))
 						      (setf (aref dc-s yji ji cam) (realpart (aref buf-cs 0 0)))
+						      
+						      #+nil 
 						      (extract-csf* (make-array (list hh (+ 1 (floor ww 2)))
 										:element-type '(complex single-float)
 										:displaced-to buf-cs)
-								    (aref ext-cs yji ji cam) :x x :y y :w d :h d)))
+								    (aref ext-cs yji ji cam) :x x :y y :w d :h d)
+						      
+						      (pylon::%helper-extract-csf
+						       (sb-sys:vector-sap (sb-ext:array-storage-vector buf-cs))
+						       (sb-sys:vector-sap
+							(sb-ext:array-storage-vector (aref ext-cs yji ji cam)))
+						       x y (1+ (floor w 2)) h
+						       d d)))
 						  (format t "acquisition error.~%")))))))
 			 :name "camera-acquisition")))
 		(sleep .001)
@@ -898,12 +911,12 @@ rectangular, for alpha=1 Hann window."
 	(let ((a (make-array (list (* h 66)
 				   (* w 66))
 			     :element-type '(complex single-float))))
-	  (loop for j below h do
-	       (loop for i below w do
+	  (loop for j from 10 below h do
+	       (loop for i from 10 below w do
 		    (let ((b (aref *result* j i k)))
 		      (dotimes (jj 66)
 			(dotimes (ii 66)
-			  (setf (aref a (+ (* 66 j) jj) (+ (* 66 i) ii))
+			  (setf (aref a (+ (* 66 (- j 10)) jj) (+ (* 66 (- i 10)) ii))
 				(aref b jj ii)))))))
 	  (write-pgm8 (format nil "/dev/shm/o~1,'0d.pgm" k)
 		      (.uint8 (.abs a)))))))
@@ -984,7 +997,7 @@ rectangular, for alpha=1 Hann window."
 
 #+nil
 (progn (let ((count 0)
-	     (step 20))
+	     (step 30))
 	 (loop for yj from 1800 below 3700 by step do
 	      (loop for j from 400 below 2900 by step do
 		   (incf count)))
