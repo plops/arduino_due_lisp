@@ -789,6 +789,7 @@ rectangular, for alpha=1 Hann window."
 #+nil(time (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 512 :h 512 :flag fftw::+measure+) nil))
 (defparameter *diff* nil)
 (defun run-several-s ()
+  (declare (optimize (debug 3) (speed 3)))
   (defparameter *diff* nil)
   ;; make sure the fft can has an optimized plan
   (fftw::%fftwf_import_wisdom_from_filename "fiberholo.fftwf.wisdom")
@@ -843,9 +844,10 @@ rectangular, for alpha=1 Hann window."
 					 (loop for i below 3 do
 					      (multiple-value-bind (cam success-p w h framenr timestamp) 
 						  (pylon::grab-sf *cams* buf-s)
-						
-						(declare (ignorable framenr))
-						(if (and (= cam 2) success-p)
+					       
+						(declare (ignorable framenr)
+							 (type (unsigned-byte 32) w h))
+						(if (and (= cam 0) success-p)
 						    (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
 							(get-cam-parameters cam)
 						      (declare (ignorable id binx biny ox oy d g e name x y))
@@ -866,30 +868,24 @@ rectangular, for alpha=1 Hann window."
 							     (sb-sys:vector-sap d)
 							     (sb-sys:vector-sap win) (* w h)))))
 						      (let ((e (aref store-s yji ji cam))
-							    (f (make-array 
-								(list hh ww)
-								:element-type 'single-float
-								:displaced-to buf-s)))
-							(declare (type (simple-array single-float 2) e)
-								 ;(type (array single-float 2) f)
+							    (f (sb-ext:array-storage-vector buf-s)))
+							(declare (type (simple-array single-float (512 512)) e)
+								 (type (simple-array single-float 1) f)
 								 )
 							(dotimes (i 512)
 							  (dotimes (j 512)
-							      (setf (aref e j i) (aref f j i)))))
+							    (setf (aref e j i) (aref f (+ i (* 512 j)))))))
 
-						      #+nil (progn
+						       (progn
 							(fftw::%fftwf_execute (elt plan cam))
 							
 							(let ((e (aref ext-cs yji ji cam))
-							      (f (make-array 
-								  (list hh (1+ (floor ww 2)))
-								  :element-type '(complex single-float)
-								  :displaced-to buf-cs)))
-							  #+nil (declare (type (simple-array (complex single-float) 2) e)
-								   (type (array (complex single-float) 2) f))
+							      (f (sb-ext:array-storage-vector buf-cs)))
+							  (declare (type (simple-array (complex single-float) 2) e)
+								   (type (simple-array (complex single-float) 1) f))
 							  (dotimes (i 257)
 							    (dotimes (j 512)
-							      (setf (aref e j i) (aref f j i)))))
+							      (setf (aref e j i) (aref f (+ i (* j 257)))))))
 							
 							#+nil
 							(extract-csf* (make-array 
@@ -947,13 +943,13 @@ rectangular, for alpha=1 Hann window."
 (time
  (loop for j below 19 do
       (loop for i below 25 do
-	   (write-pgm8 (format nil "/dev/shm/o-~3,'0d-~3,'0d.pgm" j i) (.uint8 (.log (.abs (aref *result* j i 2))))))))
+	   (write-pgm8 (format nil "/dev/shm/ko-~3,'0d-~3,'0d.pgm" j i) (.uint8 (.log (.abs (aref *result* j i 0))))))))
 
 #+nil
 (time
  (loop for j below 19 do
       (loop for i below 25 do
-	   (write-pgm8 (format nil "/dev/shm/o-~3,'0d-~3,'0d.pgm" j i) (.uint8 (aref *result2* j i 2))))))
+	   (write-pgm8 (format nil "/dev/shm/o-~3,'0d-~3,'0d.pgm" j i) (.uint8 (aref *result2* j i 0))))))
 
 #+nil
 (let ((j 15)
@@ -1094,7 +1090,7 @@ rectangular, for alpha=1 Hann window."
  (progn
    (dotimes (i 3)
      (pylon::command-execute *cams* i "GevTimestampControlReset"))
-   (defparameter *dark* (multiple-value-list (capture-dark-images 300)))
+   (defparameter *dark* (multiple-value-list (capture-dark-images 600)))
    (create-windows (first *dark*))))
 
 
