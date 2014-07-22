@@ -945,6 +945,16 @@ rectangular, for alpha=1 Hann window."
       (loop for i below 25 do
 	   (write-pgm8 (format nil "/dev/shm/ko-~3,'0d-~3,'0d.pgm" j i) (.uint8 (.log (.abs (aref *result* j i 0))))))))
 
+
+#+nil
+(let ((j 9) (i 2) (cam 0) (w 66) (h 66))
+  (let ((a (make-array (list h w) :element-type '(complex single-float))))
+    (destructuring-bind (id binx biny ww hh ox oy x y d g e name) (get-cam-parameters cam)
+      (extract-csf* (aref *result* j i 0) a :x x :y y :w w :h h)
+      (write-pgm8 (format nil "/dev/shm/eo-~3,'0d-~3,'0d.pgm" j i) (.uint8 (.abs a)))
+      (list x y))))
+
+
 #+nil
 (time
  (loop for j below 19 do
