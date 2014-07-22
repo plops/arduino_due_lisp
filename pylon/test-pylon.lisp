@@ -800,7 +800,7 @@ rectangular, for alpha=1 Hann window."
   
   (dotimes (i 3)
     (pylon:set-value-e *cams* i "TriggerMode" 1))
-  (let* ((step 80)
+  (let* ((step 30)
 	 (count-first (let ((count 0))
 			(loop for j from 400 below 2900 by step do
 			     (incf count)) 

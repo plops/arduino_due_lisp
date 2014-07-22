@@ -257,7 +257,7 @@ return number(ret);"))))
 #+nil
 (progn
   (defparameter *template-file*
-    (with-open-file (s "arduino_due_lisp.template")
+    (with-open-file (s "/home/martin/arduino_due_lisp/arduino-femtolisp/arduino_due_lisp.template")
       (let ((a (make-string (file-length s))))
 	(read-sequence a s)
 	a)))
@@ -269,11 +269,11 @@ return number(ret);"))))
 			  ("\\+INIT\\+" init)
 			  ("\\+FUN\\+" fun)
 			  ("\\+STACK\\+" stack)) do
-       (let ((defs (combine *base* *arducam*)))
+       (let ((defs *base* #+nil   (combine *base* *arducam*)))
 	(setf *template-file*
 	      (cl-ppcre:regex-replace e *template-file*
 				      (slot-value defs slot)))))
-  (with-open-file (s "arduino_due_lisp.ino"
+  (with-open-file (s "/home/martin/arduino_due_lisp/arduino-femtolisp/arduino_due_lisp.ino"
 		     :if-exists :supersede
 		     :direction :output
 		     :if-does-not-exist :create)

@@ -46,8 +46,7 @@
 	       :on ()
 	       :off (IXON IXOFF IXANY
 		     IGNBRK BRKINT PARMRK ISTRIP
-		     INLCR IGNCR ICRNL
-			  ))
+		     INLCR IGNCR ICRNL))
  
      ;; process output
      (set-flag (termios-oflag term)
@@ -559,7 +558,7 @@
 			     :time 0.01d0)))
       (sleep .03))))
 
-
+#+nil
 (let ((sys (let* ((*readtable* (copy-readtable nil))
 		    (start 0)
 		    (line t))
