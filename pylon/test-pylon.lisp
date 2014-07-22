@@ -817,6 +817,8 @@ rectangular, for alpha=1 Hann window."
 	    (pylon:start-grabbing *cams*)
 	    (let* ((buf-s (make-array (list 580 580) :element-type 'single-float))
 		   (buf-cs (make-array (list 580 (+ 1 (floor 580 2))) :element-type '(complex single-float)))
+		   (dc-s (make-array (list count-second count-first 3)
+				     :element-type 'single-float))
 		   (ext-cs (make-array (list count-second count-first 3)
 				       :initial-contents 
 				       (loop for j below count-second collect
@@ -862,6 +864,7 @@ rectangular, for alpha=1 Hann window."
 
 						    (progn
 						      (fftw::%fftwf_execute (elt plan cam))
+						      (setf (aref dc-s yji ji cam) (realpart (aref buf-cs 0 0)))
 						      (extract-csf* (make-array (list hh (+ 1 (floor ww 2)))
 										:element-type '(complex single-float)
 										:displaced-to buf-cs)
@@ -873,11 +876,18 @@ rectangular, for alpha=1 Hann window."
 		(sb-thread:join-thread th))
 	      (loop for p in plan do (fftw::%fftwf_destroy_plan p))
 	      (defparameter *result* ext-cs)
-	      #+nil (defparameter *result2* store-s)
+	      (defparameter *result2* dc-s)
 	      (sb-ext:gc :full t))))
       (pylon:stop-grabbing *cams*))))
 #+nil
 (time (progn (run-several-s) nil))
+
+#+nil
+(let ((a (make-array (list 768 3) :element-type 'single-float
+		 :displaced-to *result2*
+		 )))
+ (loop for i below 768 by 10 do (format t "~3d ~2,3g ~2,3g ~2,3g~%"  i (aref a i 0) (aref a i 1) (aref a i 2))))
+
 
 #+nil
 (unblock-laser)
