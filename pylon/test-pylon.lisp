@@ -346,7 +346,8 @@
 
 
 (init-cam-parameter-hash)
-
+#+nil
+(get-cam-parameters 2)
 
 #+nil
 (parse-integer (pylon:cam-get-serial-number *cams* 2))
@@ -751,7 +752,7 @@ rectangular, for alpha=1 Hann window."
 					     (if success-p
 						 (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
 						     (get-cam-parameters cam)
-						   (declare (ignorable id binx biny ox oy d g e name))
+						   (declare (ignorable id binx biny ox oy d g e name x y))
 						   (assert (= ww w))
 						   (assert (= hh h))
 						   (when (and *dark* *win*)
@@ -783,11 +784,14 @@ rectangular, for alpha=1 Hann window."
 
 ;(make-array (list 2 3) :initial-contents (loop for i below 2 collect (loop for j below 3 collect (list i j))))
 
+
+
 #+nil(time (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 512 :h 512 :flag fftw::+measure+) nil))
 (defparameter *diff* nil)
 (defun run-several-s ()
   (defparameter *diff* nil)
   ;; make sure the fft can has an optimized plan
+  (fftw::%fftwf_import_wisdom_from_filename "fiberholo.fftwf.wisdom")
   (time
    (progn 
      (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 580 :h 580 :flag fftw::+patient+) nil)
@@ -809,12 +813,14 @@ rectangular, for alpha=1 Hann window."
 	  (progn
 	    (pylon:start-grabbing *cams*)
 	    (let* ((buf-s (make-array (list 580 580) :element-type 'single-float))
-		   (buf-cs (make-array (list 580 580) :element-type '(complex single-float)))
+		   (buf-cs (make-array (list 580 (+ 1 (floor 580 2))) :element-type '(complex single-float)))
 		   (ext-cs (make-array (list count-second count-first 3)
 				       :initial-contents 
 				       (loop for j below count-second collect
 					    (loop for i below count-first collect
-						 (loop for i below 3 collect (make-array (list 66 66) :element-type '(complex single-float)))))))
+						 (loop for i below 3 collect
+						      (make-array (list 512 (+ 1 (floor 512 2))) 
+								  :element-type '(complex single-float)))))))
 		   (plan (loop for i below 3 collect 
 			      (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
 				  (get-cam-parameters i)
@@ -830,38 +836,53 @@ rectangular, for alpha=1 Hann window."
 						  (pylon::grab-sf *cams* buf-s)
 						
 						(declare (ignorable framenr))
-						(if success-p
+						(if (and (= cam 2) success-p)
 						    (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
 							(get-cam-parameters cam)
-						      (declare (ignorable id binx biny ox oy d g e name))
+						      (declare (ignorable id binx biny ox oy d g e name x y))
 						      (assert (= ww w))
 						      (assert (= hh h))
 						      (when (= 0 cam)
 							(push (list yji ji (/ (- timestamp old) 125e6)) *diff*)
 							(setf old timestamp))
+						      (format t "~a~%" cam)
 						      (when (and *dark* *win*)
 							(let ((win (.linear (elt *win* cam)))
 							      (d (.linear (elt (first *dark*) cam)))
 							      (s (.linear buf-s)))
 							  (declare (type (simple-array single-float 1) s win d))
 							  (sb-sys:with-pinned-objects (win d s)
-							    (pylon::helper-subtract-bg-multiply-window (sb-sys:vector-sap s)
-												       (sb-sys:vector-sap d)
-												       (sb-sys:vector-sap win)
-												       (* w h)))))
+							    (pylon::helper-subtract-bg-multiply-window 
+							     (sb-sys:vector-sap s)
+							     (sb-sys:vector-sap d)
+							     (sb-sys:vector-sap win) (* w h)))))
 						      (progn
 							(fftw::%fftwf_execute (elt plan cam))
 							
+							(let ((e (aref ext-cs yji ji cam))
+							      (f (make-array 
+								  (list hh (1+ (floor ww 2)))
+								  :element-type '(complex single-float)
+								  :displaced-to buf-cs)))
+							  #+nil (declare (type (simple-array (complex single-float) 2) e)
+								   (type (array (complex single-float) 2) f))
+							  (dotimes (i 257)
+							    (dotimes (j 512)
+							      (setf (aref e j i) (aref f j i)))))
 							#+nil
-							(extract-csf* (make-array (list hh ww)
-										  :element-type '(complex single-float)
-										  :displaced-to buf-cs)
+							(extract-csf* (make-array 
+								       (list hh (1+ (floor ww 2)))
+								       :element-type '(complex single-float)
+								       :displaced-to buf-cs)
 								      (aref ext-cs yji ji cam)
-								      :x x :y y :w d :h d)
+								      :x 0 :y 0 :w 257 :h 512)
 							
-							(pylon::%helper-extract-csf (sb-sys:vector-sap (sb-ext:array-storage-vector buf-cs))
-										    (sb-sys:vector-sap (sb-ext:array-storage-vector (aref ext-cs yji ji cam)))
-										    x y w h 66 66)))
+							#+nil
+							(pylon::%helper-extract-csf 
+							 (sb-sys:vector-sap (sb-ext:array-storage-vector buf-cs))
+							 (sb-sys:vector-sap
+							  (sb-ext:array-storage-vector (aref ext-cs yji ji cam)))
+							 x y (1+ (floor w 2)) h 512 512)))
 						    (format t "acquisition error.~%")))))))
 			   :name "camera-acquisition")))
 		  (sleep .001)
@@ -874,7 +895,36 @@ rectangular, for alpha=1 Hann window."
 #+nil
 (time (progn (run-several-s) nil))
 
+#+nil
+(unblock-laser)
+#+nil
+(defparameter *result-mosaic* 
+ (destructuring-bind (h w cams) (array-dimensions *result*)
+   (let ((a (make-array (list (* h 66)
+			      (* w 66))
+			:element-type '(complex single-float))))
+     (loop for j below h do
+	  (loop for i below w do
+	       (let ((b (aref *result* j i 1)))
+		 (dotimes (jj 66)
+		   (dotimes (ii 66)
+		     (setf (aref a (+ (* 66 j) jj) (+ (* 66 i) ii))
+			   (aref b jj ii)))))))
+     a)))
 
+#+nil
+(write-pgm8 "/dev/shm/o.pgm" (.uint8 (.abs *result-mosaic*)))
+
+#+nil
+(loop for j from 400 below 2900 by 100 and i from 0 collect (list i j)) ;; 11 is center
+#+nil
+(loop for j from 1800 below 3700 by 100 and i from 0 collect (list i j)) ;; 9 is center
+
+#+nil
+(time
+ (loop for j below 19 do
+      (loop for i below 19 do
+	   (write-pgm8 (format nil "/dev/shm/o-~3,'0d-~3,'0d.pgm" j i) (.uint8 (.log (.abs (aref *result* j i 2))))))))
 
 #+nil
 (room) 
@@ -973,7 +1023,7 @@ rectangular, for alpha=1 Hann window."
 		 (loop for i below 3 do
 		      (destructuring-bind (cam success-p w h framenr timestamp) 
 			  (multiple-value-list (pylon::grab-sf *cams* *buf-s*))
-			(declare (ignorable framenr))
+			(declare (ignorable framenr timestamp))
 			(if success-p
 			    (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
 				(get-cam-parameters cam)
