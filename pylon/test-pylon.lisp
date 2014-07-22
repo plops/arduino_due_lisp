@@ -816,7 +816,7 @@ rectangular, for alpha=1 Hann window."
 	      (pylon::command-execute *cams* i "GevTimestampControlReset"))
 	    (pylon:start-grabbing *cams*)
 	    (let* ((buf-s (make-array (list 580 580) :element-type 'single-float))
-		   (store-s (make-array (list count-second count-first 3)
+		   #+nil (store-s (make-array (list count-second count-first 3)
 					:initial-contents 
 					(loop for j below count-second collect
 					     (loop for i below count-first collect
@@ -829,7 +829,7 @@ rectangular, for alpha=1 Hann window."
 				       (loop for j below count-second collect
 					    (loop for i below count-first collect
 						 (loop for i below 3 collect
-						      (make-array (list 512 (+ 1 (floor 512 2))) 
+						      (make-array (list 66 66) 
 								  :element-type '(complex single-float)))))))
 		   (plan (loop for i below 3 collect 
 			      (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
@@ -847,7 +847,7 @@ rectangular, for alpha=1 Hann window."
 					       
 						(declare (ignorable framenr)
 							 (type (unsigned-byte 32) w h))
-						(if (and (= cam 0) success-p)
+						(if success-p
 						    (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
 							(get-cam-parameters cam)
 						      (declare (ignorable id binx biny ox oy d g e name x y))
@@ -867,6 +867,7 @@ rectangular, for alpha=1 Hann window."
 							     (sb-sys:vector-sap s)
 							     (sb-sys:vector-sap d)
 							     (sb-sys:vector-sap win) (* w h)))))
+						      #+nil
 						      (let ((e (aref store-s yji ji cam))
 							    (f (sb-ext:array-storage-vector buf-s)))
 							(declare (type (simple-array single-float (512 512)) e)
@@ -879,6 +880,7 @@ rectangular, for alpha=1 Hann window."
 						       (progn
 							(fftw::%fftwf_execute (elt plan cam))
 							
+							#+nil
 							(let ((e (aref ext-cs yji ji cam))
 							      (f (sb-ext:array-storage-vector buf-cs)))
 							  (declare (type (simple-array (complex single-float) 2) e)
@@ -887,20 +889,11 @@ rectangular, for alpha=1 Hann window."
 							    (dotimes (j 512)
 							      (setf (aref e j i) (aref f (+ i (* j 257)))))))
 							
-							#+nil
-							(extract-csf* (make-array 
-								       (list hh (1+ (floor ww 2)))
-								       :element-type '(complex single-float)
-								       :displaced-to buf-cs)
-								      (aref ext-cs yji ji cam)
-								      :x 0 :y 0 :w 257 :h 512)
-							
-							#+nil
 							(pylon::%helper-extract-csf 
 							 (sb-sys:vector-sap (sb-ext:array-storage-vector buf-cs))
 							 (sb-sys:vector-sap
 							  (sb-ext:array-storage-vector (aref ext-cs yji ji cam)))
-							 x y (1+ (floor w 2)) h 512 512)))
+							 x y (1+ (floor w 2)) h d d)))
 						    (format t "acquisition error.~%")))))))
 			   :name "camera-acquisition")))
 		  (sleep .001)
@@ -908,7 +901,7 @@ rectangular, for alpha=1 Hann window."
 		  (sb-thread:join-thread th)))
 	      (loop for p in plan do (fftw::%fftwf_destroy_plan p))
 	      (defparameter *result* ext-cs)
-	      (defparameter *result2* store-s)
+	      #+nil (defparameter *result2* store-s)
 	      (sb-ext:gc :full t))))
       (pylon:stop-grabbing *cams*))))
 #+nil
@@ -950,31 +943,15 @@ rectangular, for alpha=1 Hann window."
 (let ((j 9) (i 2) (cam 0) (w 66) (h 66))
   (let ((a (make-array (list h w) :element-type '(complex single-float))))
     (destructuring-bind (id binx biny ww hh ox oy x y d g e name) (get-cam-parameters cam)
-   (time (dotimes (k 10000)
-	  (extract-csf* (aref *result* j i 0) a :x x :y y :w w :h h)))
-   (time (dotimes (k 10000)
-      (pylon::%helper-extract-csf 
+      #+NIL (extract-csf* (aref *result* j i 0) a :x x :y y :w w :h h)
+      #+NIL (pylon::%helper-extract-csf 
        (sb-sys:vector-sap (sb-ext:array-storage-vector (aref *result* j i 0)))
        (sb-sys:vector-sap (sb-ext:array-storage-vector a))
-       x y 257 512 w h)))
-      (write-pgm8 (format nil "/dev/shm/eo-~3,'0d-~3,'0d.pgm" j i) (.uint8 (.abs a)))
+       x y 257 512 w h)
+      (dotimes (k 3)
+       (write-pgm8 (format nil "/dev/shm/eo-~3,'0d-~3,'0d-~1,'0d.pgm" j i k) (.uint8 (.abs (aref *result* j i k)))))
       (list x y))))
 
-;; Evaluation took:
-;;   3.370 seconds of real time
-;;   3.387000 seconds of total run time (3.387000 user, 0.000000 system)
-;;   [ Run times consist of 0.013 seconds GC time, and 3.374 seconds non-GC time. ]
-;;   100.50% CPU
-;;   9,478,230,077 processor cycles
-;;   697,367,040 bytes consed
-  
-;; Evaluation took:
-;;   0.452 seconds of real time
-;;   0.454000 seconds of total run time (0.454000 user, 0.000000 system)
-;;   100.44% CPU
-;;   1,271,037,970 processor cycles
-;;   294,912 bytes consed
-  
 
 
 #+nil
