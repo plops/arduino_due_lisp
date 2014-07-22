@@ -950,13 +950,31 @@ rectangular, for alpha=1 Hann window."
 (let ((j 9) (i 2) (cam 0) (w 66) (h 66))
   (let ((a (make-array (list h w) :element-type '(complex single-float))))
     (destructuring-bind (id binx biny ww hh ox oy x y d g e name) (get-cam-parameters cam)
-   #+nil      (extract-csf* (aref *result* j i 0) a :x x :y y :w w :h h)
+   (time (dotimes (k 10000)
+	  (extract-csf* (aref *result* j i 0) a :x x :y y :w w :h h)))
+   (time (dotimes (k 10000)
       (pylon::%helper-extract-csf 
        (sb-sys:vector-sap (sb-ext:array-storage-vector (aref *result* j i 0)))
        (sb-sys:vector-sap (sb-ext:array-storage-vector a))
-       x y 257 512 w h)
+       x y 257 512 w h)))
       (write-pgm8 (format nil "/dev/shm/eo-~3,'0d-~3,'0d.pgm" j i) (.uint8 (.abs a)))
       (list x y))))
+
+;; Evaluation took:
+;;   3.370 seconds of real time
+;;   3.387000 seconds of total run time (3.387000 user, 0.000000 system)
+;;   [ Run times consist of 0.013 seconds GC time, and 3.374 seconds non-GC time. ]
+;;   100.50% CPU
+;;   9,478,230,077 processor cycles
+;;   697,367,040 bytes consed
+  
+;; Evaluation took:
+;;   0.452 seconds of real time
+;;   0.454000 seconds of total run time (0.454000 user, 0.000000 system)
+;;   100.44% CPU
+;;   1,271,037,970 processor cycles
+;;   294,912 bytes consed
+  
 
 
 #+nil
