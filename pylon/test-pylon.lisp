@@ -816,12 +816,12 @@ rectangular, for alpha=1 Hann window."
 	      (pylon::command-execute *cams* i "GevTimestampControlReset"))
 	    (pylon:start-grabbing *cams*)
 	    (let* ((buf-s (make-array (list 580 580) :element-type 'single-float))
-		   #+nil (store-s (make-array (list count-second count-first 3)
+		   (store-s (make-array (list count-second count-first 3)
 					:initial-contents 
 					(loop for j below count-second collect
 					     (loop for i below count-first collect
 						  (loop for i below 3 collect
-						       (make-array (list 512 512) 
+						       (make-array (list 580 580) 
 								   :element-type 'single-float))))))
 		   (buf-cs (make-array (list 580 (+ 1 (floor 580 2))) :element-type '(complex single-float)))
 		   (ext-cs (make-array (list count-second count-first 3)
@@ -829,7 +829,8 @@ rectangular, for alpha=1 Hann window."
 				       (loop for j below count-second collect
 					    (loop for i below count-first collect
 						 (loop for i below 3 collect
-						      (make-array (list 66 66) 
+						      (make-array ;(list 66 66) 
+								   (list 580 (+ 1 (floor 580 2)))
 								  :element-type '(complex single-float)))))))
 		   (plan (loop for i below 3 collect 
 			      (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
@@ -867,28 +868,30 @@ rectangular, for alpha=1 Hann window."
 							     (sb-sys:vector-sap s)
 							     (sb-sys:vector-sap d)
 							     (sb-sys:vector-sap win) (* w h)))))
-						      #+nil
-						      (let ((e (aref store-s yji ji cam))
-							    (f (sb-ext:array-storage-vector buf-s)))
-							(declare (type (simple-array single-float (512 512)) e)
-								 (type (simple-array single-float 1) f)
-								 )
-							(dotimes (i 512)
-							  (dotimes (j 512)
-							    (setf (aref e j i) (aref f (+ i (* 512 j)))))))
+						      (when (= cam 1)
+						       (let ((e (aref store-s yji ji cam))
+							     (f (sb-ext:array-storage-vector buf-s)))
+							 (declare (type (simple-array single-float 2) e)
+								  (type (simple-array single-float 1) f)
+								  )
+							 (dotimes (i ww)
+							   (dotimes (j hh)
+							     (setf (aref e j i) (aref f (+ i (* ww j))))))))
 
-						       (progn
+						      (progn
 							(fftw::%fftwf_execute (elt plan cam))
 							
-							#+nil
-							(let ((e (aref ext-cs yji ji cam))
-							      (f (sb-ext:array-storage-vector buf-cs)))
-							  (declare (type (simple-array (complex single-float) 2) e)
-								   (type (simple-array (complex single-float) 1) f))
-							  (dotimes (i 257)
-							    (dotimes (j 512)
-							      (setf (aref e j i) (aref f (+ i (* j 257)))))))
 							
+							(when (= cam 1)
+							 (let ((e (aref ext-cs yji ji cam))
+							       (f (sb-ext:array-storage-vector buf-cs)))
+							   (declare (type (simple-array (complex single-float) 2) e)
+								    (type (simple-array (complex single-float) 1) f))
+							   (dotimes (i 291)
+							     (dotimes (j 580)
+							       (setf (aref e j i) (aref f (+ i (* j 291))))))))
+							
+							#+nil
 							(pylon::%helper-extract-csf 
 							 (sb-sys:vector-sap (sb-ext:array-storage-vector buf-cs))
 							 (sb-sys:vector-sap
@@ -901,7 +904,7 @@ rectangular, for alpha=1 Hann window."
 		  (sb-thread:join-thread th)))
 	      (loop for p in plan do (fftw::%fftwf_destroy_plan p))
 	      (defparameter *result* ext-cs)
-	      #+nil (defparameter *result2* store-s)
+	      (defparameter *result2* store-s)
 	      (sb-ext:gc :full t))))
       (pylon:stop-grabbing *cams*))))
 #+nil
@@ -936,29 +939,30 @@ rectangular, for alpha=1 Hann window."
 (time
  (loop for j below 19 do
       (loop for i below 25 do
-	   (write-pgm8 (format nil "/dev/shm/ko-~3,'0d-~3,'0d.pgm" j i) (.uint8 (.log (.abs (aref *result* j i 0))))))))
+	   (write-pgm8 (format nil "/dev/shm/ko-~3,'0d-~3,'0d.pgm" j i) (.uint8 (.log (.abs (aref *result* j i 1))))))))
+
+#+nil
+(let ((j 10) (i 10) (cam 1) (w 66) (h 66))
+  (let ((a (make-array (list h w) :element-type '(complex single-float))))
+    (destructuring-bind (id binx biny ww hh ox oy x y d g e name) (get-cam-parameters cam)
+      #+nil (extract-csf* (aref *result* j i cam) a :x x :y y :w w :h h)
+      (pylon::%helper-extract-csf 
+       (sb-sys:vector-sap (sb-ext:array-storage-vector (aref *result* j i cam)))
+       (sb-sys:vector-sap (sb-ext:array-storage-vector a))
+       x y (+ 1 (floor 580 2)) 580 w h)
+      (write-pgm8 (format nil "/dev/shm/eo-~3,'0d-~3,'0d-~1,'0d.pgm" j i cam) (.uint8 (.log (.abs a #+nil (aref *result* j i cam)))))
+      (list x y))))
 
 
 #+nil
-(let ((j 9) (i 2) (cam 0) (w 66) (h 66))
-  (let ((a (make-array (list h w) :element-type '(complex single-float))))
-    (destructuring-bind (id binx biny ww hh ox oy x y d g e name) (get-cam-parameters cam)
-      #+NIL (extract-csf* (aref *result* j i 0) a :x x :y y :w w :h h)
-      #+NIL (pylon::%helper-extract-csf 
-       (sb-sys:vector-sap (sb-ext:array-storage-vector (aref *result* j i 0)))
-       (sb-sys:vector-sap (sb-ext:array-storage-vector a))
-       x y 257 512 w h)
-      (dotimes (k 3)
-       (write-pgm8 (format nil "/dev/shm/eo-~3,'0d-~3,'0d-~1,'0d.pgm" j i k) (.uint8 (.abs (aref *result* j i k)))))
-      (list x y))))
-
+(get-cam-parameters 1)
 
 
 #+nil
 (time
  (loop for j below 19 do
       (loop for i below 25 do
-	   (write-pgm8 (format nil "/dev/shm/o-~3,'0d-~3,'0d.pgm" j i) (.uint8 (aref *result2* j i 0))))))
+	   (write-pgm8 (format nil "/dev/shm/o-~3,'0d-~3,'0d.pgm" j i) (.uint8 (aref *result2* j i 1))))))
 
 #+nil
 (let ((j 15)

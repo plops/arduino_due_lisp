@@ -707,7 +707,8 @@ extern "C" {
   {
     int i,j, ox=x-w/2, oy=y-h/2;
     for(j=0;j<h;j++)
-      for(i=0;i<w;i++)
-	out[i+w*j] = in[((i+ox)%iw) + ((j+oy)%ih)*iw];
+      for(i=0;i<w;i++){
+	out[i+w*j] = in[(((unsigned int)(i+ox))%iw) + (((unsigned int)(j+oy))%ih)*iw];
+      } // unsigned calculation necessary for modulo to work as expected with negative numbers
   }
 }
