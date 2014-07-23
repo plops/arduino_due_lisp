@@ -151,6 +151,7 @@
    :time 8d0))
 
 
+
 (defun trigger-all-cameras-seq-1d-scan (j &key 
 					   (starti 400)
 					   (maxi 2900) 
@@ -804,7 +805,7 @@ rectangular, for alpha=1 Hann window."
   
   (dotimes (i 3)
     (pylon:set-value-e *cams* i "TriggerMode" 1))
-  (let* ((step 120)
+  (let* ((step 20)
 	 (count-first (let ((count 0))
 			(loop for j from 400 below 2900 by step do
 			     (incf count)) 
@@ -891,41 +892,153 @@ rectangular, for alpha=1 Hann window."
 	      (defparameter *result* ext-cs)
 	      (defparameter *result2* dc-s)
 	      (sb-ext:gc :full t))))
-      (pylon:stop-grabbing *cams*))))
+      (pylon:stop-grabbing *cams*)
+      (tilt-mirror 0 0))))
 #+nil
 (time (progn (run-several-s) nil))
 
 #+nil
 (time
- (progn
-   (with-open-file (s "/home/martin/stabil.dat" :direction :output :if-exists :supersede :if-does-not-exist :create)
-     (let* ((a (make-array (list 10000 3) :element-type 'single-float
-			   :displaced-to *result2*
-			   ))
-	    (b (loop for k below 3 collect (loop for i below 10000 collect
-						(let ((q (aref *result* i k))
-						      (sum 0s0))
-						  (declare (type (simple-array (complex single-float) 2) q))
-						  (dotimes (j 66)
-						    (dotimes (i 66)
-						      (incf sum (expt (abs (aref q j i)) 2))))
-						  sum))))
-	    (sum (loop for k below 3 collect (loop for i below 10000 sum (aref a i k)))))
-     
-       (loop for i below 10000 by 1 do (format s "~3d ~8,5g ~8,5g ~8,5g ~8,5g ~8,5g ~8,5g~%"  i 
-					       (aref a i 0)
-					       (aref a i 1)
-					       (aref a i 2)
-					       (elt (elt b 0) i)
-					       (elt (elt b 1) i)
-					       (elt (elt b 2) i)))))
-   (with-open-file (s "/home/martin/stabil.gp" :direction :output :if-exists :supersede :if-does-not-exist :create)
-     (format s "set term gif; set output \"/home/martin/stabil.gif\"; ~%")
-     (format s "plot \"/home/martin/stabil.dat\" u 1:2 w l,  \"/home/martin/stabil.dat\" u 1:3 w l,  \"/home/martin/stabil.dat\" u 1:4 w l, \"/home/martin/stabil.dat\" u 1:5 w l,  \"/home/martin/stabil.dat\" u 1:6 w l,  \"/home/martin/stabil.dat\" u 1:7 w l"))
-   (sb-ext:run-program "/usr/bin/gnuplot" '("/home/martin/stabil.gp"))))
+ (destructuring-bind (hh ww kk) (array-dimensions *result*)
+   (let ((a (make-array (list hh ww kk 66 66) :element-type '(complex single-float))))
+     (dotimes (jj hh)
+       (dotimes (ii ww)
+	 (dotimes (k kk)
+	   (let ((b (aref *result* jj ii k)))
+	     (dotimes (j 66)
+	       (dotimes (i 66)
+		 (setf (aref a jj ii k j i) (aref b j i))))))))
+     (ics:write-ics2 (format nil "/media/sdc1/dat/0723/o.ics") a))))
+
+#+nil
+(time
+ )
+
+#+nil
+(time
+ (let ((n 1000))
+  (progn
+    (with-open-file (s "/home/martin/stabil.dat" :direction :output :if-exists :supersede :if-does-not-exist :create)
+      (let* ((a (make-array (list n 3) :element-type 'single-float
+			    :displaced-to *result2*
+			    ))
+	     (b (loop for k below 3 collect (loop for i below n collect
+						 (let ((q (aref *result* i k))
+						       (sum 0s0))
+						   (declare (type (simple-array (complex single-float) 2) q))
+						   (dotimes (j 66)
+						     (dotimes (i 66)
+						       (incf sum (expt (abs (aref q j i)) 2))))
+						   sum))))
+	     (sum (loop for k below 3 collect (loop for i below n sum (aref a i k)))))
+       
+	(loop for i below n by 1 do (format s "~3d ~8,5g ~8,5g ~8,5g ~8,5g ~8,5g ~8,5g~%"  i 
+						(aref a i 0)
+						(aref a i 1)
+						(aref a i 2)
+						(elt (elt b 0) i)
+						(elt (elt b 1) i)
+						(elt (elt b 2) i)))))
+    (with-open-file (s "/home/martin/stabil.gp" :direction :output :if-exists :supersede :if-does-not-exist :create)
+      (format s "set term gif; set output \"/home/martin/stabil.gif\"; ~%")
+      (format s "plot \"/home/martin/stabil.dat\" u 1:2 w l,  \"/home/martin/stabil.dat\" u 1:3 w l,  \"/home/martin/stabil.dat\" u 1:4 w l, \"/home/martin/stabil.dat\" u 1:5 ,  \"/home/martin/stabil.dat\" u 1:6,  \"/home/martin/stabil.dat\" u 1:7"))
+    (sb-ext:run-program "/usr/bin/gnuplot" '("/home/martin/stabil.gp")))))
+
+
+#+nil
+(time
+ (loop for k below 3 do
+      (let ((a (make-array (list 66 66) :element-type 'single-float)))
+	(loop for i below 1000 do
+	     (.accum a (.abs2 (aref *result* i k))))
+	(write-pgm8 (format nil "/dev/shm/o~3,'0d.pgm" k) (.uint8 (.abs (fftw::ftf a)))))))
 
 
 
+
+(defun run-several-with-wiggle-scanning (&optional (num 100))
+  (progn (fftw::%fftwf_import_wisdom_from_filename "fiberholo.fftwf.wisdom")
+	 (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 580 :h 580 :flag fftw::+patient+) nil)
+	 (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 512 :h 512 :flag fftw::+patient+) nil))
+  (dotimes (i 3) (pylon:set-value-e *cams* i "TriggerMode" 1))
+  (unwind-protect 
+       (let ((old 0))
+	 (progn
+	   (dotimes (i 3)
+	     (pylon::command-execute *cams* i "GevTimestampControlReset"))
+	   (tilt-mirror 1550 2500)
+	   (pylon:start-grabbing *cams*)
+	   (let* ((buf-s (make-array (list 580 580) :element-type 'single-float))
+		  (buf-cs (make-array (list 580 (+ 1 (floor 580 2))) :element-type '(complex single-float)))
+		  (dc-s (make-array (list num 3)
+				    :element-type 'single-float))
+		  (ext-cs (make-array (list num 3)
+				      :initial-contents 
+				      (loop for i below num collect
+					   (loop for i below 3 collect
+						(make-array (list 66 66) 
+							    :element-type '(complex single-float))))))
+		  (plan (loop for i below 3 collect 
+			     (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+				 (get-cam-parameters i)
+			       (declare (ignorable id binx biny ox oy d g e name x y))
+			       (fftw::rplanf buf-s :out buf-cs :w ww :h hh :flag fftw::+measure+)))))
+	     (loop for j below num do
+	      (let ((th (sb-thread:make-thread 
+			 #'(lambda ()
+			     (loop for i below 3 do
+				  (multiple-value-bind (cam success-p w h framenr timestamp) 
+				      (pylon::grab-sf *cams* buf-s)
+				    
+				    (declare (ignorable framenr)
+					     (type (unsigned-byte 32) w h))
+				    (if success-p
+					(destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+					    (get-cam-parameters cam)
+					  (declare (ignorable id binx biny ox oy d g e name x y)) (assert (= ww w)) (assert (= hh h))
+					  
+					  (when (and *dark* *win*)
+					    (let ((win (.linear (elt *win* cam)))
+						  (d (.linear (elt (first *dark*) cam)))
+						  (s (.linear buf-s)))
+					      (declare (type (simple-array single-float 1) s win d))
+					      (sb-sys:with-pinned-objects (win d s)
+						(pylon::helper-subtract-bg-multiply-window 
+						 (sb-sys:vector-sap s)
+						 (sb-sys:vector-sap d)
+						 (sb-sys:vector-sap win) (* w h)))))
+
+					  (progn
+					    (fftw::%fftwf_execute (elt plan cam))
+					    (setf (aref dc-s j cam) (realpart (aref buf-cs 0 0)))
+					    
+					    #+nil 
+					    (extract-csf* (make-array (list hh (+ 1 (floor ww 2)))
+								      :element-type '(complex single-float)
+								      :displaced-to buf-cs)
+							  (aref ext-cs yji ji cam) :x x :y y :w d :h d)
+					    
+					    (pylon::%helper-extract-csf
+					     (sb-sys:vector-sap (sb-ext:array-storage-vector buf-cs))
+					     (sb-sys:vector-sap
+					      (sb-ext:array-storage-vector (aref ext-cs j cam)))
+					     x y (1+ (floor w 2)) h
+					     d d)))
+					(format t "acquisition error.~%")))))
+			 :name "camera-acquisition")))
+		(sleep .001)
+		(if (= 0 (mod j 2))
+		    (tilt-mirror-and-trigger-all-cameras 1550 2500)
+		    (tilt-mirror-and-trigger-all-cameras 1550 2400))
+		(sb-thread:join-thread th)))
+	     (loop for p in plan do (fftw::%fftwf_destroy_plan p))
+	     (defparameter *result* ext-cs)
+	     (defparameter *result2* dc-s)
+	     (sb-ext:gc :full t))))
+    (pylon:stop-grabbing *cams*)))
+
+#+nil
+(run-several-with-wiggle-scanning 1000)
 
 (defun run-several-without-scanning (&optional (num 100))
   (declare (optimize (debug 3) (speed 3)))
@@ -1010,7 +1123,7 @@ rectangular, for alpha=1 Hann window."
 					    (format t "acquisition error.~%"))))))
 			:name "camera-acquisition")))
 	       (sleep .001)
-	       (trigger-all-cameras-seq num :delay-ms 24)
+	       (trigger-all-cameras-seq num :delay-ms 99)
 	       (sb-thread:join-thread th))
 	     (loop for p in plan do (fftw::%fftwf_destroy_plan p))
 	     (defparameter *result* ext-cs)
@@ -1052,14 +1165,14 @@ rectangular, for alpha=1 Hann window."
 	 (let ((a (make-array (list (* h hh)
 				    (* w ww))
 			      :element-type '(complex single-float))))
-	   (loop for j from 10 below h do
-		(loop for i from 10 below w do 
+	   (loop for j from 0 below h do
+		(loop for i from 0 below w do 
 		     (let ((b #+nil (extract (aref *result* j i k) :w ww :h hh)
 			      (fftw::ftf (aref *result* j i k) :sign fftw::+backward+ :flag fftw::+patient+)
 			     ))
 		       (dotimes (jj hh)
 			 (dotimes (ii ww)
-			   (setf (aref a (+ (* hh (- j 10)) jj) (+ (* ww (- i 10)) (if (= k 0) (- (1- ww) ii)
+			   (setf (aref a (+ (* hh (- j 0)) jj) (+ (* ww (- i 0)) (if (= k 0) (- (1- ww) ii)
 										       ii)))
 				 (aref b jj ii)))))))
 	   (write-pgm8 (format nil "/dev/shm/o~1,'0d.pgm" k)
@@ -1145,11 +1258,11 @@ rectangular, for alpha=1 Hann window."
 
 #+nil
 (progn (let ((count 0)
-	     (step 30))
+	     (step 12))
 	 (loop for yj from 1800 below 3700 by step do
 	      (loop for j from 400 below 2900 by step do
 		   (incf count)))
-	 (list count
+	 (list (/ (* 66 66 8 3 count) (* 1024d0 1024))
 	       (/ count 305.0)))) ; => 39.9 fps
 
 (/
@@ -1245,7 +1358,7 @@ rectangular, for alpha=1 Hann window."
  (progn
    (dotimes (i 3)
      (pylon::command-execute *cams* i "GevTimestampControlReset"))
-   (defparameter *dark* (multiple-value-list (capture-dark-images 300)))
+   (defparameter *dark* (multiple-value-list (capture-dark-images 1000)))
    (create-windows (first *dark*))))
 
 
