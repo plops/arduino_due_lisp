@@ -896,13 +896,20 @@ rectangular, for alpha=1 Hann window."
 (time (progn (run-several-s) nil))
 
 #+nil
-(let ((a (make-array (list 768 3) :element-type 'single-float
-		 :displaced-to *result2*
-		 )))
- (loop for i below 768 by 10 do (format t "~3d ~2,3g ~2,3g ~2,3g~%"  i (aref a i 0) (aref a i 1) (aref a i 2))))
+(progn
+  (with-open-file (s "/home/martin/stabil.dat" :direction :output :if-exists :supersede :if-does-not-exist :create)
+   (let ((a (make-array (list 10000 3) :element-type 'single-float
+			:displaced-to *result2*
+			)))
+     (loop for i below 10000 by 1 do (format s "~3d ~8,5g ~8,5g ~8,5g~%"  i (aref a i 0) (aref a i 1) (aref a i 2)))))
+  (with-open-file (s "/home/martin/stabil.gp" :direction :output :if-exists :supersede :if-does-not-exist :create)
+    (format s "set term gif; set output \"/home/martin/stabil.gif\"; ~%")
+    (format s "plot \"/home/martin/stabil.dat\" u 1:2 w l,  \"/home/martin/stabil.dat\" u 1:3 w l,  \"/home/martin/stabil.dat\" u 1:4 w l"))
+  (sb-ext:run-program "/usr/bin/gnuplot" '("/home/martin/stabil.gp")))
 
 
-(defun run-several-without-scanning ()
+
+(defun run-several-without-scanning (&optional (num 100))
   (declare (optimize (debug 3) (speed 3)))
   (defparameter *diff* nil)
   ;; make sure the fft can has an optimized plan
@@ -914,88 +921,87 @@ rectangular, for alpha=1 Hann window."
   
   (dotimes (i 3)
     (pylon:set-value-e *cams* i "TriggerMode" 1))
-  (let* ((num 1000))
-    (unwind-protect 
-	 (let ((old 0))
-	  (progn
-	    (dotimes (i 3)
-	      (pylon::command-execute *cams* i "GevTimestampControlReset"))
-	    (tilt-mirror 1550 2500)
-	    (pylon:start-grabbing *cams*)
-	    (let* ((buf-s (make-array (list 580 580) :element-type 'single-float))
-		   (buf-cs (make-array (list 580 (+ 1 (floor 580 2))) :element-type '(complex single-float)))
-		   (dc-s (make-array (list num 3)
-				     :element-type 'single-float))
-		   (ext-cs (make-array (list num 3)
-				       :initial-contents 
-				       (loop for i below num collect
-					    (loop for i below 3 collect
-						 (make-array (list 66 66) 
-							     :element-type '(complex single-float))))))
-		   (plan (loop for i below 3 collect 
-			      (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
-				  (get-cam-parameters i)
-				(declare (ignorable id binx biny ox oy d g e name x y))
-				(fftw::rplanf buf-s :out buf-cs :w ww :h hh :flag fftw::+measure+)))))
-	      (let ((th (sb-thread:make-thread 
-			 #'(lambda ()
-			     (loop for j below num do
-				  (loop for i below 3 do
-				       (multiple-value-bind (cam success-p w h framenr timestamp) 
-					   (pylon::grab-sf *cams* buf-s)
-					 
-					 (declare (ignorable framenr)
-						  (type (unsigned-byte 32) w h))
-					 (if success-p
-					     (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
-						 (get-cam-parameters cam)
-					       (declare (ignorable id binx biny ox oy d g e name x y))
-					       (assert (= ww w))
-					       (assert (= hh h))
-					       (when (= 0 cam)
-						 (push (list j (/ (- timestamp old) 125e6)) *diff*)
-						 (setf old timestamp))
-					       
-					       (when (and *dark* *win*)
-						 (let ((win (.linear (elt *win* cam)))
-						       (d (.linear (elt (first *dark*) cam)))
-						       (s (.linear buf-s)))
-						   (declare (type (simple-array single-float 1) s win d))
-						   (sb-sys:with-pinned-objects (win d s)
-						     (pylon::helper-subtract-bg-multiply-window 
-						      (sb-sys:vector-sap s)
-						      (sb-sys:vector-sap d)
-						      (sb-sys:vector-sap win) (* w h)))))
+  (unwind-protect 
+       (let ((old 0))
+	 (progn
+	   (dotimes (i 3)
+	     (pylon::command-execute *cams* i "GevTimestampControlReset"))
+	   (tilt-mirror 1550 2500)
+	   (pylon:start-grabbing *cams*)
+	   (let* ((buf-s (make-array (list 580 580) :element-type 'single-float))
+		  (buf-cs (make-array (list 580 (+ 1 (floor 580 2))) :element-type '(complex single-float)))
+		  (dc-s (make-array (list num 3)
+				    :element-type 'single-float))
+		  (ext-cs (make-array (list num 3)
+				      :initial-contents 
+				      (loop for i below num collect
+					   (loop for i below 3 collect
+						(make-array (list 66 66) 
+							    :element-type '(complex single-float))))))
+		  (plan (loop for i below 3 collect 
+			     (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+				 (get-cam-parameters i)
+			       (declare (ignorable id binx biny ox oy d g e name x y))
+			       (fftw::rplanf buf-s :out buf-cs :w ww :h hh :flag fftw::+measure+)))))
+	     (let ((th (sb-thread:make-thread 
+			#'(lambda ()
+			    (loop for j below num do
+				 (loop for i below 3 do
+				      (multiple-value-bind (cam success-p w h framenr timestamp) 
+					  (pylon::grab-sf *cams* buf-s)
+					
+					(declare (ignorable framenr)
+						 (type (unsigned-byte 32) w h))
+					(if success-p
+					    (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+						(get-cam-parameters cam)
+					      (declare (ignorable id binx biny ox oy d g e name x y))
+					      (assert (= ww w))
+					      (assert (= hh h))
+					      (when (= 0 cam)
+						(push (list j (/ (- timestamp old) 125e6)) *diff*)
+						(setf old timestamp))
+					      
+					      (when (and *dark* *win*)
+						(let ((win (.linear (elt *win* cam)))
+						      (d (.linear (elt (first *dark*) cam)))
+						      (s (.linear buf-s)))
+						  (declare (type (simple-array single-float 1) s win d))
+						  (sb-sys:with-pinned-objects (win d s)
+						    (pylon::helper-subtract-bg-multiply-window 
+						     (sb-sys:vector-sap s)
+						     (sb-sys:vector-sap d)
+						     (sb-sys:vector-sap win) (* w h)))))
 
-					       (progn
-						 (fftw::%fftwf_execute (elt plan cam))
-						 (setf (aref dc-s j cam) (realpart (aref buf-cs 0 0)))
-						 
-						 #+nil 
-						 (extract-csf* (make-array (list hh (+ 1 (floor ww 2)))
-									   :element-type '(complex single-float)
-									   :displaced-to buf-cs)
-							       (aref ext-cs yji ji cam) :x x :y y :w d :h d)
-						 
-						 (pylon::%helper-extract-csf
-						  (sb-sys:vector-sap (sb-ext:array-storage-vector buf-cs))
-						  (sb-sys:vector-sap
-						   (sb-ext:array-storage-vector (aref ext-cs j cam)))
-						  x y (1+ (floor w 2)) h
-						  d d)))
-					     (format t "acquisition error.~%"))))))
-			 :name "camera-acquisition")))
-		(sleep .001)
-		(trigger-all-cameras-seq num :delay-ms 24)
-		(sb-thread:join-thread th))
-	      (loop for p in plan do (fftw::%fftwf_destroy_plan p))
-	      (defparameter *result* ext-cs)
-	      (defparameter *result2* dc-s)
-	      (sb-ext:gc :full t))))
-      (pylon:stop-grabbing *cams*))))
+					      (progn
+						(fftw::%fftwf_execute (elt plan cam))
+						(setf (aref dc-s j cam) (realpart (aref buf-cs 0 0)))
+						
+						#+nil 
+						(extract-csf* (make-array (list hh (+ 1 (floor ww 2)))
+									  :element-type '(complex single-float)
+									  :displaced-to buf-cs)
+							      (aref ext-cs yji ji cam) :x x :y y :w d :h d)
+						
+						(pylon::%helper-extract-csf
+						 (sb-sys:vector-sap (sb-ext:array-storage-vector buf-cs))
+						 (sb-sys:vector-sap
+						  (sb-ext:array-storage-vector (aref ext-cs j cam)))
+						 x y (1+ (floor w 2)) h
+						 d d)))
+					    (format t "acquisition error.~%"))))))
+			:name "camera-acquisition")))
+	       (sleep .001)
+	       (trigger-all-cameras-seq num :delay-ms 24)
+	       (sb-thread:join-thread th))
+	     (loop for p in plan do (fftw::%fftwf_destroy_plan p))
+	     (defparameter *result* ext-cs)
+	     (defparameter *result2* dc-s)
+	     (sb-ext:gc :full t))))
+    (pylon:stop-grabbing *cams*)))
 #+nil
 (time
- (run-several-without-scanning))
+ (run-several-without-scanning 10000))
 
 #+nil
 (unblock-laser)
