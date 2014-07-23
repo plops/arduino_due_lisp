@@ -896,16 +896,34 @@ rectangular, for alpha=1 Hann window."
 (time (progn (run-several-s) nil))
 
 #+nil
-(progn
-  (with-open-file (s "/home/martin/stabil.dat" :direction :output :if-exists :supersede :if-does-not-exist :create)
-   (let ((a (make-array (list 10000 3) :element-type 'single-float
-			:displaced-to *result2*
-			)))
-     (loop for i below 10000 by 1 do (format s "~3d ~8,5g ~8,5g ~8,5g~%"  i (aref a i 0) (aref a i 1) (aref a i 2)))))
-  (with-open-file (s "/home/martin/stabil.gp" :direction :output :if-exists :supersede :if-does-not-exist :create)
-    (format s "set term gif; set output \"/home/martin/stabil.gif\"; ~%")
-    (format s "plot \"/home/martin/stabil.dat\" u 1:2 w l,  \"/home/martin/stabil.dat\" u 1:3 w l,  \"/home/martin/stabil.dat\" u 1:4 w l"))
-  (sb-ext:run-program "/usr/bin/gnuplot" '("/home/martin/stabil.gp")))
+(time
+ (progn
+   (with-open-file (s "/home/martin/stabil.dat" :direction :output :if-exists :supersede :if-does-not-exist :create)
+     (let* ((a (make-array (list 10000 3) :element-type 'single-float
+			   :displaced-to *result2*
+			   ))
+	    (b (loop for k below 3 collect (loop for i below 10000 collect
+						(let ((q (aref *result* i k))
+						      (sum 0s0))
+						  (declare (type (simple-array (complex single-float) 2) q))
+						  (dotimes (j 66)
+						    (dotimes (i 66)
+						      (incf sum (expt (abs (aref q j i)) 2))))
+						  sum))))
+	    (sum (loop for k below 3 collect (loop for i below 10000 sum (aref a i k)))))
+     
+       (loop for i below 10000 by 1 do (format s "~3d ~8,5g ~8,5g ~8,5g ~8,5g ~8,5g ~8,5g~%"  i 
+					       (aref a i 0)
+					       (aref a i 1)
+					       (aref a i 2)
+					       (elt (elt b 0) i)
+					       (elt (elt b 1) i)
+					       (elt (elt b 2) i)))))
+   (with-open-file (s "/home/martin/stabil.gp" :direction :output :if-exists :supersede :if-does-not-exist :create)
+     (format s "set term gif; set output \"/home/martin/stabil.gif\"; ~%")
+     (format s "plot \"/home/martin/stabil.dat\" u 1:2 w l,  \"/home/martin/stabil.dat\" u 1:3 w l,  \"/home/martin/stabil.dat\" u 1:4 w l, \"/home/martin/stabil.dat\" u 1:5 w l,  \"/home/martin/stabil.dat\" u 1:6 w l,  \"/home/martin/stabil.dat\" u 1:7 w l"))
+   (sb-ext:run-program "/usr/bin/gnuplot" '("/home/martin/stabil.gp"))))
+
 
 
 
