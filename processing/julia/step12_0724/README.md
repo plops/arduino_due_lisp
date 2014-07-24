@@ -31,11 +31,11 @@ These images were acquired simultaneously with 40 fps (overall 522s)
 
 The following displays some images of the fiber end of the 3 cameras with different illumination angles:
 
-|   |  |  |
+|               |               |               |
 | ------------- | ------------- | ------------- |
- | | ![](/processing/julia/step12_0724/fiber_coherent_intens_1-1.jpg?raw=true "")| |
-![](/processing/julia/step12_0724/fiber_coherent_intens_2-1.jpg?raw=true "")| ![](/processing/julia/step12_0724/fiber_coherent_intens_3-1.jpg?raw=true "") | ![](/processing/julia/step12_0724/fiber_coherent_intens_4-1.jpg?raw=true "")
- | | ![](/processing/julia/step12_0724/fiber_coherent_intens_5-1.jpg?raw=true "") | |
+|               | ![](/processing/julia/step12_0724/fiber_coherent_intens_1-1.jpg?raw=true "") | |
+| ![](/processing/julia/step12_0724/fiber_coherent_intens_2-1.jpg?raw=true "") | ![](/processing/julia/step12_0724/fiber_coherent_intens_3-1.jpg?raw=true "") | ![](/processing/julia/step12_0724/fiber_coherent_intens_4-1.jpg?raw=true "") |
+|               | ![](/processing/julia/step12_0724/fiber_coherent_intens_5-1.jpg?raw=true "") | |
 
 |               |               |               |
 | ------------- | ------------- | ------------- |
@@ -50,14 +50,3 @@ The following displays some images of the fiber end of the 3 cameras with differ
 | ![](/processing/julia/step12_0724/fiber_coherent_intens_2-3.jpg?raw=true "") | ![](/processing/julia/step12_0724/fiber_coherent_intens_3-3.jpg?raw=true "") | ![](/processing/julia/step12_0724/fiber_coherent_intens_4-3.jpg?raw=true "") |
 | | ![](/processing/julia/step12_0724/fiber_coherent_intens_5-3.jpg?raw=true "") | |
 
-
-
-1 | 2
---|--
-3 | 4
-
-
-|   |  |  |
-| ------------- | ------------- | ------------- |
-| Content Cell  | Content Cell  | Content Cell  |
-| Content Cell  | Content Cell  | Content Cell  |
