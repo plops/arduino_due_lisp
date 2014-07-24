@@ -908,11 +908,15 @@ rectangular, for alpha=1 Hann window."
 	     (dotimes (j 66)
 	       (dotimes (i 66)
 		 (setf (aref a jj ii k j i) (aref b j i))))))))
-     (ics:write-ics2 (format nil "/media/sdc1/dat/0723/o3.ics") a))))
+     (ics:write-ics2 (format nil "/media/sdc1/dat/0723/o4.ics") a))))
 
 #+nil
-(time
- )
+(with-open-file (s (format nil "/media/sdc1/dat/0723/o4.dat") :direction :output
+		   :if-exists :supersede :if-does-not-exist :create)
+  (format s "~a ~a~%" 'cam '(id      binx  biny  w   h     x    y  kx  ky   d   g   e   name))
+  (dotimes (cam 3)
+    (format s "~d ~s~%" cam (get-cam-parameters cam))))
+
 
 #+nil
 (time
@@ -1099,6 +1103,7 @@ rectangular, for alpha=1 Hann window."
 						      (s (.linear buf-s)))
 						  (declare (type (simple-array single-float 1) s win d))
 						  (sb-sys:with-pinned-objects (win d s)
+						    ;; i could use blas axpy instead (from acml)
 						    (pylon::helper-subtract-bg-multiply-window 
 						     (sb-sys:vector-sap s)
 						     (sb-sys:vector-sap d)
@@ -1143,15 +1148,16 @@ rectangular, for alpha=1 Hann window."
 	(let ((a (make-array (list (* h 66)
 				   (* w 66))
 			     :element-type '(complex single-float))))
-	  (loop for j from 10 below h do
-	       (loop for i from 10 below w do
+	  (loop for j from 20 below h do
+	       (loop for i from 20 below w do
 		    (let ((b (aref *result* j i k)))
 		      (dotimes (jj 66)
 			(dotimes (ii 66)
-			  (setf (aref a (+ (* 66 (- j 10)) jj) (+ (* 66 (- i 10)) ii))
+			  (setf (aref a (+ (* 66 (- j 20)) jj) (+ (* 66 (- i 20)) ii))
 				(aref b jj ii)))))))
 	  (write-pgm8 (format nil "/dev/shm/o~1,'0d.pgm" k)
 		      (.uint8 (.abs a)))))))
+
 
 #+nil
 (loop for i below 3 collect (get-cam-parameters i))
