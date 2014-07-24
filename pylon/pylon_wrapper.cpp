@@ -703,12 +703,20 @@ extern "C" {
     for (i = 0; i < n; ++i)
       a[i] = (a[i] - b[i]) * w[i];
   }
+  inline int mod (int a, int b) {
+    if(b < 0) //you can check for b == 0 separately and do what you want
+      return mod(-a, -b);   
+    int ret = a % b;
+    if(ret < 0)
+      ret+=b;
+    return ret;
+  }
   void helper_extract_csf(std::complex<float>* __restrict__ in, std::complex<float> * __restrict out, int x, int y, int iw, int ih, int w, int h)
   {
     int i,j, ox=x-w/2, oy=y-h/2;
     for(j=0;j<h;j++)
       for(i=0;i<w;i++){
-	out[i+w*j] = in[(((unsigned int)(i+ox))%iw) + (((unsigned int)(j+oy))%ih)*iw];
-      } // unsigned calculation necessary for modulo to work as expected with negative numbers
+	out[i+w*j] = in[mod(i+ox,iw) + mod(j+oy,ih)*iw];
+      }
   }
 }

@@ -908,7 +908,7 @@ rectangular, for alpha=1 Hann window."
 	     (dotimes (j 66)
 	       (dotimes (i 66)
 		 (setf (aref a jj ii k j i) (aref b j i))))))))
-     (ics:write-ics2 (format nil "/media/sdc1/dat/0723/o.ics") a))))
+     (ics:write-ics2 (format nil "/media/sdc1/dat/0723/o3.ics") a))))
 
 #+nil
 (time
