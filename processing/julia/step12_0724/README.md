@@ -48,3 +48,7 @@ The following displays some images of the fiber end of the 3 cameras with differ
 | | ![](/processing/julia/step12_0724/fiber_coherent_intens_5-3.jpg?raw=true "") | |
 
 
+
+1 | 2
+--|--
+3 | 4
