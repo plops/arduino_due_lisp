@@ -31,20 +31,20 @@ These images were acquired simultaneously with 40 fps (overall 522s)
 
 The following displays some images of the fiber end of the 3 cameras with different illumination angles:
 
-|               | transmission w/ polrot             |               |
+|       transmission w/ polrot   |          |               |
 | ------------- | ------------- | ------------- |
 |               | ![](/processing/julia/step12_0724/fiber_coherent_intens_1-1.jpg?raw=true "") | |
 | ![](/processing/julia/step12_0724/fiber_coherent_intens_2-1.jpg?raw=true "") | ![](/processing/julia/step12_0724/fiber_coherent_intens_3-1.jpg?raw=true "") | ![](/processing/julia/step12_0724/fiber_coherent_intens_4-1.jpg?raw=true "") |
 |               | ![](/processing/julia/step12_0724/fiber_coherent_intens_5-1.jpg?raw=true "") | |
 
-|               | backreflection w/ polrot             |               |
+|                backreflection w/ polrot |             |               |
 | ------------- | ------------- | ------------- |
 |               | ![](/processing/julia/step12_0724/fiber_coherent_intens_1-2.jpg?raw=true "") | |
 | ![](/processing/julia/step12_0724/fiber_coherent_intens_2-2.jpg?raw=true "") | ![](/processing/julia/step12_0724/fiber_coherent_intens_3-2.jpg?raw=true "") | ![](/processing/julia/step12_0724/fiber_coherent_intens_4-2.jpg?raw=true "") |
 |               | ![](/processing/julia/step12_0724/fiber_coherent_intens_5-2.jpg?raw=true "") | |
 
 
-|   | transmission no polrot  |  |
+|    transmission no polrot |  |  |
 | ------------- | ------------- | ------------- |
 | | ![](/processing/julia/step12_0724/fiber_coherent_intens_1-3.jpg?raw=true "") | |
 | ![](/processing/julia/step12_0724/fiber_coherent_intens_2-3.jpg?raw=true "") | ![](/processing/julia/step12_0724/fiber_coherent_intens_3-3.jpg?raw=true "") | ![](/processing/julia/step12_0724/fiber_coherent_intens_4-3.jpg?raw=true "") |
