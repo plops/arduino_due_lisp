@@ -35,14 +35,13 @@ The following displays some images of the fiber end of the 3 cameras with differ
 | ------------- | ------------- | ------------- |
  | | ![](/processing/julia/step12_0724/fiber_coherent_intens_1-1.jpg?raw=true "")| |
 ![](/processing/julia/step12_0724/fiber_coherent_intens_2-1.jpg?raw=true "")| ![](/processing/julia/step12_0724/fiber_coherent_intens_3-1.jpg?raw=true "") | ![](/processing/julia/step12_0724/fiber_coherent_intens_4-1.jpg?raw=true "")
-
  | | ![](/processing/julia/step12_0724/fiber_coherent_intens_5-1.jpg?raw=true "") | |
 
-|   |  |  |
+|               |               |               |
 | ------------- | ------------- | ------------- |
-|  | ![](/processing/julia/step12_0724/fiber_coherent_intens_1-2.jpg?raw=true "") | |
- | ![](/processing/julia/step12_0724/fiber_coherent_intens_2-2.jpg?raw=true "") | ![](/processing/julia/step12_0724/fiber_coherent_intens_3-2.jpg?raw=true "") | ![](/processing/julia/step12_0724/fiber_coherent_intens_4-2.jpg?raw=true "") |
- | | ![](/processing/julia/step12_0724/fiber_coherent_intens_5-2.jpg?raw=true "") | |
+|               | ![](/processing/julia/step12_0724/fiber_coherent_intens_1-2.jpg?raw=true "") | |
+| ![](/processing/julia/step12_0724/fiber_coherent_intens_2-2.jpg?raw=true "") | ![](/processing/julia/step12_0724/fiber_coherent_intens_3-2.jpg?raw=true "") | ![](/processing/julia/step12_0724/fiber_coherent_intens_4-2.jpg?raw=true "") |
+|               | ![](/processing/julia/step12_0724/fiber_coherent_intens_5-2.jpg?raw=true "") | |
 
 
 |   |  |  |
