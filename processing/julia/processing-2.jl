@@ -88,7 +88,7 @@ size(ds)
 @time extrema(abs(a)) # 4.9s
 
 for i = 1:3
-    pt = (squeeze(mean(abs2(a[:,:,i,:,:]),[1 2]),[1 2]));
+    pt = (squeeze(mean(abs2(a[:,:,i,:,:]),[1 2]),[1 2 3]));
     name = camname[i];
     fn = "/dev/shm/angular_throughput_$name";
     write_pgm(pt,fn * ".pgm");
