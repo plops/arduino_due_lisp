@@ -88,10 +88,13 @@ size(ds)
 @time extrema(abs(a)) # 4.9s
 
 for i = 1:3
-    pt = (squeeze(mean(abs(a[:,:,:,:,i]),[1 2]),[1 2]));
-    write_pgm(pt,"/dev/shm/a$i.pgm")
-    run(`convert /dev/shm/a$i.pgm /dev/shm/a$i.jpg`)
-end
+    pt = (squeeze(mean(abs2(a[:,:,i,:,:]),[1 2]),[1 2]));
+    name = camname[i];
+    fn = "/dev/shm/angular_throughput_$name";
+    write_pgm(pt,fn * ".pgm");
+    run(`convert $fn.pgm $fn.jpg`);
+ end
+
 run(`scp /dev/shm/a1.jpg /dev/shm/a2.jpg /dev/shm/a3.jpg martin@dr-kielhorn.eu:/var/www/2014`)
 
 for cam = 1:3
