@@ -789,8 +789,6 @@ rectangular, for alpha=1 Hann window."
 
 ;(make-array (list 2 3) :initial-contents (loop for i below 2 collect (loop for j below 3 collect (list i j))))
 
-
-
 #+nil(time (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 512 :h 512 :flag fftw::+measure+) nil))
 (defparameter *diff* nil)
 (defun run-several-s ()
@@ -1102,7 +1100,7 @@ rectangular, for alpha=1 Hann window."
 						  (declare (type (simple-array single-float 1) s win d))
 						  (sb-sys:with-pinned-objects (win d s)
 						    ;; perhap i could use sbmv with diagonal matrix instead (from acml)
-q						    (pylon::helper-subtract-bg-multiply-window 
+						    (pylon::helper-subtract-bg-multiply-window 
 						     (sb-sys:vector-sap s)
 						     (sb-sys:vector-sap d)
 						     (sb-sys:vector-sap win) (* w h)))))
