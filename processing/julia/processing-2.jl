@@ -70,7 +70,7 @@ write_pgm(abs(a[:,:,1]))
 ## 1 (21433566 1 1 580 580 520 215 220  11 66 28 21040 "backreflection with polrot")
 ## 2 (21433540 2 2 512 512 365   0 101 138 66  0  2800 "transmission same pol")
       
-qcamname=["tran_perp" "tran_para" "refl_perp"]
+qcamname=["tran_perp" "refl_perp" "tran_para"]
 @time for i = 1:3 
     ds = (squeeze(mean(abs2(a[:,:,i,:,:]),[4 5]),[4 5]));
     name = camname[i];
