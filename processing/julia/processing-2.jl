@@ -23,18 +23,18 @@ function read_ics(fn)
     pos = find_ics_raw_start(fn)
     f=open(fn)
     seek(f,pos)
-    a=read(f,Complex64,66,66,25,19,3)
+    a=read(f,Complex64,66,66,3,167,127)
     close(f)
     a
 end
 
-
+ics_file = "/media/sdc1/dat/0723/o4.ics"
 a = read_ics(ics_file)
 
 # check that the dimensions make sense
 (filesize(ics_file)-602)/(66*66*125*95*3)
 
-size(a[:,:,:,:,1])
+size(a[:,:,1,:,:])
 
 
 
@@ -64,18 +64,19 @@ end
 
 write_pgm(abs(a[:,:,1]))
 
-a= read_ics("/home/martin/scan0714_3.ics");
 
-# 65 first image transmission w/ polrot (top)
-# 66 second image backreflection w/ polrot
-# 40 third image transmission same pol (left)
-
-size(a)
-
-for i = 1:3 
-    ds = (squeeze(mean(abs(a[:,:,:,:,i]),[3 4]),[3 4]));
-    write_pgm(ds,"/dev/shm/o$i.pgm")
-    run(`convert /dev/shm/o$i.pgm /dev/shm/o$i.jpg`)
+## CAM (ID  BINX BINY W H   X   Y  KX  KY  D  G    E     NAME)
+## 0 (21433565 2 2 512 512 249  17 167 478 66  0  2800 "transmission with polrot (top)")
+## 1 (21433566 1 1 580 580 520 215 220  11 66 28 21040 "backreflection with polrot")
+## 2 (21433540 2 2 512 512 365   0 101 138 66  0  2800 "transmission same pol")
+      
+qcamname=["tran_perp" "tran_para" "refl_perp"]
+@time for i = 1:3 
+    ds = (squeeze(mean(abs2(a[:,:,i,:,:]),[4 5]),[4 5]));
+    name = camname[i];
+    fn = "/dev/shm/fiber_endface_intens_$name";
+    write_pgm(ds,fn * ".pgm");
+    run(`convert $fn.pgm $fn.jpg`);
 end
 
 size(ds)
