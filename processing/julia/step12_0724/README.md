@@ -54,8 +54,7 @@ The following displays some images of the fiber end of the 3 cameras with differ
 3 | 4
 
 
-| First Header  | Second Header | Second Header |
+|   |  |  |
 | ------------- | ------------- | ------------- |
 | Content Cell  | Content Cell  | Content Cell  |
-| ------------- | ------------- | ------------- |
 | Content Cell  | Content Cell  | Content Cell  |
