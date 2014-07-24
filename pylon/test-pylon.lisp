@@ -1101,8 +1101,8 @@ rectangular, for alpha=1 Hann window."
 						      (s (.linear buf-s)))
 						  (declare (type (simple-array single-float 1) s win d))
 						  (sb-sys:with-pinned-objects (win d s)
-						    ;; i could use blas axpy instead (from acml)
-						    (pylon::helper-subtract-bg-multiply-window 
+						    ;; perhap i could use sbmv with diagonal matrix instead (from acml)
+q						    (pylon::helper-subtract-bg-multiply-window 
 						     (sb-sys:vector-sap s)
 						     (sb-sys:vector-sap d)
 						     (sb-sys:vector-sap win) (* w h)))))
