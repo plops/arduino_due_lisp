@@ -114,7 +114,7 @@ bottom = [cx 20+63]
 pos = [top; left; middle; right; bottom]
 for k=1:3
     for i=1:size( pos,1 )
-        im = abs2(ifft(squeeze(a[:,:,k,pos[i,1],pos[i,2]],[3,4,5]),[1 2]));
+        im = abs(ifft(squeeze(a[:,:,k,pos[i,1],pos[i,2]],[3,4,5]),[1 2]));
         if(k==3)
             im = im[66:-1:1,:]
         end
