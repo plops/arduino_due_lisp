@@ -94,9 +94,42 @@ for i = 1:3
     fn = "/dev/shm/angular_throughput_$name";
     write_pgm(pt,fn * ".pgm");
     run(`convert $fn.pgm $fn.jpg`);
- end
+end
 
-run(`scp /dev/shm/a1.jpg /dev/shm/a2.jpg /dev/shm/a3.jpg martin@dr-kielhorn.eu:/var/www/2014`)
+# with imagej i select a circle in the angular scan: 63x63+36+20
+# sort them like this:
+#     1
+#
+#  2  3  4
+#
+#     5
+
+cx = 36+floor(63/2)
+cy = 20+floor(63/2)
+top = [cx 20]
+left = [36 cy]
+middle = [cx cy]
+right = [36+63 cy]
+bottom = [cx 20+63]
+pos = [top; left; middle; right; bottom]
+for k=1:3
+    for i=1:size( pos,1 )
+        im = abs2(ifft(squeeze(a[:,:,k,pos[i,1],pos[i,2]],[3,4,5]),[1 2]));
+        if(k==3)
+            im = im[66:-1:1,:]
+        end
+        fn = "/dev/shm/fiber_coherent_intens_$i-$k";
+        write_pgm(im,fn*".pgm")
+        run(`convert $fn.pgm $fn.jpg`);
+    end
+end
+
+function extract(a,size,center)
+    b = zeros(size);
+    center = [floor(size(a,1)/2) floor(size(a,2)/2)]
+    
+end
+
 
 for cam = 1:3
     mosaic = reshape(a[:,:,:,:,cam],66*25,66*19)
