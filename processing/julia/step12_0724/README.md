@@ -22,11 +22,9 @@ points along the first axis and 127 points along the second axis.
 
 These images were acquired simultaneously with 40 fps (overall 522s)
 
-![refl_perp](/processing/julia/step12_0724/angular_throughput_refl_perp.jpg?raw=true "refl_perp")
-
-![tran_para](/processing/julia/step12_0724/angular_throughput_tran_para.jpg?raw=true "tran_para")
-
-![tran_perp](/processing/julia/step12_0724/angular_throughput_tran_perp.jpg?raw=true "tran_perp")
+|       refl w/ polrot   | trans no polrot         | trans w/ polrot               |
+| ------------- | ------------- | ------------- |
+| ![refl_perp](/processing/julia/step12_0724/angular_throughput_refl_perp.jpg?raw=true "refl_perp") | ![tran_para](/processing/julia/step12_0724/angular_throughput_tran_para.jpg?raw=true "tran_para") | ![tran_perp](/processing/julia/step12_0724/angular_throughput_tran_perp.jpg?raw=true "tran_perp") |
 
 
 The following displays some images of the fiber end of the 3 cameras with different illumination angles:
