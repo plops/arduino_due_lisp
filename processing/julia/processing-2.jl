@@ -79,11 +79,12 @@ camname=["tran_perp" "refl_perp" "tran_para"]
     ds = (squeeze(mean(abs2(ifft(a,[1 2])[:,:,i,:,:]),[4 5]),[4 5]));
     name = camname[i];
     fn = "/dev/shm/fiber_endface_intens_$name";
+    if(i==3)
+        ds = ds[66:-1:1,:]
+    end
     write_pgm(ds,fn * ".pgm");
     run(`convert $fn.pgm $fn.jpg`);
 end
-
-size(ds)
 
 @time extrema(abs(a)) # 4.9s
 
