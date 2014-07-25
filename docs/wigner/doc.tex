@@ -169,14 +169,15 @@ en bestimmen:
 \end{align}
 
 \begin{align}
-  \Phi'(x) = \textrm{Im}\left(\frac{\frac{\trmd U}{\trmd x}}{U} -  \frac{1}{| U |}\frac{\trmd |U|}{\trmd x} \right) 
+  \Phi'(x) = \textrm{Im}\left(\frac{1}{U}\left(\frac{\trmd U}{\trmd x} -  \frac{\trmd |U|}{\trmd x} \frac{U}{| U |}\right)\right) 
 \end{align}
 
 Die Gr\"o\ss en $U$, $\trmd U / \trmd x$, $|U|$ and $\trmd |U| / \trmd
 x$ k\"onnen leicht aus den gemessenen Daten ermittelt
 werden. Insbesonder weist das Ergebnis $\Phi'(x)$ keine Probleme mit
 Spr\"ungen um $2\pi$ auf, wie sie auftreten w\"urden, wenn einfach
-$\trmd \arg(U)/\trmd x$ berechnet werden w\"urde.
+$\trmd \arg(U)/\trmd x$ berechnet werden w\"urde. Das $U$ wird nicht
+gek\"urzt um Stabilit\"at im Bereich kleiner $|U|$ zu gew\"ahrleisten.
 
 
 Die \"Uberlagerung von zwei Feldern f\"uhrt zu einem Interferenzterm
