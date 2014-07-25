@@ -69,8 +69,62 @@ $u$ mit der optischen Achse:
 
 Die Koh\"arenzfunktion $\Gamma$ und die Wignerdistribution $W'$
 enthalten die gleichen Informationen. Beide sind vierdimensional. $W'$
-ist eine Quasidichteverteilung\footnote{Quasidichteverteilungen
-  liefern zwar den Erwartungswert aber die zugrundeliegenden Gr\"osse
-  ist nicht wie bei Wahrscheinlichkeitsverteilung unabh\"angig.}
+ist eine Quasidichteverteilung. Quasidichteverteilungen liefern zwar
+den Erwartungswert aber die zugrundeliegenden Gr\"osse ist nicht wie
+bei Wahrscheinlichkeitsverteilung unabh\"angig.
+
+Wahrscheinlichkeitsaxiome:
+\begin{align}
+  P(E)&\in\mathbb{R},\quad P(E)\ge 0 \forall E \in F\\
+  P(\Omega) &= 1\\
+  P(E_1\cup E_2\cup\ldots) &= \sum_{i=0}^\infty P(E_i)
+\end{align}
+Ereignisraum $F$, Testraum $\Omega$
+
+
+Die Wignerverteilung beschreibt die Amplitude eines Strahls an der
+Position $x, y$ mit Richtung $p, q$. Da $\Gamma$ hermitisch ist, ist
+$W$ stets reell. Destruktive Interferenz kann zu negativen Werten von
+$W$ f\"uhren.
+
+Das Integral von $W'$ \"uber die Raumkoordinaten $\r$ liefert ein
+Winkelspektrum.
+
+\begin{align}
+  I(\p) = \int W'(\r,\p) \textrm{d}\r
+\end{align}
+
+Das Integral \"uber alle Winkelrichtungen $p$ liefert
+die \"ortlich aufgel\"oste Intensit\"atsverteilung.
+
+\begin{align}
+  I(\r) = \frac{1}{(2\pi)^2} \int W'(\r,\p) \textrm{d}\p
+\end{align}
+
+H\"ohere Momente beschreiben beispielsweise die Qualit\"at von
+Laserstrahlen.
+
+Die Wignerverteilung $W'$ kann durch Faltung mit einem Gauss in eine
+echte Dichteverteilung $Q$ verwandelt werden.
+
+\begin{align}
+  Q(\r,\p) = \int\int W'(\r,\p)\, e^{-\left(\frac{\r-\r'}{a}\right)^2} e^{-\left(\frac{\p-\p'}{b}\right)^2}\textrm{d}\r\textrm{d}\p
+\end{align}
+
+Insbesondere liefert eine Messung immer eine gegl\"attete
+Wignerverteilung $Q$.
+
+
+Im besten Fall: 
+
+\begin{align}
+  Q(\r,\p) = \frac{1}{\sqrt{\Delta x \Delta p }}\int\int W'(\r,\p)\, e^{-2 \left(\frac{\r-\r'}{\Delta x}\right)^2} e^{- 2 \left(\frac{\p-\p'}{\Delta p}\right)^2}\textrm{d}\r\textrm{d}\p
+\end{align}
+
+\begin{align}
+  \Delta x \cdot \Delta p = \frac{\lambda}{\pi}
+\end{align}
+
+
 
 \end{document}
