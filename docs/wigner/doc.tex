@@ -125,6 +125,51 @@ Im besten Fall:
   \Delta x \cdot \Delta p = \frac{\lambda}{\pi}
 \end{align}
 
+Das elektromagnetische Feld am Ausgang einer Multimode-Faser mit
+monochromatischer Beleuchtung l\"asst sich folgendermassen in eine
+Wignerverteilung umwandeln:
 
+\begin{align}
+  W'(x,p) = \int U(x+\Delta x/2) U^*(x-\Delta x/2) e^{-i k_0 \Delta x p}\textrm{d}\Delta x
+\end{align}
+
+Aus gegebener Wignerverteilung l\"asst sich das Feld jedoch nicht
+rekonstruieren, denn im Ausdruck
+\begin{align}
+  U(x) = \frac{1}{\lambda U^*(0)} \int W'(x/2,p)\ e^{ik_0 px} \textrm{p}
+\end{align}
+taucht die Unbekannte $U(0)$, also die globale Phase auf.
+
+Ein koh\"arenter Strahl kann beschrieben werden durch seine
+Amplituden- und Phasenverteilung:
+
+\begin{align}
+  U(x) = A(x) e^{i\Phi(x)}
+\end{align}
+
+Wobei die Phase $\Phi$ mit der Wellenrichtung $p$ im Zusammenhang steht:
+\begin{align}
+  p(x) = \frac{\lambda}{2\pi} \frac{\textrm{d} \Phi(x)}{\textrm{d} x}
+\end{align}
+
+Damit ist die Wignerverteilung f\"ur einen koh\"arenten Strahl
+\begin{align}
+  W'(x,p)= A^2(x) \cdot \delta\left(p-\frac{\lambda}{2\pi}
+    \frac{\textrm{d} \Phi(x)}{\textrm{d} x}\right)
+\end{align}
+
+Die \"Uberlagerung von zwei Feldern f\"uhrt zu einem Interferenzterm
+$W'_\textrm{int}$
+
+\begin{align}
+  W'_\textrm{sum}(x,p) = W'_1(x,p) + W'_2(x,p) + W'_\textrm{int} (x,p)
+\end{align}
+
+mit 
+\begin{align}
+  W'_\textrm{int} (x,p) = 
+  &\int U_1(x+\Delta x/2)  U^*_2(x-\Delta x/2) e^{i k_0 \Delta x p} \textrm{d} \Delta x \\
+  + &\int U_2(x+\Delta x/2)  U^*_1(x-\Delta x/2) e^{i k_0 \Delta x p} \textrm{d} \Delta x
+\end{align}
 
 \end{document}
