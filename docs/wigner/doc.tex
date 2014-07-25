@@ -1,0 +1,76 @@
+\documentclass{article}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{amsbsy} % for bold greek
+\newcommand{\vect}[1]{\mathbf{#1}}
+\renewcommand{\r}{\vect r}
+\newcommand{\p}{\vect p}
+\renewcommand{\k}{\vect k}
+\newcommand{\vnu}{\boldsymbol\nu}
+\begin{document}
+the following from Gross: ``Handbook of optical systems'' 2005 Wiley-VCH
+
+definition of the coherence function $\Gamma$:
+\begin{align}
+  \Gamma_{12}(\tau) &= \frac{1}{T}\int_t^{t+T} U(\r_1,t+\tau) U^*(\r_2,t)\textrm{d}t
+\end{align}
+
+permuting the spatial vectors results in the complex conjugate
+
+inserting two complex amplitudes:
+
+\begin{align}
+  \Gamma(U_n, U_m) &= \frac{1}{T}\int_0^T A_n A_m \cos\left[ \Delta k_{nm} r -\Delta\omega_{nm}(t+\tau) + \Delta\phi_{nm} \right]\textrm{d}t
+\end{align}
+
+for $n=m$ this expression is the intensity and is consequently called mutual intensity
+
+complex degree of coherence $\gamma\in[0,1]$
+
+\begin{align}
+  \gamma_{12}(\tau) &= \frac{\Gamma_{12}(\tau)}{\sqrt{\Gamma_{11}(0)\Gamma_{22}(0)}} = \frac{\Gamma(\r_1,\r_2,\tau)}{\sqrt{I(\r_1)I(\r_2)}}
+\end{align}
+
+diese Funktion wird mit zunehmenden Abstand in Raum $\Delta\r$ und Zeit $\tau$ kleiner
+
+Anwendung der Wellengleichung in Helmholtzformulierung f\"uhrt zu zwei
+gekoppelten Wellengleichungen in beiden Ortskoordinaten f\"ur die
+Koh\"arenzfunktion:
+\begin{align}
+  \nabla_j^2\,\Gamma - \frac{1}{c^2} \frac{\partial^2\, \Gamma}{\partial t^2} = 0, \quad j=1,2
+\end{align}
+
+Einf\"uhrung der Wignerdistribution:
+
+Nutze Schwerpunkt und Differenzkoordinaten:
+\begin{align}
+  \r &= \frac{\r_1+\r_2}{2} \\
+  \Delta\r &= \r_1-\r_2
+\end{align}
+
+
+\begin{align}
+  W(\r,\vnu) &= \int\Gamma\left(\r+\frac{\Delta\r}{2},\r+\frac{\Delta\r}{2}\right) e^{-2\pi i \Delta\r\vnu}\textrm{d}\Delta\r
+\end{align}
+
+Eine oft genutzte alternative Formulierung ersetzt die transverse
+Ortsfrequenz $\nu$ mit den $x-$ und $y-$Komponenten des optischen
+Richtungskosinusvektors $\p$. Diese sind gegeben durch seinen Winkel
+$u$ mit der optischen Achse:
+
+\begin{align}
+  \p &= \sin\vect u = \lambda \vnu = \frac{\lambda}{2\pi} \k
+\end{align}
+
+\begin{align}
+  W'(\r,\p) &= \int\Gamma\left(\r+\frac{\Delta\r}{2},\r+\frac{\Delta\r}{2}\right) e^{-2\pi i \Delta\r\p}\textrm{d}\Delta\r
+\end{align}
+
+
+Die Koh\"arenzfunktion $\Gamma$ und die Wignerdistribution $W'$
+enthalten die gleichen Informationen. Beide sind vierdimensional. $W'$
+ist eine Quasidichteverteilung\footnote{Quasidichteverteilungen
+  liefern zwar den Erwartungswert aber die zugrundeliegenden Gr\"osse
+  ist nicht wie bei Wahrscheinlichkeitsverteilung unabh\"angig.}
+
+\end{document}
