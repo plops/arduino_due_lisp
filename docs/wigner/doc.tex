@@ -5,6 +5,7 @@
 \newcommand{\vect}[1]{\mathbf{#1}}
 \renewcommand{\r}{\vect r}
 \newcommand{\p}{\vect p}
+\newcommand{\trmd}{\textrm{d}}
 \renewcommand{\k}{\vect k}
 \newcommand{\vnu}{\boldsymbol\nu}
 \begin{document}
@@ -144,6 +145,7 @@ Ein koh\"arenter Strahl kann beschrieben werden durch seine
 Amplituden- und Phasenverteilung:
 
 \begin{align}
+  \label{eq:feld}
   U(x) = A(x) e^{i\Phi(x)}
 \end{align}
 
@@ -158,6 +160,25 @@ Damit ist die Wignerverteilung f\"ur einen koh\"arenten Strahl
     \frac{\textrm{d} \Phi(x)}{\textrm{d} x}\right)
 \end{align}
 
+Ausgehend von einer holographisch gemessenen Feldverteilung
+\eqref{eq:feld} l\"asst sich die Ableitung der Phase folgenderma\ss
+en bestimmen:
+
+\begin{align}
+  \frac{\trmd U}{\trmd x} = A'(x) e^{i\Phi(x)} + A(x) e^{i\Phi(x)} i \Phi'(x)
+\end{align}
+
+\begin{align}
+  \Phi'(x) = \textrm{Im}\left(\frac{\frac{\trmd U}{\trmd x}}{U} -  \frac{1}{| U |}\frac{\trmd |U|}{\trmd x} \right) 
+\end{align}
+
+Die Gr\"o\ss en $U$, $\trmd U / \trmd x$, $|U|$ and $\trmd |U| / \trmd
+x$ k\"onnen leicht aus den gemessenen Daten ermittelt
+werden. Insbesonder weist das Ergebnis $\Phi'(x)$ keine Probleme mit
+Spr\"ungen um $2\pi$ auf, wie sie auftreten w\"urden, wenn einfach
+$\trmd \arg(U)/\trmd x$ berechnet werden w\"urde.
+
+
 Die \"Uberlagerung von zwei Feldern f\"uhrt zu einem Interferenzterm
 $W'_\textrm{int}$
 
@@ -171,5 +192,8 @@ mit
   &\int U_1(x+\Delta x/2)  U^*_2(x-\Delta x/2) e^{i k_0 \Delta x p} \textrm{d} \Delta x \\
   + &\int U_2(x+\Delta x/2)  U^*_1(x-\Delta x/2) e^{i k_0 \Delta x p} \textrm{d} \Delta x
 \end{align}
+
+
+
 
 \end{document}
