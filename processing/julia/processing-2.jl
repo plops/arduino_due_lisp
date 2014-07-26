@@ -152,26 +152,35 @@ run(`scp /dev/shm/m1.jpg /dev/shm/m2.jpg /dev/shm/m3.jpg martin@dr-kielhorn.eu:/
 
 norm(a[:,:,1,4,cama])
 
-pearsonrr = zeros(25,19);
-pearsonri = zeros(25,19);
-pearsonir = zeros(25,19);
-pearsonii = zeros(25,19);     
 begin
-    cama = 1
-    camb = 3
-    for i=1:25, j=1:19
-        car = real(a[:,:,i,j,cama])
-        cbr = real(a[end-1:1,:,i,j,camb])
-        cai = imag(a[:,:,i,j,cama])
-        cbi = imag(a[end-1:1,:,i,j,camb])
-        pearsonrr[i,j] = sum(car .* cbr)/(norm(car) * norm(cbr));
-        pearsonri[i,j] = sum(car .* cbi)/(norm(car) * norm(cbi));
-        pearsonir[i,j] = sum(cai .* cbr)/(norm(cai) * norm(cbr));
-        pearsonii[i,j] = sum(cai .* cbi)/(norm(cai) * norm(cbi)); 
+    w = size(a,4)
+    h = size(a,5)
+    pearsonaa = zeros(w,h);
+    pearsonrr = zeros(w,h);
+    pearsonri = zeros(w,h);
+    pearsonir = zeros(w,h);
+    pearsonii = zeros(w,h);     
+    begin
+        cama = 1
+        camb = 3
+        for i=1:w, j=1:h
+            la = squeeze(a[:,:,cama,i,j],[3,4,5]);
+            lb = squeeze(a[end:-1:1,:,camb,i,j],[3,4,5]);
+            car = real(la)
+            cbr = real(lb)
+            cai = imag(la)
+            cbi = imag(lb)
+            caa = abs(la)
+            cba = abs(lb)
+            pearsonrr[i,j] = sum(car .* cbr)/(norm(car) * norm(cbr));
+            pearsonri[i,j] = sum(car .* cbi)/(norm(car) * norm(cbi));
+            pearsonir[i,j] = sum(cai .* cbr)/(norm(cai) * norm(cbr));
+            pearsonii[i,j] = sum(cai .* cbi)/(norm(cai) * norm(cbi));
+            pearsonaa[i,j] = sum(caa .* cba)/(norm(caa) * norm(cba)); 
+        end
+        write_pgm(abs(pearson),"/dev/shm/p$cama$camb.pgm")
     end
-    #write_pgm(abs(pearson),"/dev/shm/p$cama$camb.pgm")
 end
-
 
 # note:
 # think about reflection on one camera
