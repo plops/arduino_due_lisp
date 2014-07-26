@@ -163,8 +163,7 @@ end # elapsed time: 132.095573614 seconds (14144661320 bytes allocated, 6.02% gc
     fn = "pearson_tran";
     write_pgm(abs(pearson_c[:,:]),"/dev/shm/$fn.pgm")
     run(`convert /dev/shm/$fn.pgm /home/martin/arduino_due_lisp/processing/julia/step12_0724/$fn.jpg`)
-    end
-end 
+end # elapsed time: 74.414528512 seconds (6461485144 bytes allocated, 5.55% gc time)
 
 @time begin
     cx = 36+floor(63/2)
