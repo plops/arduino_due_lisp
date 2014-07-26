@@ -155,9 +155,9 @@ end # elapsed time: 132.095573614 seconds (14144661320 bytes allocated, 6.02% gc
     pearson_c = zeros(Complex{Float32},w,h);
     for i=1:w, j=1:h
         cam = 1;
-        la = squeeze((cam == 3)?a[end:-1:1,:,cam,cx,cy]:a[:,:,cam,cx,cy],[3,4,5]);
+        la = squeeze((cam == 3)?ka[end:-1:1,:,cam,cx,cy]:ka[:,:,cam,cx,cy],[3,4,5]);
         cam = 3;
-        lb = squeeze((cam == 3)?a[end:-1:1,:,cam,i,j]:a[:,:,cam,i,j],[3,4,5]);
+        lb = squeeze((cam == 3)?ka[end:-1:1,:,cam,i,j]:ka[:,:,cam,i,j],[3,4,5]);
         pearson_c[i,j] = sum(la .* conj(lb))/(norm(la) * norm(lb));
     end
     fn = "pearson_tran";
