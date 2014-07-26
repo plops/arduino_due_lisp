@@ -133,7 +133,7 @@ end
     h = size(a,5)
     pearson = zeros(Complex{Float32},w,h,3);
     for cam = 1:3
-        la = squeeze((cam == 3)?a[end:-1:1,:,cam,i,j]:a[:,:,cam,cx,cy],[3,4,5]);
+        la = squeeze((cam == 3)?a[end:-1:1,:,cam,cx,cy]:a[:,:,cam,cx,cy],[3,4,5]);
         nla = norm(la);
         for i=1:w, j=1:h
             lb = squeeze((cam == 3)?a[end:-1:1,:,cam,i,j]:a[:,:,cam,i,j],[3,4,5]);
@@ -184,7 +184,7 @@ abs(pearson)
 
 begin
     d = 5
-    floor(10*abs(pearson[cx-d:cx+d,cy-d:cy+d]))
+    floor(100*abs(pearson[cx-d:cx+d,cy-d:cy+d,3]))
 end
 
 ## 11x11 Array{Float32,2}:
