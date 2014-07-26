@@ -46,3 +46,8 @@ The following displays some images of the fiber end of the 3 cameras with differ
 
 
 
+correlation between holograms with different illumination angles with respect to the central hologram 
+
+|       refl w/ polrot   | trans no polrot         | trans w/ polrot               |
+| ------------- | ------------- | ------------- |
+| ![refl_perp](/processing/julia/step12_0724/pearson_center_refl_perp.jpg?raw=true "refl_perp") | ![tran_para](/processing/julia/step12_0724/pearson_center_tran_para.jpg?raw=true "tran_para") | ![tran_perp](/processing/julia/step12_0724/pearson_center_tran_perp.jpg?raw=true "tran_perp") |

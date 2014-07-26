@@ -131,6 +131,30 @@ end
     cy = 20+floor(63/2)
     w = size(a,4)
     h = size(a,5)
+    pearson = zeros(Complex{Float32},w,h,3);
+    for cam = 1:3
+        la = squeeze((cam == 3)?a[end:-1:1,:,cam,i,j]:a[:,:,cam,cx,cy],[3,4,5]);
+        nla = norm(la);
+        for i=1:w, j=1:h
+            lb = squeeze((cam == 3)?a[end:-1:1,:,cam,i,j]:a[:,:,cam,i,j],[3,4,5]);
+            pearson[i,j,cam] = sum(la .* conj(lb))/(nla * norm(lb));
+        end
+        write_pgm(abs(pearson[:,:,cam]),"/dev/shm/pearson_center_$cam.pgm")
+    end
+end # elapsed time: 96.987855795 seconds (5697805832 bytes allocated, 4.20% gc time)
+
+
+for cam=1:3
+    name = camname[cam];
+    fn = "pearson_center_$name";
+    run(`convert /dev/shm/pearson_center_$cam.pgm /home/martin/arduino_due_lisp/processing/julia/step12_0724/$fn.jpg`)
+end
+
+@time begin
+    cx = 36+floor(63/2)
+    cy = 20+floor(63/2)
+    w = size(a,4)
+    h = size(a,5)
     pearson = zeros(Complex{Float32},w,h);
     ## pearsonaa = zeros(w,h);
     ## pearsonrr = zeros(w,h);
@@ -158,6 +182,7 @@ end
     #write_pgm(abs(pearson),"/dev/shm/p$cama$camb.pgm")
 end # elapsed time: 96.987855795 seconds (5697805832 bytes allocated, 4.20% gc time)
 
+
 abs(pearson)
 
 begin
@@ -178,6 +203,7 @@ end
 ##   7.0  11.0  19.0  31.0  45.0  53.0  53.0  44.0  50.0  47.0  41.0
 ##   5.0   7.0  12.0  23.0  33.0  40.0  42.0  36.0  43.0  42.0  37.0
 
+write_pgm(abs(pearson),"/dev/shm/pearson_center.pgm")
 
 
 function extract(a,size,center)
