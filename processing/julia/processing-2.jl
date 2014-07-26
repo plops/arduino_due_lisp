@@ -131,12 +131,13 @@ end
     cy = 20+floor(63/2)
     w = size(a,4)
     h = size(a,5)
+    ka=ifft(a,[1 2]);
     pearson = zeros(Complex{Float32},w,h,3);
     for cam = 1:3
-        la = squeeze((cam == 3)?a[end:-1:1,:,cam,cx,cy]:a[:,:,cam,cx,cy],[3,4,5]);
+        la = squeeze((cam == 3)?ka[end:-1:1,:,cam,cx,cy]:ka[:,:,cam,cx,cy],[3,4,5]);
         nla = norm(la);
         for i=1:w, j=1:h
-            lb = squeeze((cam == 3)?a[end:-1:1,:,cam,i,j]:a[:,:,cam,i,j],[3,4,5]);
+            lb = squeeze((cam == 3)?ka[end:-1:1,:,cam,i,j]:ka[:,:,cam,i,j],[3,4,5]);
             pearson[i,j,cam] = sum(la .* conj(lb))/(nla * norm(lb));
         end
         name = camname[cam];
@@ -144,7 +145,7 @@ end
         write_pgm(abs(pearson[:,:,cam]),"/dev/shm/$fn.pgm")
         run(`convert /dev/shm/$fn.pgm /home/martin/arduino_due_lisp/processing/julia/step12_0724/$fn.jpg`)
     end
-end # elapsed time: 123.228320524 seconds (11929061128 bytes allocated, 6.51% gc time)
+end # elapsed time: 132.095573614 seconds (14144661320 bytes allocated, 6.02% gc time)
 
 
 # compare images of camera 1 and 3 
