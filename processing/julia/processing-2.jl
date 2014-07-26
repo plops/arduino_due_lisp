@@ -187,8 +187,10 @@ end # elapsed time: 132.095573614 seconds (14144661320 bytes allocated, 6.02% gc
     run(`convert /dev/shm/$fn-rr.pgm /home/martin/arduino_due_lisp/processing/julia/step12_0724/$fn-rr.jpg`)
     run(`convert /dev/shm/$fn-ri.pgm /home/martin/arduino_due_lisp/processing/julia/step12_0724/$fn-ri.jpg`)
     run(`convert /dev/shm/$fn-ir.pgm /home/martin/arduino_due_lisp/processing/julia/step12_0724/$fn-ir.jpg`)
+    run(`convert /dev/shm/$fn-ii.pgm /home/martin/arduino_due_lisp/processing/julia/step12_0724/$fn-ii.jpg`)
     run(`convert /dev/shm/$fn-aa.pgm /home/martin/arduino_due_lisp/processing/julia/step12_0724/$fn-aa.jpg`)
 end # elapsed time: 391.645044235 seconds (20057144992 bytes allocated, 3.58% gc time)
+
 
 @time begin
     cx = 36+floor(63/2)
