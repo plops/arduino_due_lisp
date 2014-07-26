@@ -147,6 +147,24 @@ end
 end # elapsed time: 123.228320524 seconds (11929061128 bytes allocated, 6.51% gc time)
 
 
+# compare images of camera 1 and 3 
+@time begin
+    w = size(a,4)
+    h = size(a,5)
+    pearson_c = zeros(Complex{Float32},w,h);
+    for i=1:w, j=1:h
+        cam = 1;
+        la = squeeze((cam == 3)?a[end:-1:1,:,cam,cx,cy]:a[:,:,cam,cx,cy],[3,4,5]);
+        cam = 3;
+        lb = squeeze((cam == 3)?a[end:-1:1,:,cam,i,j]:a[:,:,cam,i,j],[3,4,5]);
+        pearson_c[i,j] = sum(la .* conj(lb))/(norm(la) * norm(lb));
+    end
+    fn = "pearson_tran";
+    write_pgm(abs(pearson_c[:,:]),"/dev/shm/$fn.pgm")
+    run(`convert /dev/shm/$fn.pgm /home/martin/arduino_due_lisp/processing/julia/step12_0724/$fn.jpg`)
+    end
+end 
+
 @time begin
     cx = 36+floor(63/2)
     cy = 20+floor(63/2)
@@ -184,7 +202,7 @@ abs(pearson)
 
 begin
     d = 5
-    floor(100*abs(pearson[cx-d:cx+d,cy-d:cy+d,3]))
+    floor(100*abs(pearson_c[cx-d:cx+d,cy-d:cy+d]))
 end
 
 ## 11x11 Array{Float32,2}:
@@ -213,8 +231,7 @@ end
 for cam = 1:3
     mosaic = reshape(a[:,:,:,:,cam],66*25,66*19)
     for i=1:25
-        for j=1:19
-            for u=1:65
+        for j=1:19            for u=1:65
                 for v=1:65
                     mosaic[(i-1)*66+u,(j-1)*66+v]=a[u,v,i,j,cam]
                 end
