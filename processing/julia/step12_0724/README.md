@@ -55,4 +55,6 @@ correlation between holograms with different illumination angles with respect to
 
 correlation of transmission holograms perp and para 
 
-![tran](/processing/julia/step12_0724/pearson_tran.jpg?raw=true "")
+|    U1 U2*     | Re(U1) Re(U2)         | Re(U1) Im(U2)               | Im(U1) Re(U2) | Abs(U1) Abs(U2) |
+| ------------- | ------------- | ------------- | ------------- | ------------- |
+| ![tran](/processing/julia/step12_0724/pearson_tran.jpg?raw=true "") | ![tran](/processing/julia/step12_0724/pearson_tran-rr.jpg?raw=true "") | ![tran](/processing/julia/step12_0724/pearson_tran-ri.jpg?raw=true "") | ![tran](/processing/julia/step12_0724/pearson_tran-ir.jpg?raw=true "") | ![tran](/processing/julia/step12_0724/pearson_tran-aa.jpg?raw=true "") |

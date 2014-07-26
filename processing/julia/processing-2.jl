@@ -153,17 +153,42 @@ end # elapsed time: 132.095573614 seconds (14144661320 bytes allocated, 6.02% gc
     w = size(a,4)
     h = size(a,5)
     pearson_c = zeros(Complex{Float32},w,h);
+    pearsonaa_c = zeros(w,h);
+    pearsonrr_c = zeros(w,h);
+    pearsonri_c = zeros(w,h);
+    pearsonir_c = zeros(w,h);
+    pearsonii_c = zeros(w,h);     
     for i=1:w, j=1:h
         cam = 1;
         la = squeeze((cam == 3)?ka[end:-1:1,:,cam,i,j]:ka[:,:,cam,i,j],[3,4,5]);
         cam = 3;
         lb = squeeze((cam == 3)?ka[end:-1:1,:,cam,i,j]:ka[:,:,cam,i,j],[3,4,5]);
         pearson_c[i,j] = sum(la .* conj(lb))/(norm(la) * norm(lb));
+        car = real(la)
+        cai = imag(la)
+        caa = abs(la)
+        cbr = real(lb)
+        cbi = imag(lb)
+        cba = abs(lb)
+        pearsonrr_c[i,j] = sum(car .* cbr)/(norm(car) * norm(cbr));
+        pearsonri_c[i,j] = sum(car .* cbi)/(norm(car) * norm(cbi));
+        pearsonir_c[i,j] = sum(cai .* cbr)/(norm(cai) * norm(cbr));
+        pearsonii_c[i,j] = sum(cai .* cbi)/(norm(cai) * norm(cbi));
+        pearsonaa_c[i,j] = sum(caa .* cba)/(norm(caa) * norm(cba)); 
     end
     fn = "pearson_tran";
     write_pgm(abs(pearson_c[:,:]),"/dev/shm/$fn.pgm")
+    write_pgm(abs(pearsonrr_c[:,:]),"/dev/shm/$fn-rr.pgm")
+    write_pgm(abs(pearsonri_c[:,:]),"/dev/shm/$fn-ri.pgm")
+    write_pgm(abs(pearsonir_c[:,:]),"/dev/shm/$fn-ir.pgm")
+    write_pgm(abs(pearsonii_c[:,:]),"/dev/shm/$fn-ii.pgm")
+    write_pgm(abs(pearsonaa_c[:,:]),"/dev/shm/$fn-aa.pgm")
     run(`convert /dev/shm/$fn.pgm /home/martin/arduino_due_lisp/processing/julia/step12_0724/$fn.jpg`)
-end # elapsed time: 74.414528512 seconds (6461485144 bytes allocated, 5.55% gc time)
+    run(`convert /dev/shm/$fn-rr.pgm /home/martin/arduino_due_lisp/processing/julia/step12_0724/$fn-rr.jpg`)
+    run(`convert /dev/shm/$fn-ri.pgm /home/martin/arduino_due_lisp/processing/julia/step12_0724/$fn-ri.jpg`)
+    run(`convert /dev/shm/$fn-ir.pgm /home/martin/arduino_due_lisp/processing/julia/step12_0724/$fn-ir.jpg`)
+    run(`convert /dev/shm/$fn-aa.pgm /home/martin/arduino_due_lisp/processing/julia/step12_0724/$fn-aa.jpg`)
+end # elapsed time: 391.645044235 seconds (20057144992 bytes allocated, 3.58% gc time)
 
 @time begin
     cx = 36+floor(63/2)
@@ -171,17 +196,9 @@ end # elapsed time: 74.414528512 seconds (6461485144 bytes allocated, 5.55% gc t
     w = size(a,4)
     h = size(a,5)
     pearson = zeros(Complex{Float32},w,h);
-    ## pearsonaa = zeros(w,h);
-    ## pearsonrr = zeros(w,h);
-    ## pearsonri = zeros(w,h);
-    ## pearsonir = zeros(w,h);
-    ## pearsonii = zeros(w,h);     
     cam = 1;
     la = squeeze((cam == 3)?a[end:-1:1,:,cam,i,j]:a[:,:,cam,cx,cy],[3,4,5]);
     nla = norm(la);
-    ## car = real(la)
-    ## cai = imag(la)
-    ## caa = abs(la)
     for i=1:w, j=1:h
         lb = squeeze((cam == 3)?a[end:-1:1,:,cam,i,j]:a[:,:,cam,i,j],[3,4,5]);
         ## cbr = real(lb)
