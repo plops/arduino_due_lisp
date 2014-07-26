@@ -124,6 +124,62 @@ for k=1:3
     end
 end
 
+
+# calculate correlation to the central image
+@time begin
+    cx = 36+floor(63/2)
+    cy = 20+floor(63/2)
+    w = size(a,4)
+    h = size(a,5)
+    pearson = zeros(Complex{Float32},w,h);
+    ## pearsonaa = zeros(w,h);
+    ## pearsonrr = zeros(w,h);
+    ## pearsonri = zeros(w,h);
+    ## pearsonir = zeros(w,h);
+    ## pearsonii = zeros(w,h);     
+    cam = 1;
+    la = squeeze((cam == 3)?a[end:-1:1,:,cam,i,j]:a[:,:,cam,cx,cy],[3,4,5]);
+    nla = norm(la);
+    ## car = real(la)
+    ## cai = imag(la)
+    ## caa = abs(la)
+    for i=1:w, j=1:h
+        lb = squeeze((cam == 3)?a[end:-1:1,:,cam,i,j]:a[:,:,cam,i,j],[3,4,5]);
+        ## cbr = real(lb)
+        ## cbi = imag(lb)
+        ## cba = abs(lb)
+        pearson[i,j] = sum(la .* conj(lb))/(nla * norm(lb));
+        ## pearsonrr[i,j] = sum(car .* cbr)/(norm(car) * norm(cbr));
+        ## pearsonri[i,j] = sum(car .* cbi)/(norm(car) * norm(cbi));
+        ## pearsonir[i,j] = sum(cai .* cbr)/(norm(cai) * norm(cbr));
+        ## pearsonii[i,j] = sum(cai .* cbi)/(norm(cai) * norm(cbi));
+        ## pearsonaa[i,j] = sum(caa .* cba)/(norm(caa) * norm(cba)); 
+    end
+    #write_pgm(abs(pearson),"/dev/shm/p$cama$camb.pgm")
+end # elapsed time: 96.987855795 seconds (5697805832 bytes allocated, 4.20% gc time)
+
+abs(pearson)
+
+begin
+    d = 5
+    floor(10*abs(pearson[cx-d:cx+d,cy-d:cy+d]))
+end
+
+## 11x11 Array{Float32,2}:
+##  34.0  30.0  37.0  44.0  45.0  40.0  33.0  18.0  15.0   7.0   3.0
+##  35.0  32.0  42.0  52.0  56.0  52.0  42.0  26.0  22.0  14.0   6.0
+##  38.0  35.0  45.0  58.0  66.0  63.0  53.0  35.0  30.0  22.0  12.0
+##  37.0  35.0  48.0  64.0  77.0  76.0  65.0  44.0  40.0  31.0  20.0
+##  33.0  34.0  48.0  69.0  83.0  84.0  73.0  52.0  48.0  39.0  26.0
+##  29.0  31.0  44.0  67.0  86.0  94.0  81.0  57.0  56.0  45.0  33.0
+##  22.0  27.0  40.0  62.0  82.0  87.0  81.0  58.0  61.0  51.0  39.0
+##  17.0  21.0  34.0  51.0  72.0  76.0  73.0  55.0  60.0  51.0  43.0
+##  12.0  15.0  26.0  42.0  58.0  62.0  64.0  51.0  56.0  50.0  43.0
+##   7.0  11.0  19.0  31.0  45.0  53.0  53.0  44.0  50.0  47.0  41.0
+##   5.0   7.0  12.0  23.0  33.0  40.0  42.0  36.0  43.0  42.0  37.0
+
+
+
 function extract(a,size,center)
     b = zeros(size);
     center = [floor(size(a,1)/2) floor(size(a,2)/2)]
@@ -151,6 +207,9 @@ run(`scp /dev/shm/m1.jpg /dev/shm/m2.jpg /dev/shm/m3.jpg martin@dr-kielhorn.eu:/
 
 
 norm(a[:,:,1,4,cama])
+
+
+
 
 begin
     w = size(a,4)
