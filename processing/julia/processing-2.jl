@@ -139,16 +139,13 @@ end
             lb = squeeze((cam == 3)?a[end:-1:1,:,cam,i,j]:a[:,:,cam,i,j],[3,4,5]);
             pearson[i,j,cam] = sum(la .* conj(lb))/(nla * norm(lb));
         end
-        write_pgm(abs(pearson[:,:,cam]),"/dev/shm/pearson_center_$cam.pgm")
+        name = camname[cam];
+        fn = "pearson_center_$name";
+        write_pgm(abs(pearson[:,:,cam]),"/dev/shm/$fn.pgm")
+        run(`convert /dev/shm/$fn.pgm /home/martin/arduino_due_lisp/processing/julia/step12_0724/$fn.jpg`)
     end
-end # elapsed time: 96.987855795 seconds (5697805832 bytes allocated, 4.20% gc time)
+end # elapsed time: 123.228320524 seconds (11929061128 bytes allocated, 6.51% gc time)
 
-
-for cam=1:3
-    name = camname[cam];
-    fn = "pearson_center_$name";
-    run(`convert /dev/shm/pearson_center_$cam.pgm /home/martin/arduino_due_lisp/processing/julia/step12_0724/$fn.jpg`)
-end
 
 @time begin
     cx = 36+floor(63/2)
