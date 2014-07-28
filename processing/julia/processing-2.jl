@@ -247,21 +247,6 @@ begin
 end
 
 
-write_pgm(abs(pearson),"/dev/shm/pearson_center.pgm")
-
-typeof([1 2 3])
-
-typeof(size(ds))
-
-
-floor(size(ds).*.5)
-
-function extract(a,size,center)
-    b = zeros(size);
-    center = [floor(size(a,1)/2) floor(size(a,2)/2)]
-    
-end
-
 
 for cam = 1:3
     mosaic = reshape(a[:,:,:,:,cam],66*25,66*19)

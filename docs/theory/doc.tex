@@ -9,6 +9,58 @@
 \renewcommand{\k}{\vect k}
 \newcommand{\vnu}{\boldsymbol\nu}
 \begin{document}
+\section{multimode faser imaging im jones kalkuel}
+
+\begin{itemize}
+\item am fasereingang einfallendes feld $u^i$
+\item am faserende austretendes feld $u^t$
+\item an faserende reflektiertes feld $u^r$
+\item reflexionsmatrix am faserende $R_s$
+\item am fasereingang austretendes feld $u^o$
+\end{itemize}
+
+die transmittierten felder ergeben sich aus der propagationsmatrix $M$
+der faser und dem einfallendem feld am fasereingang.
+\begin{align}
+  u^t &= \begin{pmatrix}u^t_\parallel \\ u^t_\perp\end{pmatrix} = M u^i
+\end{align}
+das einfallende feld ist eine $\delta$ distribution und entweder
+polarisiert in die richtung $\circledast$ oder $\nwarrow$.
+\begin{align}
+  u^i &= \begin{pmatrix}u^i_\circledast \\ u^i_\nwarrow\end{pmatrix}
+\end{align}
+entsprechend findet man 4 submatrizen in der propagationsmatrix $M$
+\begin{align}
+  M &= \begin{pmatrix}
+    M^\circledast_\parallel & M^\nwarrow_\parallel \\
+    M^\circledast_\perp & M^\nwarrow_\perp 
+  \end{pmatrix}
+\end{align}
+das durch den fasereingang zurueckkommende feld $u^o$ ergibt sich aus:
+\begin{align}
+  u^o &= M^{-1} R_s M u^i
+\end{align}
+im bisherigen aufbau vermesse ich nur $u^t_\parallel$, $u^t_\perp$ und $u^o_\perp$
+
+angenommen $R_s$ ist bekannt, dann werden zug\"anglich: 
+
+die submatrizen $M^\circledast_\parallel$ und $M^\circledast_\perp$,
+sowie $C$ und $D$ in
+\begin{align}
+  M^{-1} &=\begin{pmatrix}
+    A & B \\ C& D
+  \end{pmatrix}
+\end{align}
+
+
+zur kompletten vermessung muessten zusaetzlich zu den bisherigen
+aufnahmen noch hologramme mit um 90 grad gedrehter polarisation
+$u^i_\nwarrow$ ermittelt werden. zusaetzlich fehlt noch
+$u^o_\parallel$. die struktur von $R_s$ koennte ermittelt werden, wenn
+auch von der anderen seite felder wie $u_i$ in die faser gestrahlt
+werden koennten.
+
+\section{ueber die wigner distribution}
 the following from Gross: ``Handbook of optical systems'' 2005 Wiley-VCH
 
 definition of the coherence function $\Gamma$:
