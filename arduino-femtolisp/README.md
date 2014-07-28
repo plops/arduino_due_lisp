@@ -184,3 +184,6 @@ example:
 ;; => "3
 ;; > "
 ```
+
+An article about tty is here
+http://www.linusakesson.net/programming/tty/index.php
