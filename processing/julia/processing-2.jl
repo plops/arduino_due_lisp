@@ -72,19 +72,41 @@ write_pgm(abs(a[:,:,1]))
       
 # the data in a is the raw acquisition data
 
+using Winston
+
+x = linspace(0, 3pi, 100)
+c = cos(x)
+s = sin(x)
+p = FramedPlot(title="title!",xlabel="\\Sigma x^2_i",ylabel="\\Theta_i")
+add(p, FillBetween(x, c, x, s))
+add(p, Curve(x, c, color="red"))
+add(p, Curve(x, s, color="blue"))
+p
+
+savefig(p,"/dev/shm/o.png")
+
 
 
 camname=["tran_perp" "refl_perp" "tran_para"]
+ds = zeros(Float32,66,66,3);
 @time for i = 1:3 
-    ds = (squeeze(mean(abs2(ifft(a,[1 2])[:,:,i,:,:]),[4 5]),[4 5]));
+    ds[:,:,i] = (squeeze(mean(abs2(ifft(a,[1 2])[:,:,i,:,:]),[4 5]),[4 5]));
     name = camname[i];
-    fn = "/dev/shm/fiber_endface_intens_$name";
+    fn = "fiber_endface_intens_$name";
     if(i==3)
-        ds = ds[66:-1:1,:]
+        ds[:,:,i] = ds[66:-1:1,:,i]
     end
-    write_pgm(ds,fn * ".pgm");
-    run(`convert $fn.pgm $fn.jpg`);
-end
+    #write_pgm(ds[:,:,i],fn * ".pgm");
+    savefig(imagesc(ds[:,:,i]),"/dev/shm" * fn * ".png")
+    run(`convert /dev/shm/$fn.png /home/martin/arduino_due_lisp/processing/julia/step12_0724/$fn.jpg`);
+end # elapsed time: 22.026625532 seconds (9983991416 bytes allocated, 2.92% gc time)
+
+
+
+
+
+
+
 
 @time extrema(abs(a)) # 4.9s
 
@@ -148,6 +170,11 @@ end
 end # elapsed time: 132.095573614 seconds (14144661320 bytes allocated, 6.02% gc time)
 
 
+# cross correlation between average images of cameras 1 and 3
+begin
+    write_pgm(abs(ifft(fft(ds[:,:,1]).*conj(fft(ds[:,:,3])))),"/dev/shm/correlate_trans_avg.pgm")
+end
+    
 # compare images of camera 1 and 3 
 @time begin
     w = size(a,4)
@@ -239,6 +266,12 @@ end
 
 write_pgm(abs(pearson),"/dev/shm/pearson_center.pgm")
 
+typeof([1 2 3])
+
+typeof(size(ds))
+
+
+floor(size(ds).*.5)
 
 function extract(a,size,center)
     b = zeros(size);
