@@ -169,8 +169,8 @@ end
     end
 end # elapsed time: 132.095573614 seconds (14144661320 bytes allocated, 6.02% gc time)
 
-savefig(imagesc(abs(hcat(pearson[:,:,1], pearson[:,:,2], pearson[:,:,3]))),"/home/martin/arduino_due_lisp/processing/julia/step12_0724/pearson_center_all.png");
-
+savefig(imagesc(abs(hcat(pearson[:,:,2], pearson[:,:,1], pearson[:,:,3],pearson_c))),"/home/martin/arduino_due_lisp/processing/julia/step12_0724/pearson_center_all.png");
+run(`convert /home/martin/arduino_due_lisp/processing/julia/step12_0724/pearson_center_all.png /home/martin/arduino_due_lisp/processing/julia/step12_0724/pearson_center_all.jpg`);
 
 
 

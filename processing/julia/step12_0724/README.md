@@ -52,13 +52,15 @@ correlation between holograms with different illumination angles with respect to
 | ------------- | ------------- | ------------- |
 | ![refl_perp](/processing/julia/step12_0724/pearson_center_refl_perp.jpg?raw=true "refl_perp") | ![tran_para](/processing/julia/step12_0724/pearson_center_tran_para.jpg?raw=true "tran_para") | ![tran_perp](/processing/julia/step12_0724/pearson_center_tran_perp.jpg?raw=true "tran_perp") |
 
-all images with the same scale:
-
-![](/processing/julia/step12_0724/pearson_center_all.png?raw=true "")
-
 
 correlation of transmission holograms perp and para 
 
 |    U1 U2*     | Re(U1) Re(U2)         | Re(U1) Im(U2)               | Im(U1) Re(U2) | Im(U1) Im(U2) | Abs(U1) Abs(U2) |
 | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |
 | ![tran](/processing/julia/step12_0724/pearson_tran.jpg?raw=true "") | ![tran](/processing/julia/step12_0724/pearson_tran-rr.jpg?raw=true "") | ![tran](/processing/julia/step12_0724/pearson_tran-ri.jpg?raw=true "") | ![tran](/processing/julia/step12_0724/pearson_tran-ir.jpg?raw=true "") | ![tran](/processing/julia/step12_0724/pearson_tran-ii.jpg?raw=true "") | ![tran](/processing/julia/step12_0724/pearson_tran-aa.jpg?raw=true "") |
+
+
+all images (refl w/ polrot, trans no polrot, trans w/ polrot, U1 U2*) at the same scale:
+
+![](/processing/julia/step12_0724/pearson_center_all.jpg?raw=true "")
+
