@@ -147,7 +147,7 @@ for k=1:3
 end
 
 
-# calculate correlation to the central image
+# calculate correlation to the central image of the other polarization
 @time begin
     cx = 36+floor(63/2)
     cy = 20+floor(63/2)
@@ -168,6 +168,11 @@ end
         run(`convert /dev/shm/$fn.pgm /home/martin/arduino_due_lisp/processing/julia/step12_0724/$fn.jpg`)
     end
 end # elapsed time: 132.095573614 seconds (14144661320 bytes allocated, 6.02% gc time)
+
+savefig(imagesc(abs(hcat(pearson[:,:,1], pearson[:,:,2], pearson[:,:,3]))),"/home/martin/arduino_due_lisp/processing/julia/step12_0724/pearson_center_all.png");
+
+
+
 
 
 # cross correlation between average images of cameras 1 and 3
