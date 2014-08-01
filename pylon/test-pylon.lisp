@@ -66,20 +66,6 @@
    (first *ard*)
    "(dac 1550 3000)")
 
-;; http://www.imagemagick.org/Usage/fourier/
-;; for i in e{66,65,40}h.tiff; do
-;;   name=k`basename $i .tiff`.miff
-;;   nameabs=k`basename $i .tiff`-0.miff
-;;   namelog=k`basename $i .tiff`-0log.miff
-;;   convert $i -fft    +depth +adjoin $name
-;;   scale=`convert $nameabs -auto-level -format "%[fx:exp(log(mean)/log(0.5))]" info:`
-;;   convert $nameabs -auto-level -evaluate log $scale  $namelog
-;; done
-
-;; in display Image Edit -> region of interest to find the position of first order
-;; 40 66x66+127+365
-;; 65 66x66+63+260
-;; 66 66x66-25+25
 
 #+nil
 (loop for i from 1000 below 4000 by 10
@@ -359,10 +345,29 @@
 (defparameter *fact* (pylon::factory))
 (defparameter *cams* (pylon:create *fact* 3))
 
+;; http://www.imagemagick.org/Usage/fourier/
+;; for i in e{66,65,40}h.tiff; do
+;;   name=k`basename $i .tiff`.miff
+;;   nameabs=k`basename $i .tiff`-0.miff
+;;   namelog=k`basename $i .tiff`-0log.miff
+;;   convert $i -fft    +depth +adjoin $name
+;;   scale=`convert $nameabs -auto-level -format "%[fx:exp(log(mean)/log(0.5))]" info:`
+;;   convert $nameabs -auto-level -evaluate log $scale  $namelog
+;; done
+
+;; in display Image Edit -> region of interest to find the position of first order
+;; 40 66x66+127+365
+;; 65 66x66+63+260
+;; 66 66x66-25+25
+
+(list (list 40 (+ 33 (- 322 256)) (+ 33 256 83))
+      (list 65 (+ 33 (- 386 256)) (+ 33 256 189))
+      (list 66 (+ 33 (- 474 256)) (+ 33 (- 426 256))))
+
 (defparameter *cam-parameters*
-  `((21433565    2    2   512 512 nil  249  17 167 478  66   0  1200 "transmission with polrot (top)")
-    (21433566    1    1   512 512 nil  520 39 63  11  66  0 20000 "backreflection with polrot")  
-    (21433540    2    2   512 512 t    93   0 101 138  66   0  1200 "transmission same pol"))
+  `((21433565    2    2   512 512 nil  249  17 163 478  66   0  1200 "transmission with polrot (top)")
+    (21433566    1    1   512 512 nil  520  39 251 203  66   0 20000 "backreflection with polrot")  
+    (21433540    2    2   512 512 t    93    0  99 372  66   0  1200 "transmission same pol"))
   "    id      binx  biny  w   h  rev   x    y  kx  ky   d   g   e   name")
 ;; i reverseX the 40 to compensate for the pbs
 ;; 33040
