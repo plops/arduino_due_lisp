@@ -832,7 +832,7 @@ rectangular, for alpha=1 Hann window."
   (fftw::%fftwf_import_wisdom_from_filename "fiberholo.fftwf.wisdom")
   (time
    (progn 
-     (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 580 :h 580 :flag fftw::+patient+) nil)
+;;     (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 580 :h 580 :flag fftw::+patient+) nil)
      (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 512 :h 512 :flag fftw::+patient+) nil)))
   
   (dotimes (i 3)
@@ -940,8 +940,8 @@ rectangular, for alpha=1 Hann window."
 	     (dotimes (j 66)
 	       (dotimes (i 66)
 		 (setf (aref a jj ii k j i) (aref b j i))))))))
-     (ics:write-ics2 (format nil "/media/sdc1/dat/0723/o4.ics") a))
-   (with-open-file (s (format nil "/media/sdc1/dat/0723/o4.dat") :direction :output
+     (ics:write-ics2 (format nil "/media/sdc1/dat/0801/op1.ics") a))
+   (with-open-file (s (format nil "/media/sdc1/dat/0801/op1.dat") :direction :output
 		      :if-exists :supersede :if-does-not-exist :create)
      (format s "~a ~a~%" 'cam '(id      binx  biny  w   h  rev   x    y  kx  ky   d   g   e   name))
      (dotimes (cam 3)
