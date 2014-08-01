@@ -356,9 +356,9 @@
  (let ((a nil))
    (defun init-cam-parameter-hash ()
      (setf a (make-hash-table))
-     (loop for (id      binx  biny  w   h     x    y kx  ky   d  g   e   name)
+     (loop for (id      binx  biny  rev w   h     x    y kx  ky   d  g   e   name)
 	in *cam-parameters* do
-	  (setf (gethash id a) (list id      binx  biny  w   h     x    y kx  ky   d  g   e   name))))
+	  (setf (gethash id a) (list id      binx  biny  w   h rev    x    y kx  ky   d  g   e   name))))
    (defun get-cam-parameters (cam)
      (gethash (parse-integer (pylon:cam-get-serial-number *cams* cam)) a))))
 
@@ -399,7 +399,7 @@
 
 #+nil
 (loop for i below 3 collect
-     (destructuring-bind (    id      binx  biny  w   h     x    y  kx  ky   d   g   e   name)
+     (destructuring-bind (    id      binx  biny  w   h rev    x    y  kx  ky   d   g   e   name)
 	 (get-cam-parameters i)
        (let ((inc (pylon:get-inc-i *cams* i "ExposureTimeRaw")))
 	 (pylon:set-value-i *cams* i "ExposureTimeRaw" (* inc (floor e inc))))
@@ -709,7 +709,7 @@ rectangular, for alpha=1 Hann window."
 					       (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
 					     (declare (ignorable framenr))
 					     (if success-p
-						 (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+						 (destructuring-bind (id binx biny ww hh rev ox oy x y d g e name) 
 						     (get-cam-parameters cam)
 						   (declare (ignorable id binx biny ox oy d g e name))
 						   (assert (= ww w))
@@ -769,7 +769,7 @@ rectangular, for alpha=1 Hann window."
 					       (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
 					     (declare (ignorable framenr))
 					     (if success-p
-						 (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+						 (destructuring-bind (id binx biny ww hh rev ox oy x y d g e name) 
 						     (get-cam-parameters cam)
 						   (declare (ignorable id binx biny ox oy d g e name x y))
 						   (assert (= ww w))
@@ -844,7 +844,7 @@ rectangular, for alpha=1 Hann window."
 						      (make-array (list 66 66) 
 								  :element-type '(complex single-float)))))))
 		   (plan (loop for i below 3 collect 
-			      (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+			      (destructuring-bind (id binx biny ww hh rev ox oy x y d g e name) 
 				  (get-cam-parameters i)
 				(declare (ignorable id binx biny ox oy d g e name x y))
 				(fftw::rplanf buf-s :out buf-cs :w ww :h hh :flag fftw::+measure+)))))
@@ -859,7 +859,7 @@ rectangular, for alpha=1 Hann window."
 					      (declare (ignorable framenr)
 						       (type (unsigned-byte 32) w h))
 					      (if success-p
-						  (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+						  (destructuring-bind (id binx biny ww hh rev ox oy x y d g e name) 
 						      (get-cam-parameters cam)
 						    (declare (ignorable id binx biny ox oy d g e name x y))
 						    (assert (= ww w))
@@ -923,7 +923,7 @@ rectangular, for alpha=1 Hann window."
      (ics:write-ics2 (format nil "/media/sdc1/dat/0723/o4.ics") a))
    (with-open-file (s (format nil "/media/sdc1/dat/0723/o4.dat") :direction :output
 		      :if-exists :supersede :if-does-not-exist :create)
-     (format s "~a ~a~%" 'cam '(id      binx  biny  w   h     x    y  kx  ky   d   g   e   name))
+     (format s "~a ~a~%" 'cam '(id      binx  biny  w   h  rev   x    y  kx  ky   d   g   e   name))
      (dotimes (cam 3)
        (format s "~d ~s~%" cam (get-cam-parameters cam))))))
 
@@ -993,7 +993,7 @@ rectangular, for alpha=1 Hann window."
 						(make-array (list 66 66) 
 							    :element-type '(complex single-float))))))
 		  (plan (loop for i below 3 collect 
-			     (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+			     (destructuring-bind (id binx biny ww hh rev ox oy x y d g e name) 
 				 (get-cam-parameters i)
 			       (declare (ignorable id binx biny ox oy d g e name x y))
 			       (fftw::rplanf buf-s :out buf-cs :w ww :h hh :flag fftw::+measure+)))))
@@ -1007,7 +1007,7 @@ rectangular, for alpha=1 Hann window."
 				    (declare (ignorable framenr)
 					     (type (unsigned-byte 32) w h))
 				    (if success-p
-					(destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+					(destructuring-bind (id binx biny ww hh rev ox oy x y d g e name) 
 					    (get-cam-parameters cam)
 					  (declare (ignorable id binx biny ox oy d g e name x y)) (assert (= ww w)) (assert (= hh h))
 					  
@@ -1084,7 +1084,7 @@ rectangular, for alpha=1 Hann window."
 						(make-array (list 66 66) 
 							    :element-type '(complex single-float))))))
 		  (plan (loop for i below 3 collect 
-			     (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+			     (destructuring-bind (id binx biny ww hh rev ox oy x y d g e name) 
 				 (get-cam-parameters i)
 			       (declare (ignorable id binx biny ox oy d g e name x y))
 			       (fftw::rplanf buf-s :out buf-cs :w ww :h hh :flag fftw::+measure+)))))
@@ -1098,9 +1098,9 @@ rectangular, for alpha=1 Hann window."
 					(declare (ignorable framenr)
 						 (type (unsigned-byte 32) w h))
 					(if success-p
-					    (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+					    (destructuring-bind (id binx biny ww hh rev ox oy x y d g e name) 
 						(get-cam-parameters cam)
-					      (declare (ignorable id binx biny ox oy d g e name x y))
+					      (declare (ignorable id binx biny ox oy rev d g e name x y))
 					      (assert (= ww w))
 					      (assert (= hh h))
 					      (when (= 0 cam)
@@ -1215,7 +1215,7 @@ rectangular, for alpha=1 Hann window."
 #+nil
 (let ((j 10) (i 10) (cam 1) (w 66) (h 66))
   (let ((a (make-array (list h w) :element-type '(complex single-float))))
-    (destructuring-bind (id binx biny ww hh ox oy x y d g e name) (get-cam-parameters cam)
+    (destructuring-bind (id binx biny ww hh rev ox oy x y d g e name) (get-cam-parameters cam)
       #+nil (extract-csf* (aref *result* j i cam) a :x x :y y :w w :h h)
      (pylon::%helper-extract-csf 
        (sb-sys:vector-sap (sb-ext:array-storage-vector (aref *result* j i cam)))
@@ -1318,8 +1318,8 @@ rectangular, for alpha=1 Hann window."
    (format t "~a~%" (multiple-value-list (get-decoded-time)))))
 
 (defun make-camera-buffer (cam) 
-  (destructuring-bind (id binx biny ww hh ox oy x y d g e name) (get-cam-parameters cam)
-    (declare (ignorable id binx biny ox oy x y d g e name))
+  (destructuring-bind (id binx biny ww hh rev ox oy x y d g e name) (get-cam-parameters cam)
+    (declare (ignorable id binx biny rev ox oy x y d g e name))
     (make-array (list hh ww) :element-type 'single-float :initial-element 0s0)))
 
 (defun capture-dark-images (&optional (n 10))
@@ -1339,9 +1339,9 @@ rectangular, for alpha=1 Hann window."
 			  (multiple-value-list (pylon::grab-sf *cams* *buf-s*))
 			(declare (ignorable framenr timestamp))
 			(if success-p
-			    (destructuring-bind (id binx biny ww hh ox oy x y d g e name) 
+			    (destructuring-bind (id binx biny ww hh rev ox oy x y d g e name) 
 				(get-cam-parameters cam)
-			      (declare (ignorable id binx biny ox oy x y d g e name))
+			      (declare (ignorable id binx biny rev ox oy x y d g e name))
 			      (assert (= ww w))
 			      (assert (= hh h))
 			      (let* ((q (make-array (list h w)
