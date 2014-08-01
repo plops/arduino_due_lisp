@@ -66,6 +66,21 @@
    (first *ard*)
    "(dac 1550 3000)")
 
+;; http://www.imagemagick.org/Usage/fourier/
+;; for i in e{66,65,40}h.tiff; do
+;;   name=k`basename $i .tiff`.miff
+;;   nameabs=k`basename $i .tiff`-0.miff
+;;   namelog=k`basename $i .tiff`-0log.miff
+;;   convert $i -fft    +depth +adjoin $name
+;;   scale=`convert $nameabs -auto-level -format "%[fx:exp(log(mean)/log(0.5))]" info:`
+;;   convert $nameabs -auto-level -evaluate log $scale  $namelog
+;; done
+
+;; in display Image Edit -> region of interest to find the position of first order
+;; 40 66x66+127+365
+;; 65 66x66+63+260
+;; 66 66x66-25+25
+
 #+nil
 (loop for i from 1000 below 4000 by 10
      do
@@ -356,7 +371,7 @@
  (let ((a nil))
    (defun init-cam-parameter-hash ()
      (setf a (make-hash-table))
-     (loop for (id      binx  biny  rev w   h     x    y kx  ky   d  g   e   name)
+     (loop for (id      binx  biny  w   h rev    x    y kx  ky   d  g   e   name)
 	in *cam-parameters* do
 	  (setf (gethash id a) (list id      binx  biny  w   h rev    x    y kx  ky   d  g   e   name))))
    (defun get-cam-parameters (cam)
@@ -431,8 +446,8 @@
 (defparameter *buf-s* (make-array (list 1 1) :element-type 'single-float))
  
 
-(let ((w 580)
-      (h 580))
+(let ((w 512)
+      (h 512))
   (defparameter *buf-c1* (make-array (* w h) :element-type '(complex double-float)))
   (defparameter *out-cs1* (make-array (* w h) :element-type '(complex single-float)))
   (defparameter *out-c1* (make-array (* w h) :element-type '(complex double-float)))
@@ -817,7 +832,7 @@ rectangular, for alpha=1 Hann window."
   
   (dotimes (i 3)
     (pylon:set-value-e *cams* i "TriggerMode" 1))
-  (let* ((step 15)
+  (let* ((step 50)
 	 (count-first (let ((count 0))
 			(loop for j from 400 below 2900 by step do
 			     (incf count)) 
@@ -1322,6 +1337,12 @@ rectangular, for alpha=1 Hann window."
     (declare (ignorable id binx biny rev ox oy x y d g e name))
     (make-array (list hh ww) :element-type 'single-float :initial-element 0s0)))
 
+#+nil
+(get-cam-parameters 0)
+
+#+nil
+(make-camera-buffer 0)
+
 (defun capture-dark-images (&optional (n 10))
   (block-laser)
   (sleep .1)
@@ -1376,7 +1397,6 @@ rectangular, for alpha=1 Hann window."
      (pylon::command-execute *cams* i "GevTimestampControlReset"))
    (defparameter *dark* (multiple-value-list (capture-dark-images 300)))
    (create-windows (first *dark*))))
-
 
 #+nil
 (dotimes (i 3)
