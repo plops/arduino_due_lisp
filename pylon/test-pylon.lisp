@@ -64,7 +64,20 @@
 (arduino-serial-sbcl:talk-arduino
    ( second *ard*) 
    (first *ard*)
-   "(set 'list (lambda args args))")
+   "(dac 1550 3000)")
+
+#+nil
+(loop for i from 1000 below 4000 by 10
+     do
+     (sleep .05)
+     (format t "~a~%" i)
+     (arduino-serial-sbcl:talk-arduino
+      ( second *ard*) 
+      (first *ard*)
+      
+      (format nil "(dac 1550 ~a)"
+	      i)))
+
 #+nil
 (arduino-serial-sbcl:talk-arduino
    ( second *ard*) 
@@ -332,11 +345,11 @@
 (defparameter *cams* (pylon:create *fact* 3))
 
 (defparameter *cam-parameters*
-  `((21433565    2    2   512 512   249  17 167 478  66   0  2800 "transmission with polrot (top)")
-    (21433566    1    1   580 580   520 215 220  11  66  28 21040 "backreflection with polrot") ;; this one has order on zero line
-    (21433540    2    2   512 512   365   0 101 138  66   0  2800 "transmission same pol"))
-  "    id      binx  biny  w   h     x    y  kx  ky   d   g   e   name")
-
+  `((21433565    2    2   512 512 nil  249  17 167 478  66   0  1200 "transmission with polrot (top)")
+    (21433566    1    1   512 512 nil  520 39 63  11  66  0 20000 "backreflection with polrot")  
+    (21433540    2    2   512 512 t    93   0 101 138  66   0  1200 "transmission same pol"))
+  "    id      binx  biny  w   h  rev   x    y  kx  ky   d   g   e   name")
+;; i reverseX the 40 to compensate for the pbs
 ;; 33040
 
 (eval-when (:compile-toplevel :execute :load-toplevel)
@@ -373,6 +386,7 @@
       (list :trigger-mode (pylon:get-value-e *cams* j "TriggerMode")
 	    :last-error (pylon:get-value-e *cams* j "LastError")
 	    :rate-p (pylon:get-value-b *cams* j "AcquisitionFrameRateEnable")
+	    :reverse-x (pylon:get-value-b *cams* j "ReverseX")
 	    :rate (pylon:get-value-f *cams* j "ResultingFrameRateAbs")
 	    :temp (pylon:get-value-f *cams* j "TemperatureAbs"))))
 
