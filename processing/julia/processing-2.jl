@@ -23,12 +23,12 @@ function read_ics(fn)
     pos = find_ics_raw_start(fn)
     f=open(fn)
     seek(f,pos)
-    a=read(f,Complex64,66,66,3,167,127)
+    a=read(f,Complex64,66,66,3,50,38)
     close(f)
     a
 end
 
-ics_file = "/media/sdc1/dat/0723/o4.ics"
+ics_file = "/media/sdc1/dat/0801/op1.ics"
 a = read_ics(ics_file)
 
 # check that the dimensions make sense
@@ -96,9 +96,9 @@ ds = zeros(Float32,66,66,3);
     if(i==3)
         ds[:,:,i] = ds[66:-1:1,:,i]
     end
-    #write_pgm(ds[:,:,i],fn * ".pgm");
-    savefig(imagesc(ds[:,:,i]),"/dev/shm" * fn * ".png")
-    run(`convert /dev/shm/$fn.png /home/martin/arduino_due_lisp/processing/julia/step12_0724/$fn.jpg`);
+    write_pgm(ds[:,:,i],"/dev/shm/" * fn * ".pgm");
+    #savefig(imagesc(ds[:,:,i]),"/dev/shm" * fn * ".png")
+    #run(`convert /dev/shm/$fn.png /home/martin/arduino_due_lisp/processing/julia/step12_0724/$fn.jpg`);
 end # elapsed time: 22.026625532 seconds (9983991416 bytes allocated, 2.92% gc time)
 
 
@@ -249,11 +249,12 @@ end
 
 
 for cam = 1:3
-    mosaic = reshape(a[:,:,:,:,cam],66*25,66*19)
-    for i=1:25
-        for j=1:19            for u=1:65
+    mosaic = reshape(a[:,:,cam,:,:],66*50,66*38)
+    for i=1:50
+        for j=1:38
+            for u=1:65
                 for v=1:65
-                    mosaic[(i-1)*66+u,(j-1)*66+v]=a[u,v,i,j,cam]
+                    mosaic[(i-1)*66+u,(j-1)*66+v]=a[u,v,cam,i,j]
                 end
             end
         end
@@ -261,6 +262,8 @@ for cam = 1:3
     write_pgm(abs(mosaic),"/dev/shm/m$cam.pgm")
     run(`convert /dev/shm/m$cam.pgm /dev/shm/m$cam.jpg`)
 end
+
+# image from cam 2 didn't cut out fourier order correctly
 
 run(`scp /dev/shm/m1.jpg /dev/shm/m2.jpg /dev/shm/m3.jpg martin@dr-kielhorn.eu:/var/www/2014`)
 
