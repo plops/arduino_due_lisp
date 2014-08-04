@@ -89,13 +89,13 @@
     b))
 
 (defun .log (a)
-  (let* ((b (make-array (array-dimensions a) :element-type 'double-float))
+  (let* ((b (make-array (array-dimensions a) :element-type 'single-float))
 	 (b1 (.linear b))
 	 (a1 (.linear a)))
     (dotimes (i (length a1))
       (let ((v (aref a1 i)))
-	(setf (aref b1 i) (if (= v 0d0)
-			      0d0
+	(setf (aref b1 i) (if (= v 0f0)
+			      0f0
 			      (log v)))))
     b))
 

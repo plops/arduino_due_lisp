@@ -364,10 +364,14 @@
       (list 65 (+ 33 (- 386 256)) (+ 33 256 189))
       (list 66 (+ 33 (- 474 256)) (+ 33 (- 426 256))))
 
+(list (list 40 (+ 33 65) (+ 33 339))
+      (list 65 (+ 33 131) (+ 33 443))
+      (list 66 (+ 33 217) (+ 33 168)))
+
 (defparameter *cam-parameters*
-  `((21433565    2    2   512 512 nil  249  17 163 478  66   0  1200 "transmission with polrot (top)")
-    (21433566    1    1   512 512 nil  520  39 251 203  66   0 20000 "backreflection with polrot")  
-    (21433540    2    2   512 512 t    93    0  99 372  66   0  1200 "transmission same pol"))
+  `((21433565    2    2   512 512 nil  249  17 164 476  66   0  1200 "transmission with polrot (top)")
+    (21433566    1    1   512 512 nil  520  39 250 201  66   0 20000 "backreflection with polrot")  
+    (21433540    2    2   512 512 t    93    0  98 372  66   0  1200 "transmission same pol"))
   "    id      binx  biny  w   h  rev   x    y  kx  ky   d   g   e   name")
 ;; i reverseX the 40 to compensate for the pbs
 ;; 33040
@@ -832,12 +836,12 @@ rectangular, for alpha=1 Hann window."
   (fftw::%fftwf_import_wisdom_from_filename "fiberholo.fftwf.wisdom")
   (time
    (progn 
-;;     (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 580 :h 580 :flag fftw::+patient+) nil)
+;;     (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 512 :h 512 :flag fftw::+patient+) nil)
      (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 512 :h 512 :flag fftw::+patient+) nil)))
   
   (dotimes (i 3)
     (pylon:set-value-e *cams* i "TriggerMode" 1))
-  (let* ((step 50)
+  (let* ((step 200)
 	 (count-first (let ((count 0))
 			(loop for j from 400 below 2900 by step do
 			     (incf count)) 
@@ -852,8 +856,10 @@ rectangular, for alpha=1 Hann window."
 	    (dotimes (i 3)
 	      (pylon::command-execute *cams* i "GevTimestampControlReset"))
 	    (pylon:start-grabbing *cams*)
-	    (let* ((buf-s (make-array (list 580 580) :element-type 'single-float))
-		   (buf-cs (make-array (list 580 (+ 1 (floor 580 2))) :element-type '(complex single-float)))
+	    (let* ((buf-s (make-array (list 512 512) :element-type 'single-float))
+		   (buf-cs (make-array (list 512 (+ 1 (floor 512 2))) :element-type '(complex single-float)))
+		   (accum-buf-s (loop for i below 3 collect
+				     (make-array (list 512 (+ 1 (floor 512 2))) :element-type 'single-float)))
 		   (dc-s (make-array (list count-second count-first 3)
 				     :element-type 'single-float))
 		   (ext-cs (make-array (list count-second count-first 3)
@@ -902,7 +908,7 @@ rectangular, for alpha=1 Hann window."
 						    (progn
 						      (fftw::%fftwf_execute (elt plan cam))
 						      (setf (aref dc-s yji ji cam) (realpart (aref buf-cs 0 0)))
-						      
+						      (.accum (elt accum-buf-s cam) (.abs2 buf-cs))
 						      #+nil 
 						      (extract-csf* (make-array (list hh (+ 1 (floor ww 2)))
 										:element-type '(complex single-float)
@@ -918,16 +924,24 @@ rectangular, for alpha=1 Hann window."
 						  (format t "acquisition error.~%")))))))
 			 :name "camera-acquisition")))
 		(sleep .001)
-		(trigger-all-cameras-seq-2d-scan :stepj step :stepi step :delay-ms 24)
+		(trigger-all-cameras-seq-2d-scan :stepj step :stepi step :delay-ms 44)
 		(sb-thread:join-thread th))
 	      (loop for p in plan do (fftw::%fftwf_destroy_plan p))
 	      (defparameter *result* ext-cs)
 	      (defparameter *result2* dc-s)
+	      (defparameter *result3* accum-buf-s)
 	      (sb-ext:gc :full t))))
       (pylon:stop-grabbing *cams*)
       (tilt-mirror 0 0))))
 #+nil
 (time (progn (run-several-s) nil))
+
+#+nil
+(loop for i below 3 do
+     (write-pgm8 (format nil "/dev/shm/o~d.pgm" i) (.uint8 (.log (elt *result3* i)))))
+
+#+nil
+(get-cam-parameters 2)
 
 #+nil
 (time
