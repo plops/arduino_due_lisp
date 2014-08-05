@@ -32,6 +32,8 @@ ics_file = "/media/sdc1/dat/0805/o9.ics"
 a = read_ics(ics_file)
 ics_file = "/media/sdc1/dat/0805/orot9.ics"
 ar = read_ics(ics_file)
+ics_file = "/media/sdc1/dat/0805/o8.ics"
+ar = read_ics(ics_file)
 
 # check that the dimensions make sense
 (filesize(ics_file)-602)/(66*66*125*95*3)
@@ -252,7 +254,7 @@ pearson_pol = zeros(Complex{Float32},47,37);
 for i=1:47
     for j=1:37
         xa = squeeze(a[:,:,3,i,j],[3 4 5]);
-        xb = squeeze(ar[:,:,1,i,j],[3 4 5]);
+        xb = squeeze(ar[:,:,3,i,j],[3 4 5]);
         size(xa)
         ma = mean(xa);
         mb = mean(xb);
