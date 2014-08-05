@@ -248,7 +248,22 @@ begin
     int(100*abs(pearson[cx-d:cx+d,cy-d:cy+d,3]))
 end
 
-
+pearson_pol = zeros(Complex{Float32},47,37);
+for i=1:47
+    for j=1:37
+        xa = squeeze(a[:,:,3,i,j],[3 4 5]);
+        xb = squeeze(ar[:,:,1,i,j],[3 4 5]);
+        size(xa)
+        ma = mean(xa);
+        mb = mean(xb);
+        ad = xa-ma;
+        bd = xb-mb;
+        pearson_pol[i,j] = sum(ad.*conj(bd))/sqrt(sum(abs2(ad))*sum(abs2(bd)));
+    end
+end
+write_pgm(abs(pearson_pol),"/dev/shm/pear.pgm")
+extrema(abs(pearson_pol))
+        
 
 for cam = 1:3
     mosaic = reshape(a[:,:,cam,:,:],90*47,90*37)
