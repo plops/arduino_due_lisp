@@ -653,25 +653,26 @@ rectangular, for alpha=1 Hann window."
   (dotimes (i 3)
     (pylon:set-value-e *cams* i "TriggerMode" 1))
   (let* ((step 50)
+	 (starti 500)
+	 (maxi 3000)
+	 (stepi step)
+	 (startj 500)
+	 (maxj 3000)
+	 (stepj step)
 	 (count-first (let ((count 0))
-			(loop for j from 400 below 2900 by step do
+			(loop for j from starti below maxi by stepi do
 			     (incf count)) 
 			count))
 	 (count-second (let ((count 0))
-			 (loop for yj from 1800 below 3700 by step do
+			 (loop for yj from startj below maxj by stepj do
 			      (incf count)) 
 			 count)))
-    (unwind-protect 
-	 (let ((old 0))
-	  (progn
-	    (dotimes (i 3)
-	      (pylon::command-execute *cams* i "GevTimestampControlReset"))
-	    (pylon:start-grabbing *cams*)
-	    (let* ((buf-s (make-array (list 1024 1024) :element-type 'single-float))
-		   (buf-cs (make-array (list 1024 (+ 1 (floor 1024 2))) :element-type '(complex single-float)))
-		   (accum-buf-s (loop for i below 3 collect
-				     (destructuring-bind (id binx biny ww hh rev ox oy x y d g e name) 
-					 (get-cam-parameters i)
+    (let* ((old 0)
+	  (buf-s (make-array (list 1024 1024) :element-type 'single-float))
+		    (buf-cs (make-array (list 1024 (+ 1 (floor 1024 2))) :element-type '(complex single-float)))
+		    (accum-buf-s (loop for i below 3 collect
+				      (destructuring-bind (id binx biny ww hh rev ox oy x y d g e name) 
+					  (get-cam-parameters i)
 				       (declare (ignorable id binx biny ox oy d g e name x y))
 				       (make-array (list hh (+ 1 (floor ww 2))) :element-type 'single-float))))
 		   (dc-s (make-array (list count-second count-first 3)
@@ -688,67 +689,74 @@ rectangular, for alpha=1 Hann window."
 				  (get-cam-parameters i)
 				(declare (ignorable id binx biny ox oy d g e name x y))
 				(fftw::rplanf buf-s :out buf-cs :w ww :h hh :flag fftw::+measure+)))))
-	      (let ((th (sb-thread:make-thread 
-			 #'(lambda ()
-			     (loop for yj from 1800 below 3700 by step and yji from 0 collect ;; second
-				  (loop for j from 400 below 2900 by step and ji from 0 collect ;; first
-				       (loop for i below 3 do
-					    (multiple-value-bind (cam success-p w h framenr timestamp) 
-						(pylon::grab-sf *cams* buf-s)
-					      
-					      (declare (ignorable framenr)
-						       (type (unsigned-byte 32) w h))
-					      (if success-p
-						  (destructuring-bind (id binx biny ww hh rev ox oy x y d g e name) 
-						      (get-cam-parameters cam)
-						    (declare (ignorable id binx biny ox oy d g e name x y))
-						    (assert (= ww w))
-						    (assert (= hh h))
-						    (when (= 0 cam)
-						      (push (list yji ji (/ (- timestamp old) 125e6)) *diff*)
-						      (setf old timestamp))
-						    (format t "~a~%" cam)
-						    (when (and *dark* *win*)
-						      (let ((win (.linear (elt *win* cam)))
-							    (d (.linear (elt (first *dark*) cam)))
-							    (s (.linear buf-s)))
-							(declare (type (simple-array single-float 1) s win d))
-							(sb-sys:with-pinned-objects (win d s)
-							  (pylon::helper-subtract-bg-multiply-window 
-							   (sb-sys:vector-sap s)
-							   (sb-sys:vector-sap d)
-							   (sb-sys:vector-sap win) (* w h)))))
+      (unwind-protect 
+		 (progn
+		   (dotimes (i 3)
+		     (pylon::command-execute *cams* i "GevTimestampControlReset"))
+		   (pylon:start-grabbing *cams*)
+		   (let ((th (sb-thread:make-thread 
+			      #'(lambda ()
+				  (loop for yj from startj below maxj by stepj and yji from 0 collect ;; second
+				       (loop for j from starti below maxi by stepi and ji from 0 collect ;; first
+					    (loop for i below 3 do
+						 (multiple-value-bind (cam success-p w h framenr timestamp) 
+						     (pylon::grab-sf *cams* buf-s)
+						   
+						   (declare (ignorable framenr)
+							    (type (unsigned-byte 32) w h))
+						   (if success-p
+						       (destructuring-bind (id binx biny ww hh rev ox oy x y d g e name) 
+							   (get-cam-parameters cam)
+							 (declare (ignorable id binx biny ox oy d g e name x y))
+							 (assert (= ww w))
+							 (assert (= hh h))
+							 (when (= 0 cam)
+							   (push (list yji ji (/ (- timestamp old) 125e6)) *diff*)
+							   (setf old timestamp))
+							 (format t "~a~%" cam)
+							 (when (and *dark* *win*)
+							   (let ((win (.linear (elt *win* cam)))
+								 (d (.linear (elt (first *dark*) cam)))
+								 (s (.linear buf-s)))
+							     (declare (type (simple-array single-float 1) s win d))
+							     (sb-sys:with-pinned-objects (win d s)
+							       (pylon::helper-subtract-bg-multiply-window 
+								(sb-sys:vector-sap s)
+								(sb-sys:vector-sap d)
+								(sb-sys:vector-sap win) (* w h)))))
 
-						    (progn
-						      (fftw::%fftwf_execute (elt plan cam))
-						      (setf (aref dc-s yji ji cam) (realpart (aref buf-cs 0 0)))
-						      (.accum (elt accum-buf-s cam) (.abs2 buf-cs))
-						      #+nil 
-						      (extract-csf* (make-array (list hh (+ 1 (floor ww 2)))
-										:element-type '(complex single-float)
-										:displaced-to buf-cs)
-								    (aref ext-cs yji ji cam) :x x :y y :w d :h d)
-						      
-						      (pylon::%helper-extract-csf
-						       (sb-sys:vector-sap (sb-ext:array-storage-vector buf-cs))
-						       (sb-sys:vector-sap
-							(sb-ext:array-storage-vector (aref ext-cs yji ji cam)))
-						       x y (1+ (floor w 2)) h
-						       d d)))
-						  (format t "acquisition error.~%")))))))
-			 :name "camera-acquisition")))
-		(sleep .001)
-		(trigger-all-cameras-seq-2d-scan :stepj step :stepi step :delay-ms 100 :line-delay-ms 100)
-		(sb-thread:join-thread th))
-	      (loop for p in plan do (fftw::%fftwf_destroy_plan p))
+							 (progn
+							   (fftw::%fftwf_execute (elt plan cam))
+							   (setf (aref dc-s yji ji cam) (realpart (aref buf-cs 0 0)))
+							   #+nil (.accum (elt accum-buf-s cam) (.abs2 buf-cs))
+							   #+nil 
+							   (extract-csf* (make-array (list hh (+ 1 (floor ww 2)))
+										     :element-type '(complex single-float)
+										     :displaced-to buf-cs)
+									 (aref ext-cs yji ji cam) :x x :y y :w d :h d)
+							   
+							   (pylon::%helper-extract-csf
+							    (sb-sys:vector-sap (sb-ext:array-storage-vector buf-cs))
+							    (sb-sys:vector-sap
+							     (sb-ext:array-storage-vector (aref ext-cs yji ji cam)))
+							    x y (1+ (floor w 2)) h
+							    d d)))
+						       (format t "acquisition error.~%")))))))
+			      :name "camera-acquisition")))
+		     (sleep .001)
+		     (trigger-all-cameras-seq-2d-scan :starti starti :startj startj
+						      :maxi maxi :maxj maxj
+						      :stepj step :stepi step :delay-ms 50 :line-delay-ms 100)
+		     (sb-thread:join-thread th)))
+	      (pylon:stop-grabbing *cams*)
 	      (defparameter *result* ext-cs)
 	      (defparameter *result2* dc-s)
 	      (defparameter *result3* accum-buf-s)
-	      (sb-ext:gc :full t))))
-      (pylon:stop-grabbing *cams*)
-      (tilt-mirror 0 0))))
+	      (loop for p in plan do (fftw::%fftwf_destroy_plan p))
+	      (sb-ext:gc :full t)
+	      (tilt-mirror 0 0)))))
 #+nil
-(time (progn (run-several-s) nil))
+(time (progn (run-several-s) nil)23)
 
 #+nil
 (loop for i below 3 do
@@ -768,8 +776,8 @@ rectangular, for alpha=1 Hann window."
 	     (dotimes (j 90)
 	       (dotimes (i 90)
 		 (setf (aref a jj ii k j i) (aref b j i))))))))
-     (ics:write-ics2 (format nil "/media/sdc1/dat/0805/o2.ics") a))
-   (with-open-file (s (format nil "/media/sdc1/dat/0805/o2.dat") :direction :output
+     (ics:write-ics2 (format nil "/media/sdc1/dat/0805/orot3.ics") a))
+   (with-open-file (s (format nil "/media/sdc1/dat/0805/orot3.dat") :direction :output
 		      :if-exists :supersede :if-does-not-exist :create)
      (format s "~a ~a~%" 'cam '(id      binx  biny  w   h  rev   x    y  kx  ky   d   g   e   name))
      (dotimes (cam 3)
@@ -1024,7 +1032,7 @@ rectangular, for alpha=1 Hann window."
  (progn
    (dotimes (i 3)
      (pylon::command-execute *cams* i "GevTimestampControlReset"))
-   (defparameter *dark* (multiple-value-list (capture-dark-images 1000)))
+   (defparameter *dark* (multiple-value-list (capture-dark-images 300)))
    (create-windows (first *dark*))))
 
 #+nil
