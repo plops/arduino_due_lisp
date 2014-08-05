@@ -23,12 +23,12 @@ function read_ics(fn)
     pos = find_ics_raw_start(fn)
     f=open(fn)
     seek(f,pos)
-    a=read(f,Complex64,66,66,3,50,38)
+    a=read(f,Complex64,90,90,3,50,38)
     close(f)
     a
 end
 
-ics_file = "/media/sdc1/dat/0801/op1.ics"
+ics_file = "/media/sdc1/dat/0805/o1.ics"
 a = read_ics(ics_file)
 
 # check that the dimensions make sense
@@ -88,14 +88,14 @@ savefig(p,"/dev/shm/o.png")
 
 
 camname=["tran_perp" "refl_perp" "tran_para"]
-ds = zeros(Float32,66,66,3);
+ds = zeros(Float32,90,90,3);
 @time for i = 1:3 
     ds[:,:,i] = (squeeze(mean(abs2(ifft(a,[1 2])[:,:,i,:,:]),[4 5]),[4 5]));
     name = camname[i];
     fn = "fiber_endface_intens_$name";
-    if(i==3)
-        ds[:,:,i] = ds[66:-1:1,:,i]
-    end
+    #if(i==3)
+    #    ds[:,:,i] = ds[90:-1:1,:,i]
+    #end
     write_pgm(ds[:,:,i],"/dev/shm/" * fn * ".pgm");
     #savefig(imagesc(ds[:,:,i]),"/dev/shm" * fn * ".png")
     #run(`convert /dev/shm/$fn.png /home/martin/arduino_due_lisp/processing/julia/step12_0724/$fn.jpg`);
@@ -249,18 +249,20 @@ end
 
 
 for cam = 1:3
-    mosaic = reshape(a[:,:,cam,:,:],66*50,66*38)
+    mosaic = reshape(a[:,:,cam,:,:],90*50,90*38)
     for i=1:50
         for j=1:38
-            for u=1:65
-                for v=1:65
-                    mosaic[(i-1)*66+u,(j-1)*66+v]=a[u,v,cam,i,j]
+            for u=1:90
+                for v=1:90
+                    mosaic[(i-1)*90+u,(j-1)*90+v]=a[u,v,cam,i,j]
                 end
             end
         end
     end
     write_pgm(abs(mosaic),"/dev/shm/m$cam.pgm")
+    write_pgm(angle(mosaic),"/dev/shm/ma$cam.pgm")
     run(`convert /dev/shm/m$cam.pgm /dev/shm/m$cam.jpg`)
+    run(`convert /dev/shm/ma$cam.pgm /dev/shm/ma$cam.jpg`)
 end
 
 # image from cam 2 didn't cut out fourier order correctly

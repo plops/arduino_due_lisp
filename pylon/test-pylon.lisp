@@ -846,7 +846,7 @@ rectangular, for alpha=1 Hann window."
   
   (dotimes (i 3)
     (pylon:set-value-e *cams* i "TriggerMode" 1))
-  (let* ((step 200)
+  (let* ((step 50)
 	 (count-first (let ((count 0))
 			(loop for j from 400 below 2900 by step do
 			     (incf count)) 
@@ -875,7 +875,7 @@ rectangular, for alpha=1 Hann window."
 				       (loop for j below count-second collect
 					    (loop for i below count-first collect
 						 (loop for i below 3 collect
-						      (make-array (list 66 66) 
+						      (make-array (list 90 90) 
 								  :element-type '(complex single-float)))))))
 		   (plan (loop for i below 3 collect 
 			      (destructuring-bind (id binx biny ww hh rev ox oy x y d g e name) 
@@ -954,16 +954,16 @@ rectangular, for alpha=1 Hann window."
 #+nil
 (time
  (destructuring-bind (hh ww kk) (array-dimensions *result*)
-   (let ((a (make-array (list hh ww kk 66 66) :element-type '(complex single-float))))
+   (let ((a (make-array (list hh ww kk 90 90) :element-type '(complex single-float))))
      (dotimes (jj hh)
        (dotimes (ii ww)
 	 (dotimes (k kk)
 	   (let ((b (aref *result* jj ii k)))
-	     (dotimes (j 66)
-	       (dotimes (i 66)
+	     (dotimes (j 90)
+	       (dotimes (i 90)
 		 (setf (aref a jj ii k j i) (aref b j i))))))))
-     (ics:write-ics2 (format nil "/media/sdc1/dat/0801/op1.ics") a))
-   (with-open-file (s (format nil "/media/sdc1/dat/0801/op1.dat") :direction :output
+     (ics:write-ics2 (format nil "/media/sdc1/dat/0805/o1.ics") a))
+   (with-open-file (s (format nil "/media/sdc1/dat/0805/o1.dat") :direction :output
 		      :if-exists :supersede :if-does-not-exist :create)
      (format s "~a ~a~%" 'cam '(id      binx  biny  w   h  rev   x    y  kx  ky   d   g   e   name))
      (dotimes (cam 3)
