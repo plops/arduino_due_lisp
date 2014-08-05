@@ -64,7 +64,7 @@
 (arduino-serial-sbcl:talk-arduino
    ( second *ard*) 
    (first *ard*)
-   "(dac 1550 2500)")
+   "(dac 1200 1200)")
 
 #+nil
 (loop for r from 100 below 400 by 20 do ;dotimes (seq 10)
@@ -639,217 +639,6 @@ rectangular, for alpha=1 Hann window."
 (run)
 (defvar *dark* nil)
 
-
-
-(defun run-raw ()
-  (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
-  (dotimes (i 3)
-    (pylon:set-value-e *cams* i "TriggerMode" 0))
-  (let ((fds nil))
-   (unwind-protect 
-	(progn 
-	  (setf fds
-		(loop for i below 3 collect
-		     (sb-unix::unix-open (format nil "/dev/shm/r~a.raw" i) (logior sb-unix:o_creat 
-										     sb-unix:o_trunc
-										     sb-unix:o_wronly) 
-					 #o666)))
-	  (pylon:start-grabbing *cams*)
-	  (loop for yj from 1800 below 3700 by 100  and yji from 0 collect
-	   (loop for j from 400 below 2900 by 100 and ji from 0 collect
-	    (let ((th (sb-thread:make-thread 
-		       #'(lambda ()
-			   (progn
-			     ;(tilt-mirror j yj)
-			     (loop for i below 3 do
-				  (destructuring-bind (cam success-p w h framenr) 
-				      (multiple-value-list (pylon::grab-store *cams* fds))
-				   (declare (ignorable w h framenr cam))
-				    (unless (= 1 success-p)
-				      (format t "acquisition error. ~a~%" success-p))))))
-		       :name "camera-acquisition")))
-	      (sleep .0001)
-	    ;  (trigger-all-cameras)
-	      (sb-thread:join-thread th)))))
-    (progn (pylon:stop-grabbing *cams*)
-	   (loop for e in fds do
-		(sb-unix::unix-close e))))))
-
-
-(defun run-raw-several ()
-  (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
-  (dotimes (i 3)
-    (pylon:set-value-e *cams* i "TriggerMode" 1))
-  (let* ((fds nil)
-	(step 100)
-	 (count (let ((count 0))		 (loop for yj from 1800 below 3700 by step do
-		      (loop for j from 400 below 2900 by step do
-			   (incf count)))
-		 count)))
-   (unwind-protect 
-	(progn 
-	  (setf fds
-		(loop for i below 3 collect
-		     (sb-unix::unix-open (format nil "/dev/shm/r~a.raw" i) (logior sb-unix:o_creat 
-										     sb-unix:o_trunc
-										     sb-unix:o_wronly) 
-					 #o666)))
-	  
-	  (pylon:start-grabbing *cams*)
-	  (let ((th (sb-thread:make-thread 
-		     #'(lambda ()
-			 (loop for yj from 1800 below 3700 by step and yji from 0 do
-			      (loop for j from 400 below 2900 by step and ji from 0 do
-					;(tilt-mirror j yj)
-				   (format t "~a/3700 ~a/2900~%" yj j)
-				   (loop for i below 3 do
-					(destructuring-bind (cam success-p w h framenr) 
-					    (multiple-value-list (pylon::grab-store *cams* fds))
-					  (declare (ignorable cam w h framenr))
-					  (unless (= 1 success-p)
-					    (format t "acquisition error. ~a~%" success-p)))))))
-		     :name "camera-acquisition")))
-	    (sleep .001)
-	    (time
-	     (trigger-all-cameras-seq count))
-	    (sb-thread:join-thread th)))
-    (progn (pylon:stop-grabbing *cams*)
-	   (loop for e in fds do
-		(sb-unix::unix-close e))))))
-
-
-#+nil
-(time (run-raw-several))
-
-#+nil
-(require :sb-sprof)
-
-#+nil
-(time
- (progn (format t "~a~%" (multiple-value-list (get-decoded-time)))
-	(sb-sprof:with-profiling (:max-samples 1000
-                                       :report :flat
-                                       :loop nil)
-	  (run-raw-several))
-	(format t "~a~%" (multiple-value-list (get-decoded-time)))))
-
-
-
-(defun run ()
-  (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
-  (dotimes (i 3)
-    (pylon:set-value-e *cams* i "TriggerMode" 1))
-  (unwind-protect 
-       (progn
-	 (pylon:start-grabbing *cams*)
-	 (;let ((yj 2550) (yji 0)) ;
-	  loop for yj from 1800 below 3700 by 100  and yji from 0 collect
-	       (;let ((j 1550) (ji 0)) ;
-		loop for j from 400 below 2900 by 100 and ji from 0 collect
-		     (let ((th (sb-thread:make-thread 
-				#'(lambda ()
-				    (progn
-				      (tilt-mirror j yj)
-				      (loop for i below 3 do
-					   (destructuring-bind (cam success-p w h framenr) 
-					       (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
-					     (declare (ignorable framenr))
-					     (if success-p
-						 (destructuring-bind (id binx biny ww hh rev ox oy x y d g e name) 
-						     (get-cam-parameters cam)
-						   (declare (ignorable id binx biny ox oy d g e name))
-						   (assert (= ww w))
-						   (assert (= hh h))
-						   (when (and *dark* *win*)
-						     (subtract-bg-and-multiply-window
-						      *buf-c* (elt (first *dark*) cam)
-						      (elt *win* cam)))
-						   
-						   (format t "max ~a~%" (reduce #'(lambda (x y) (max (realpart x) (realpart y)))
-										(make-array (* h w)
-											    :element-type '(complex double-float)
-											    :displaced-to *buf-c*)))
-						   (fftw:ft *buf-c* :out-arg *out-c* :w w :h h :flag fftw::+measure+)
-						   (let* ((q (make-array (list h w)
-									 :element-type '(complex double-float)
-									 :displaced-to *out-c*))
-							  #+nil
-							  (v (.mean (.abs2 q)))
-							  (v 1d0))
-						     (format t "~a~%" (list j yj))
-						     
-						     (push (list j yj ji yji v  ;*out-c*
-								 (extract q :x x :y y :w d :h d)
-								 #+nil (adjust-array q (list h w)
-									       :element-type '(complex double-float))) 
-							   (aref *bla* cam))))
-						 (format t "acquisition error.~%"))))))
-				:name "camera-acquisition")))
-		       (sleep .001)
-		       (trigger-all-cameras)
-		       (sleep .001)
-		       (sb-thread:join-thread th)))))
-    (pylon:stop-grabbing *cams*)))
-
-(defun run-several ()
-  (setf *bla* (make-array 3 :initial-element nil))  (unless *trigger-outputs-initialized*)
-  (dotimes (i 3)
-    (pylon:set-value-e *cams* i "TriggerMode" 1))
-  (let* ((step 120)
-	(count (let ((count 0))
-		 (loop for yj from 1800 below 3700 by step do
-		      (loop for j from 400 below 2900 by step do
-			   (incf count)))
-		 count)))
-    (unwind-protect 
-	 (progn
-	   (pylon:start-grabbing *cams*)
-	   (let ((th (sb-thread:make-thread 
-		      #'(lambda ()
-			  (progn
-					;(tilt-mirror j yj)
-			    (loop for yj from 1800 below 3700 by step and yji from 0 collect
-				 (loop for j from 400 below 2900 by step and ji from 0 collect
-				      (loop for i below 3 do
-					   (destructuring-bind (cam success-p w h framenr) 
-					       (multiple-value-list (pylon:grab-cdf *cams* *buf-c*))
-					     (declare (ignorable framenr))
-					     (if success-p
-						 (destructuring-bind (id binx biny ww hh rev ox oy x y d g e name) 
-						     (get-cam-parameters cam)
-						   (declare (ignorable id binx biny ox oy d g e name x y))
-						   (assert (= ww w))
-						   (assert (= hh h))
-						   (when (and *dark* *win*)
-						     (subtract-bg-and-multiply-window1
-						      (.linear *buf-c*)
-						      (.linear (elt (first *dark*) cam))
-						      (.linear (elt *win* cam))))
-						   #+nil
-						   (format t "max ~a~%" (reduce #'(lambda (x y) (max (realpart x) (realpart y)))
-										(make-array (* h w)
-											    :element-type '(complex double-float)
-											    :displaced-to *buf-c*)))
-						   (fftw:ft *buf-c* :out-arg *out-c* :w w :h h :flag fftw::+measure+)
-						   #+nil (let* ((q (make-array (list h w)
-									 :element-type '(complex double-float)
-									 :displaced-to *out-c*))
-							  (v 1d0))
-						     (format t "~a~%" (list j yj))
-						     (push (list j yj ji yji v
-								 (extract q :x x :y y :w d :h d)) 
-							   (aref *bla* cam))))
-						 (format t "acquisition error.~%"))))))))
-		      :name "camera-acquisition")))
-	     (sleep .001)
-	     (time
-	      (trigger-all-cameras-seq count :delay-ms 99))
-	     (sb-thread:join-thread th)))
-      (pylon:stop-grabbing *cams*))))
-
-;(make-array (list 2 3) :initial-contents (loop for i below 2 collect (loop for j below 3 collect (list i j))))
-
-#+nil(time (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 512 :h 512 :flag fftw::+measure+) nil))
 (defparameter *diff* nil)
 (defun run-several-s ()
   (declare (optimize (debug 3) (speed 3)))
@@ -863,7 +652,7 @@ rectangular, for alpha=1 Hann window."
   
   (dotimes (i 3)
     (pylon:set-value-e *cams* i "TriggerMode" 1))
-  (let* ((step 100)
+  (let* ((step 50)
 	 (count-first (let ((count 0))
 			(loop for j from 400 below 2900 by step do
 			     (incf count)) 
@@ -949,7 +738,7 @@ rectangular, for alpha=1 Hann window."
 						  (format t "acquisition error.~%")))))))
 			 :name "camera-acquisition")))
 		(sleep .001)
-		(trigger-all-cameras-seq-2d-scan :stepj step :stepi step :delay-ms 100)
+		(trigger-all-cameras-seq-2d-scan :stepj step :stepi step :delay-ms 100 :line-delay-ms 100)
 		(sb-thread:join-thread th))
 	      (loop for p in plan do (fftw::%fftwf_destroy_plan p))
 	      (defparameter *result* ext-cs)
@@ -979,8 +768,8 @@ rectangular, for alpha=1 Hann window."
 	     (dotimes (j 90)
 	       (dotimes (i 90)
 		 (setf (aref a jj ii k j i) (aref b j i))))))))
-     (ics:write-ics2 (format nil "/media/sdc1/dat/0805/orot1.ics") a))
-   (with-open-file (s (format nil "/media/sdc1/dat/0805/orot1.dat") :direction :output
+     (ics:write-ics2 (format nil "/media/sdc1/dat/0805/o2.ics") a))
+   (with-open-file (s (format nil "/media/sdc1/dat/0805/o2.dat") :direction :output
 		      :if-exists :supersede :if-does-not-exist :create)
      (format s "~a ~a~%" 'cam '(id      binx  biny  w   h  rev   x    y  kx  ky   d   g   e   name))
      (dotimes (cam 3)
@@ -1235,7 +1024,7 @@ rectangular, for alpha=1 Hann window."
  (progn
    (dotimes (i 3)
      (pylon::command-execute *cams* i "GevTimestampControlReset"))
-   (defparameter *dark* (multiple-value-list (capture-dark-images 300)))
+   (defparameter *dark* (multiple-value-list (capture-dark-images 1000)))
    (create-windows (first *dark*))))
 
 #+nil
