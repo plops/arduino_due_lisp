@@ -653,7 +653,7 @@ rectangular, for alpha=1 Hann window."
   (dotimes (i 3)
     (pylon:set-value-e *cams* i "TriggerMode" 1))
   (let* ((step 50)
-	 (starti 500)
+	 (starti 300)
 	 (maxi 3000)
 	 (stepi step)
 	 (startj 500)
@@ -756,7 +756,7 @@ rectangular, for alpha=1 Hann window."
 	      (sb-ext:gc :full t)
 	      (tilt-mirror 0 0)))))
 #+nil
-(time (progn (run-several-s) nil)23)
+(time (progn (run-several-s) nil))
 
 #+nil
 (loop for i below 3 do
@@ -776,8 +776,8 @@ rectangular, for alpha=1 Hann window."
 	     (dotimes (j 90)
 	       (dotimes (i 90)
 		 (setf (aref a jj ii k j i) (aref b j i))))))))
-     (ics:write-ics2 (format nil "/media/sdc1/dat/0805/orot3.ics") a))
-   (with-open-file (s (format nil "/media/sdc1/dat/0805/orot3.dat") :direction :output
+     (ics:write-ics2 (format nil "/media/sdc1/dat/0805/o4.ics") a))
+   (with-open-file (s (format nil "/media/sdc1/dat/0805/o4.dat") :direction :output
 		      :if-exists :supersede :if-does-not-exist :create)
      (format s "~a ~a~%" 'cam '(id      binx  biny  w   h  rev   x    y  kx  ky   d   g   e   name))
      (dotimes (cam 3)

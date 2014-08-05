@@ -23,14 +23,15 @@ function read_ics(fn)
     pos = find_ics_raw_start(fn)
     f=open(fn)
     seek(f,pos)
-    a=read(f,Complex64,90,90,3,50,38)
+    a=read(f,Complex64,90,90,3,54,50)
     close(f)
     a
 end
 
-ics_file = "/media/sdc1/dat/0805/o1.ics"
+ics_file = "/media/sdc1/dat/0805/o4.ics"
 a = read_ics(ics_file)
-ics_file = "/media/sdc1/dat/0805/orot1.ics"
+
+ics_file = "/media/sdc1/dat/0805/orot3.ics"
 ar = read_ics(ics_file)
 
 # check that the dimensions make sense
@@ -92,7 +93,7 @@ savefig(p,"/dev/shm/o.png")
 camname=["tran_perp" "refl_perp" "tran_para"]
 ds = zeros(Float32,90,90,3);
 @time for i = 1:3 
-    ds[:,:,i] = (squeeze(mean(abs2(ifft(ar,[1 2])[:,:,i,:,:]),[4 5]),[4 5]));
+    ds[:,:,i] = (squeeze(mean(abs2(ifft(a,[1 2])[:,:,i,:,:]),[4 5]),[4 5]));
     name = camname[i];
     fn = "fiber_endface_intens_r_$name";
     #if(i==3)
@@ -113,7 +114,7 @@ end # elapsed time: 22.026625532 seconds (9983991416 bytes allocated, 2.92% gc t
 @time extrema(abs(a)) # 4.9s
 
 for i = 1:3
-    pt = (squeeze(mean(abs2(ar[:,:,i,:,:]),[1 2]),[1 2 3]));
+    pt = (squeeze(mean(abs2(a[:,:,i,:,:]),[1 2]),[1 2 3]));
     name = camname[i];
     fn = "/dev/shm/angular_throughput_r_$name";
     write_pgm(pt,fn * ".pgm");
