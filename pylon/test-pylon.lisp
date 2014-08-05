@@ -962,8 +962,8 @@ rectangular, for alpha=1 Hann window."
 	     (dotimes (j 90)
 	       (dotimes (i 90)
 		 (setf (aref a jj ii k j i) (aref b j i))))))))
-     (ics:write-ics2 (format nil "/media/sdc1/dat/0805/o1.ics") a))
-   (with-open-file (s (format nil "/media/sdc1/dat/0805/o1.dat") :direction :output
+     (ics:write-ics2 (format nil "/media/sdc1/dat/0805/orot1.ics") a))
+   (with-open-file (s (format nil "/media/sdc1/dat/0805/orot1.dat") :direction :output
 		      :if-exists :supersede :if-does-not-exist :create)
      (format s "~a ~a~%" 'cam '(id      binx  biny  w   h  rev   x    y  kx  ky   d   g   e   name))
      (dotimes (cam 3)
