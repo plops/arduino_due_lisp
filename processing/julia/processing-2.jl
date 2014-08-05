@@ -261,10 +261,26 @@ for cam = 1:3
             end
         end
     end
+    write_pgm(abs(mosaic),"/dev/shm/m$cam.pgm")
+    #write_pgm(angle(mosaic),"/dev/shm/ma_r$cam.pgm")
+    run(`convert /dev/shm/m$cam.pgm /dev/shm/m$cam.jpg`)
+    #run(`convert /dev/shm/ma_r$cam.pgm /dev/shm/ma_r$cam.jpg`)
+end
+for cam = 1:3
+    mosaic = reshape(a[:,:,cam,:,:],90*47,90*37)
+    for i=1:47
+        for j=1:37
+            for u=1:90
+                for v=1:90
+                    mosaic[(i-1)*90+u,(j-1)*90+v]=ar[u,v,cam,i,j]
+                end
+            end
+        end
+    end
     write_pgm(abs(mosaic),"/dev/shm/m_r$cam.pgm")
-    write_pgm(angle(mosaic),"/dev/shm/ma_r$cam.pgm")
+    #write_pgm(angle(mosaic),"/dev/shm/ma_r$cam.pgm")
     run(`convert /dev/shm/m_r$cam.pgm /dev/shm/m_r$cam.jpg`)
-    run(`convert /dev/shm/ma_r$cam.pgm /dev/shm/ma_r$cam.jpg`)
+    #run(`convert /dev/shm/ma_r$cam.pgm /dev/shm/ma_r$cam.jpg`)
 end
 
 # image from cam 2 didn't cut out fourier order correctly
