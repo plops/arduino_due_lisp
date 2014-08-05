@@ -385,14 +385,14 @@
       (list 65 (+ 33 (- 386 256)) (+ 33 256 189))
       (list 66 (+ 33 (- 474 256)) (+ 33 (- 426 256))))
 
-(list (list 40 (+ 45 -5) (+ 45 813))
-      (list 65 (+ 45 120) (+ 45 940))
-      (list 66 (+ 45 180) (+ 45 139)))
+(list (list 40 (+ 45 130) (+ 45 122))
+      (list 65 (+ 45 301) (+ 45 773))
+      (list 66 (+ 45 184) (+ 45 126)))
 
 (defparameter *cam-parameters*
-  `((21433565    1    1  1024 1024 nil  170  47 165 985  90   0   875 "transmission with polrot (top)")
-    (21433566    1    1   512  512 nil  339 345 225 184  90   0  4000 "backreflection with polrot")  
-    (21433540    1    1  1024 1024 t    476  56  40 858  90   0   875 "transmission same pol"))
+  `((21433565    1    1  1024 1024 nil  170  47 346 818  90   0   875 "transmission with polrot (top)")
+    (21433566    1    1   512  512 nil  339 345 229 171  90   0  4000 "backreflection with polrot")  
+    (21433540    1    1  1024 1024 t    476  56 175 167  90   0   875 "transmission same pol"))
   "    id      binx  biny  w    h  rev   x    y  kx  ky   d   g   e   name")
 ;; i reverseX the 40 to compensate for the pbs
 ;; 33040
@@ -966,7 +966,7 @@ rectangular, for alpha=1 Hann window."
      (write-pgm8 (format nil "/dev/shm/o~d.pgm" i) (.uint8 (.log (elt *result3* i)))))
 
 #+nil
-(get-cam-parameters 0)
+(get-cam-parameters 2)
 
 #+nil
 (time
