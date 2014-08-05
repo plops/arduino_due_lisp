@@ -620,6 +620,7 @@ rectangular, for alpha=1 Hann window."
 
 (declaim (optimize (speed 0) (debug 3) (safety 3)))
 
+
 #+nil
 (create-windows (first *dark*))
 
@@ -639,6 +640,8 @@ rectangular, for alpha=1 Hann window."
 (run)
 (defvar *dark* nil)
 
+(+ 500 (* (+ 14 35) 50))
+
 (defparameter *diff* nil)
 (defun run-several-s ()
   (declare (optimize (debug 3) (speed 3)))
@@ -653,11 +656,11 @@ rectangular, for alpha=1 Hann window."
   (dotimes (i 3)
     (pylon:set-value-e *cams* i "TriggerMode" 1))
   (let* ((step 50)
-	 (starti 300)
-	 (maxi 3000)
+	 (starti 450)
+	 (maxi 2800)
 	 (stepi step)
-	 (startj 500)
-	 (maxj 3000)
+	 (startj 1100)
+	 (maxj 2950)
 	 (stepj step)
 	 (count-first (let ((count 0))
 			(loop for j from starti below maxi by stepi do
@@ -746,12 +749,15 @@ rectangular, for alpha=1 Hann window."
 		     (sleep .001)
 		     (trigger-all-cameras-seq-2d-scan :starti starti :startj startj
 						      :maxi maxi :maxj maxj
-						      :stepj step :stepi step :delay-ms 50 :line-delay-ms 100)
+						      :stepj step :stepi step :delay-ms 40 :line-delay-ms 100)
+		     (defparameter *steering-params* (list 'i starti maxi stepi
+						    'j startj maxj stepj))
 		     (sb-thread:join-thread th)))
 	      (pylon:stop-grabbing *cams*)
 	      (defparameter *result* ext-cs)
 	      (defparameter *result2* dc-s)
 	      (defparameter *result3* accum-buf-s)
+	      
 	      (loop for p in plan do (fftw::%fftwf_destroy_plan p))
 	      (sb-ext:gc :full t)
 	      (tilt-mirror 0 0)))))
@@ -776,9 +782,10 @@ rectangular, for alpha=1 Hann window."
 	     (dotimes (j 90)
 	       (dotimes (i 90)
 		 (setf (aref a jj ii k j i) (aref b j i))))))))
-     (ics:write-ics2 (format nil "/media/sdc1/dat/0805/o4.ics") a))
-   (with-open-file (s (format nil "/media/sdc1/dat/0805/o4.dat") :direction :output
+     (ics:write-ics2 (format nil "/media/sdc1/dat/0805/o7.ics") a))
+   (with-open-file (s (format nil "/media/sdc1/dat/0805/o7.dat") :direction :output
 		      :if-exists :supersede :if-does-not-exist :create)
+     (format s "~a~%" *steering-params*)
      (format s "~a ~a~%" 'cam '(id      binx  biny  w   h  rev   x    y  kx  ky   d   g   e   name))
      (dotimes (cam 3)
        (format s "~d ~s~%" cam (get-cam-parameters cam))))))
