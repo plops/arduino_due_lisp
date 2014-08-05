@@ -471,7 +471,8 @@
   (defparameter *out-cs* (make-array (list h w) :element-type '(complex single-float)
 			    :displaced-to *out-cs1*))
   (defparameter *buf-s1* (make-array (* w h) :element-type 'single-float))
-  (defparameter *buf-s* (make-array (list h w) :element-type 'single-float))
+  (defparameter *buf-s* (make-array (list h w) :element-type 'single-float
+				    :displaced-to *buf-s1*))
   nil)
 
 (declaim (type (simple-array (complex single-float) 1) *out-cs1*)
@@ -936,7 +937,7 @@ rectangular, for alpha=1 Hann window."
 	      (loop for p in plan do (fftw::%fftwf_destroy_plan p))
 	      (defparameter *result* ext-cs)
 	      (defparameter *result2* dc-s)
-	      (defparameter *result3* accum-buf-s)
+	      ;(defparameter *result3* accum-buf-s)
 	      (sb-ext:gc :full t))))
       (pylon:stop-grabbing *cams*)
       (tilt-mirror 0 0))))
@@ -1403,8 +1404,11 @@ rectangular, for alpha=1 Hann window."
 				(incf (elt count cam))))
 			    (format t "acquisition error.~%")))))
 	    (loop for cam below 3 do
+		 (format t "~a~%" (list (first (get-cam-parameters cam))
+					'collected-dark-frames (elt count cam)))
 		 (unless (= 0 (elt count cam))
 		   (setf (elt cambuf cam) (.* (elt cambuf cam) (/ (elt count cam))))))
+	    
 	    (values cambuf count)))))
     (progn (pylon:stop-grabbing *cams*)
 	    (unblock-laser))))
@@ -1426,6 +1430,10 @@ rectangular, for alpha=1 Hann window."
      (pylon::command-execute *cams* i "GevTimestampControlReset"))
    (defparameter *dark* (multiple-value-list (capture-dark-images 300)))
    (create-windows (first *dark*))))
+
+#+nil
+(reduce #'+ (sb-ext:array-storage-vector (elt (first *dark*) 0)
+	     ))
 
 #+nil
 (dotimes (i 3)
