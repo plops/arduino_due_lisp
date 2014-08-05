@@ -33,7 +33,7 @@ a = read_ics(ics_file)
 ics_file = "/media/sdc1/dat/0805/orot9.ics"
 ar = read_ics(ics_file)
 ics_file = "/media/sdc1/dat/0805/o8.ics"
-ar = read_ics(ics_file)
+a8 = read_ics(ics_file)
 
 # check that the dimensions make sense
 (filesize(ics_file)-602)/(66*66*125*95*3)
@@ -250,21 +250,33 @@ begin
     int(100*abs(pearson[cx-d:cx+d,cy-d:cy+d,3]))
 end
 
-pearson_pol = zeros(Complex{Float32},47,37);
-for i=1:47
-    for j=1:37
-        xa = squeeze(a[:,:,3,i,j],[3 4 5]);
-        xb = squeeze(ar[:,:,3,i,j],[3 4 5]);
-        size(xa)
-        ma = mean(xa);
-        mb = mean(xb);
-        ad = xa-ma;
-        bd = xb-mb;
-        pearson_pol[i,j] = sum(ad.*conj(bd))/sqrt(sum(abs2(ad))*sum(abs2(bd)));
+
+function pearson_coef(a,b,cama,camb)
+    pearson = zeros(Complex{Float32},47,37);
+    for i=1:47
+        for j=1:37
+            xa = squeeze(a[:,:,cama,i,j],[3 4 5]);
+            xb = squeeze(ar[:,:,camb,i,j],[3 4 5]);
+            ma = mean(xa);
+            mb = mean(xb);
+            ad = xa-ma;
+            bd = xb-mb;
+            pearson[i,j] = sum(ad.*conj(bd))/sqrt(sum(abs2(ad))*sum(abs2(bd)));
+        end
     end
+    pearson
 end
-write_pgm(abs(pearson_pol),"/dev/shm/pear.pgm")
-extrema(abs(pearson_pol))
+write_pgm(abs(pearson_coef(a,ar,1,3)),"/dev/shm/pear_o9-1_or9-3.pgm")
+write_pgm(abs(pearson_coef(a,ar,3,1)),"/dev/shm/pear_o9-3_or9-1.pgm")
+write_pgm(abs(pearson_coef(a,ar,2,2)),"/dev/shm/pear_o9-2_or9-2.pgm")
+write_pgm(abs(pearson_coef(a,a8,1,1)),"/dev/shm/pear_o9-1_o8-1.pgm")
+write_pgm(abs(pearson_coef(a,a8,2,2)),"/dev/shm/pear_o9-2_o8-2.pgm")
+write_pgm(abs(pearson_coef(a,a8,3,3)),"/dev/shm/pear_o9-3_o8-3.pgm")
+write_pgm(abs(pearson_coef(a,a8,1,3)),"/dev/shm/pear_o9-1_o8-3.pgm")
+write_pgm(abs(pearson_coef(a,a8,3,1)),"/dev/shm/pear_o9-3_o8-1.pgm")
+write_pgm(abs(pearson_coef(a,a,1,3)),"/dev/shm/pear_o9-1_o9-3.pgm")
+write_pgm(abs(pearson_coef(a,a,3,1)),"/dev/shm/pear_o9-3_o9-1.pgm")
+
         
 
 for cam = 1:3
