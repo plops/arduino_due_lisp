@@ -782,8 +782,8 @@ rectangular, for alpha=1 Hann window."
 	     (dotimes (j 90)
 	       (dotimes (i 90)
 		 (setf (aref a jj ii k j i) (aref b j i))))))))
-     (ics:write-ics2 (format nil "/media/sdc1/dat/0805/o7.ics") a))
-   (with-open-file (s (format nil "/media/sdc1/dat/0805/o7.dat") :direction :output
+     (ics:write-ics2 (format nil "/media/sdc1/dat/0805/o9.ics") a))
+   (with-open-file (s (format nil "/media/sdc1/dat/0805/o9.dat") :direction :output
 		      :if-exists :supersede :if-does-not-exist :create)
      (format s "~a~%" *steering-params*)
      (format s "~a ~a~%" 'cam '(id      binx  biny  w   h  rev   x    y  kx  ky   d   g   e   name))
@@ -1039,7 +1039,7 @@ rectangular, for alpha=1 Hann window."
  (progn
    (dotimes (i 3)
      (pylon::command-execute *cams* i "GevTimestampControlReset"))
-   (defparameter *dark* (multiple-value-list (capture-dark-images 300)))
+   (defparameter *dark* (multiple-value-list (capture-dark-images 1000)))
    (create-windows (first *dark*))))
 
 #+nil
