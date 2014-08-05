@@ -30,6 +30,8 @@ end
 
 ics_file = "/media/sdc1/dat/0805/o1.ics"
 a = read_ics(ics_file)
+ics_file = "/media/sdc1/dat/0805/orot1.ics"
+ar = read_ics(ics_file)
 
 # check that the dimensions make sense
 (filesize(ics_file)-602)/(66*66*125*95*3)
@@ -90,9 +92,9 @@ savefig(p,"/dev/shm/o.png")
 camname=["tran_perp" "refl_perp" "tran_para"]
 ds = zeros(Float32,90,90,3);
 @time for i = 1:3 
-    ds[:,:,i] = (squeeze(mean(abs2(ifft(a,[1 2])[:,:,i,:,:]),[4 5]),[4 5]));
+    ds[:,:,i] = (squeeze(mean(abs2(ifft(ar,[1 2])[:,:,i,:,:]),[4 5]),[4 5]));
     name = camname[i];
-    fn = "fiber_endface_intens_$name";
+    fn = "fiber_endface_intens_r_$name";
     #if(i==3)
     #    ds[:,:,i] = ds[90:-1:1,:,i]
     #end
@@ -111,9 +113,9 @@ end # elapsed time: 22.026625532 seconds (9983991416 bytes allocated, 2.92% gc t
 @time extrema(abs(a)) # 4.9s
 
 for i = 1:3
-    pt = (squeeze(mean(abs2(a[:,:,i,:,:]),[1 2]),[1 2 3]));
+    pt = (squeeze(mean(abs2(ar[:,:,i,:,:]),[1 2]),[1 2 3]));
     name = camname[i];
-    fn = "/dev/shm/angular_throughput_$name";
+    fn = "/dev/shm/angular_throughput_r_$name";
     write_pgm(pt,fn * ".pgm");
     run(`convert $fn.pgm $fn.jpg`);
 end
@@ -249,20 +251,20 @@ end
 
 
 for cam = 1:3
-    mosaic = reshape(a[:,:,cam,:,:],90*50,90*38)
+    mosaic = reshape(ar[:,:,cam,:,:],90*50,90*38)
     for i=1:50
         for j=1:38
             for u=1:90
                 for v=1:90
-                    mosaic[(i-1)*90+u,(j-1)*90+v]=a[u,v,cam,i,j]
+                    mosaic[(i-1)*90+u,(j-1)*90+v]=ar[u,v,cam,i,j]
                 end
             end
         end
     end
-    write_pgm(abs(mosaic),"/dev/shm/m$cam.pgm")
-    write_pgm(angle(mosaic),"/dev/shm/ma$cam.pgm")
-    run(`convert /dev/shm/m$cam.pgm /dev/shm/m$cam.jpg`)
-    run(`convert /dev/shm/ma$cam.pgm /dev/shm/ma$cam.jpg`)
+    write_pgm(abs(mosaic),"/dev/shm/m_r$cam.pgm")
+    write_pgm(angle(mosaic),"/dev/shm/ma_r$cam.pgm")
+    run(`convert /dev/shm/m_r$cam.pgm /dev/shm/m_r$cam.jpg`)
+    run(`convert /dev/shm/ma_r$cam.pgm /dev/shm/ma_r$cam.jpg`)
 end
 
 # image from cam 2 didn't cut out fourier order correctly
