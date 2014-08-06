@@ -41,6 +41,47 @@ a8 = read_ics(ics_file)
 size(a[:,:,1,:,:])
 
 
+a1 = reshape(a[:,:,1,:,:],90*90,47*37);
+
+
+
+function avg_endface(a,cam)
+    mean(abs2(ifft(a[:,:,cam,:,:],[1 2])),[4 5])
+end
+write_pgm(avg_endface(a,1),"/dev/shm/os1.pgm");
+write_pgm(avg_endface(a,3),"/dev/shm/os3.pgm");
+write_pgm(avg_endface(ar,1),"/dev/shm/or1.pgm");
+write_pgm(avg_endface(ar,3),"/dev/shm/or3.pgm");
+
+function bin_avg_endface(a,cam)
+    q=avg_endface(a,cam);
+    q .> quantile(reshape(q,90*90),.5)
+end
+
+write_pgm(bin_avg_endface(a,1),"/dev/shm/bos1.pgm");
+write_pgm(bin_avg_endface(a,3),"/dev/shm/bos3.pgm");
+write_pgm(bin_avg_endface(ar,1),"/dev/shm/bor1.pgm");
+write_pgm(bin_avg_endface(ar,3),"/dev/shm/bor3.pgm");
+
+bin_all= bin_avg_endface(a,1) & bin_avg_endface(a,3) & bin_avg_endface(ar,1) & bin_avg_endface(ar,3);
+write_pgm(bin_all,"/dev/shm/bo_all.pgm");
+
+
+function avg_angle(a,cam)
+    squeeze(mean(abs2(a[:,:,cam,:,:]),[1 2]),[1,2,3])
+end
+
+function bin_avg_angle(a,cam)
+    q=avg_angle(a,cam);
+    q .> quantile(reshape(q,47*37),.6)
+end
+
+abin_all= bin_avg_angle(a,1) & bin_avg_angle(a,3) & bin_avg_angle(ar,1) & bin_avg_angle(ar,3);
+write_pgm(abin_all,"/dev/shm/abo_all.pgm");
+
+
+
+size(a1)
 
 # there is a nice interface for the browser in julia, but for now i
 # just store images as pgm files.
@@ -256,7 +297,7 @@ function pearson_coef(a,b,cama,camb)
     for i=1:47
         for j=1:37
             xa = squeeze(a[:,:,cama,i,j],[3 4 5]);
-            xb = squeeze(ar[:,:,camb,i,j],[3 4 5]);
+            xb = squeeze(b[:,:,camb,i,j],[3 4 5]);
             ma = mean(xa);
             mb = mean(xb);
             ad = xa-ma;
