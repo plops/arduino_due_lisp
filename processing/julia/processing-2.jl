@@ -64,7 +64,7 @@ write_pgm(bin_avg_endface(ar,1),"/dev/shm/bor1.pgm");
 write_pgm(bin_avg_endface(ar,3),"/dev/shm/bor3.pgm");
 
 bin_all= bin_avg_endface(a,1) & bin_avg_endface(a,3) & bin_avg_endface(ar,1) & bin_avg_endface(ar,3);
-write_pgm(bin_all,"/dev/shm/bo_all.pgm");
+write_pgm(bin_all,"/dev/shm/bin_all.pgm");
 
 
 function avg_angle(a,cam)
@@ -73,13 +73,20 @@ end
 
 function bin_avg_angle(a,cam)
     q=avg_angle(a,cam);
-    q .> quantile(reshape(q,47*37),.6)
+    q .> quantile(reshape(q,47*37),.3)
 end
 
 abin_all= bin_avg_angle(a,1) & bin_avg_angle(a,3) & bin_avg_angle(ar,1) & bin_avg_angle(ar,3);
-write_pgm(abin_all,"/dev/shm/abo_all.pgm");
+write_pgm(abin_all,"/dev/shm/abin_all.pgm");
 
+asmall=vcat(reshape(a[:,:,1,:,:],90*90,47*37)[reshape(bin_all,90*90),reshape(abin_all,47*37)],
+            reshape(ar[:,:,1,:,:],90*90,47*37)[reshape(bin_all,90*90),reshape(abin_all,47*37)],
+            reshape(a[:,:,3,:,:],90*90,47*37)[reshape(bin_all,90*90),reshape(abin_all,47*37)],
+            reshape(ar[:,:,3,:,:],90*90,47*37)[reshape(bin_all,90*90),reshape(abin_all,47*37)])
 
+@time inv_asmall = pinv(asmall) # takes 16s
+
+write_pgm(abs(asmall),"/dev/shm/asmall.pgm")
 
 size(a1)
 
