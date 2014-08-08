@@ -2,6 +2,8 @@
 \usepackage{amssymb}
 \usepackage{amsmath}
 \usepackage{amsbsy} % for bold greek
+\usepackage{graphicx}
+\usepackage{color}
 \newcommand{\vect}[1]{\mathbf{#1}}
 \renewcommand{\r}{\vect r}
 \newcommand{\p}{\vect p}
@@ -14,6 +16,9 @@
 \begin{document}
 \maketitle
 \section{multimode faser imaging im jones kalkuel}
+
+% inkscape --export-latex -A setup.pdf setup.svg
+\input{setup.pdf_tex}
 
 \begin{itemize}
 \item am fasereingang einfallendes feld $u^i$
@@ -78,7 +83,6 @@ transformation, beschrieben durch die matrix $R_s$ verknuepft:
 
 \begin{align}
   u^r = R_s u^t
-
 \end{align}
 
 die struktur von $R_s$ koennte ermittelt werden, wenn auch von der
