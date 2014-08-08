@@ -738,7 +738,7 @@ rectangular, for alpha=1 Hann window."
 										     :displaced-to buf-cs)
 									 (aref ext-cs yji ji cam) :x x :y y :w d :h d)
 							   
-							   (pylon::%helper-extract-csf
+							   (pylon::%helper-extract-csf ;; note: there is still a bug in this code in case of horizontal aliasing of rft arrays
 							    (sb-sys:vector-sap (sb-ext:array-storage-vector buf-cs))
 							    (sb-sys:vector-sap
 							     (sb-ext:array-storage-vector (aref ext-cs yji ji cam)))
