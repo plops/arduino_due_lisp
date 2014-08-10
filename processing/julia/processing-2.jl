@@ -90,6 +90,54 @@ write_pgm(abs(asmall),"/dev/shm/asmall.pgm")
 
 size(a1)
 
+begin
+    img = zeros(4,3)
+    center = map((x)->div(x,2),size(img))
+    asize = [5 5]
+
+    if size(asize,1) > 1
+        asize = asize'
+    end
+
+    if size(center,1) > 1
+        center = center'
+    end
+
+    isize = size(img)
+    if length(asize) < length(isize)
+        for d = length(asize)+1:length(isize)
+            asize(d)=size(img,d);
+        end
+    end
+
+    if length(center) < length(isize)
+        for d = length(center)+1:length(isize)
+            center(d)=div(size(img,d),2);
+        end
+    end
+    
+    srccenter=center'
+    if length(asize) > length(srccenter)
+        srccenter[end+1:length(asize)]=0
+        isize[end+1:length(asize)]=1
+    end
+
+    srcstart = map((x,y)->x-div(y,2),srccenter,asize)
+    srcend=srcstart+asize
+
+    dststart=zeros(length(asize))
+end
+
+
+
+
+
+function extract(img,asize,center=floor(size(img)/2),value=0)
+    
+end
+
+
+
 # there is a nice interface for the browser in julia, but for now i
 # just store images as pgm files.
 
