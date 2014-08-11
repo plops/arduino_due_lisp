@@ -10,11 +10,6 @@ function find_ics_raw_start(fn)
     close(f)
     res
 end
-
-
-
-find_ics_raw_start(ics_file)
-
 # this function 
 # jumps over the header
 # and reads the raw data from the file into an array
@@ -38,13 +33,23 @@ a = read_ics(ics_file)
 # check that the dimensions make sense
 (filesize(ics_file)-602)/(66*66*125*95*3)
 
+q= convert(Array{Int32,5},map((x)->div(abs2(x),1),a));
 
 size(a[:,:,1,:,:])
 
 using View5D
-view5d(abs(squeeze(a[:,:,1,:,div(37,2)],[3,5])))
 
+view5d(squeeze(q[:,:,1,:,:],3))
 
+view5d((squeeze(a[:,:,1,:,:],[3])))
+
+ka=squeeze(mean(abs2(ifft(a[:,:,1,:,:],[1 2])),[4 5]),[3,4,5])
+
+view5d(convert(Array{Float64,2},ka))
+
+view5d(ka)
+
+typeof(convert(Array{Float64,2},ka))
 
 a1 = reshape(a[:,:,1,:,:],90*90,47*37);
 
