@@ -30,15 +30,20 @@ end
 
 ics_file = "/media/sdc1/dat/0805/o9.ics"
 a = read_ics(ics_file)
-ics_file = "/media/sdc1/dat/0805/orot9.ics"
-ar = read_ics(ics_file)
-ics_file = "/media/sdc1/dat/0805/o8.ics"
-a8 = read_ics(ics_file)
+#ics_file = "/media/sdc1/dat/0805/orot9.ics"
+#ar = read_ics(ics_file)
+#ics_file = "/media/sdc1/dat/0805/o8.ics"
+#a8 = read_ics(ics_file)
 
 # check that the dimensions make sense
 (filesize(ics_file)-602)/(66*66*125*95*3)
 
+
 size(a[:,:,1,:,:])
+
+using View5D
+view5d(abs(squeeze(a[:,:,1,:,div(37,2)],[3,5])))
+
 
 
 a1 = reshape(a[:,:,1,:,:],90*90,47*37);
