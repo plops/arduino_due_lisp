@@ -114,6 +114,15 @@
 		       (b ,dstend ,dststart))
 		     '((setf b a))))))
 
+(let ((a (make-array (list 10)))
+      (a2 (make-array (list 10 10) :element-type '(complex double-float))))
+  (typecase a
+    ((array t 2) 2)
+    ((array t 1) 1)
+    ((array * 2) 's2)
+    ((array * 1) 's1)
+    (t 'nix)))
+
 #+il
 (let ((a (make-array (list 10))))
   (extract a '(3)))
