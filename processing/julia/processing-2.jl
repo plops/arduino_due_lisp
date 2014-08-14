@@ -43,13 +43,23 @@ view5d(squeeze(abs2(a[:,:,1,20,16]),[3,4,5]))
 
 begin
 #    ap = squeeze(a[:,:,1,20,16],[3,4,5]);
-    ap=squeeze(mean(map((x)->div(abs2(x),1),squeeze(a[:,:,2,:,:],3)),[3 4]),[3 4])
+    ap=squeeze(mean(map((x)->abs2(x),squeeze(a[:,:,3,:,:],3)),[3 4]),[3 4])
     kap= fft(ap);
     cor= ifft(kap .* kap)
     view5d(abs(fftshift(cor)))
 end
 # find the center of the first order:
 # results: 1 [44 45], 2 [41 43], 3 [36 42]
+
+cor=zeros(90,90);
+for i=1:size(a,5)
+    for j=1:size(a,6)
+        ap=squeeze(a[:,:,1,i,j],[3 4 5])
+        kap= fft(ap);
+        cor[:,:] += abs(ifft(kap .* kap))
+    end
+end
+view5d(fftshift(cor))
 
 view5d((squeeze(a[:,:,1,:,:],[3])))
 
