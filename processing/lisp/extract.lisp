@@ -48,40 +48,13 @@
 			     do
 			       ,@acc))))))
       `(symbol-macrolet (,@(loop for name in names and i from 0 collect
-				`(,name (aref ,name ,@(loop for ind in (elt indices i) collect ind)))))
+				`(,name (aref ,name ,@(loop for d below dim collect (elt (elt indices dim) i))))))
 	 ,(first (rec (1- dim) body))))))
 
 #+nil
 (do-region (3 (src (5 4 2) (0 0 0)) (dst (10 8 4) (0 0 0)))
   (setf dst src))
 
-(defun fun-do-region (rest body)
-  (let ((spec (loop for (name ends starts) in rest collect 
-		   (let ((indices (loop for e in ends collect (gensym))))
-		     (list name (reverse ends) (reverse starts) (reverse indices))))))
-    (labels ((rec (spec acc)
-	       (if (null (second (first spec)))
-		   acc
-		   (rec (loop for (name ends starts indices) in spec collect
-			     (list name (cdr ends) (cdr starts) (cdr indices)))
-			`((loop for
-			       ,@(flatten 
-				  (loop for i from (1- (length spec)) downto 0 and
-					       (name ends starts indices) in spec collect 
-				       (if (= i 0)
-					   `(,(car indices) from ,(car starts) below ,(car ends))
-					   `(,(car indices) from ,(car starts) below ,(car ends) and)))) 
-			     do
-			       ,@acc))))))
-      `(symbol-macrolet () #+nil (,@(loop for (name ends starts indices) in spec collect
-				   `(,name (aref ,name ,@(loop for ind in indices collect ind)))
-				   )) 
-	 ,(first (rec spec body)))
-      )))
-#+nil
-(fun-do-region '((src (5 4 2) (0 0 0))
-		 (dst (10 8 4) (0 0 0)))
-	       '((setf dst src)))
 
 (defun extract (a size &optional
 			 (center (.floor (array-dimensions a) 2))
@@ -114,11 +87,16 @@
 			   se)))
 	 (srcstart2 (loop for ss in srcstart collect
 			 (if (< ss 0) 0 ss))))
-    (let ((b (make-array dstend :element-type (array-element-type a)
+    (let ((dst (make-array dstend :element-type (array-element-type a)
 			 :initial-element border)))
-      (fun-do-region `((a ,srcend2 ,srcstart2)
-		       (b ,dstend ,dststart))
-		     '((setf b a))))))
+      (let* ((dim 3)
+	     (start-l (list srcstart2 dststart))
+	     (end-l (list srcend2 dstend))
+	     (n (length end-l))
+	     (start (make-array (list n dim) :element-type 'fixnum :initial-contents start-l))
+	     (end (make-array (list n dim) :element-type 'fixnum :initial-contents end-l)))
+	(do-region (3 (a dst) start end)
+	  (setf dst a))))))
 
 (let ((a (make-array (list 10)))
       (a2 (make-array (list 10 10) :element-type '(complex double-float))))
