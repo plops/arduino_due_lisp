@@ -20,29 +20,36 @@
 		   (t (rec (car x) (rec (cdr x) acc))))))
     (rec x nil)))
 
-(defmacro do-region ((dim &rest rest) &body body)
-  (let ((spec (loop for (name ends starts) in rest collect 
-		   (let ((indices (loop for e in ends collect (gensym))))
-		     (list name (reverse ends) (reverse starts) (reverse indices))))))
+(let* ((dim 3)
+       (n 2)
+       (start-l '((0 0 0) (1 1 1)))
+       (end-l '((2 2 2) (3 3 3)))
+       (astart (make-array (list n dim) :element-type 'fixnum :initial-contents start-l))
+       (aend (make-array (list n dim) :element-type 'fixnum :initial-contents end-l)))
+  (do-region (3 (src dst) astart aend)
+    (setf dst src)))
+
+(defmacro do-region ((dim names start end) &body body)
+  (let* ((n (length names))
+	 (indices (loop for d below dim collect
+		       (loop for i below n collect (gensym)))))
     (labels ((rec (dim acc)
-	       (if (= dim 1)
+	       (if (= dim 0)
 		   acc
 		   (rec (1- dim)
-			(loop for (name ends starts indices) in spec collect
-			     (list name (cdr ends) (cdr starts) (cdr indices)))
 			`((loop for
-			       ,@(flatten 
-				  (loop for i from (1- (length spec)) downto 0 and
-				       (name ends starts indices) in spec collect 
-				       (if (= i 0)
-					   `(,(car indices) from ,(car starts) below ,(car ends))
-					   `(,(car indices) from ,(car starts) below ,(car ends) and)))) 
+			       ,@(reduce #'append
+					 (loop for i below n collect
+					      (if (= i (1- n))
+						  `(,(elt (elt indices dim) i) 
+						     from (aref ,start ,i ,dim) below (aref ,end ,i ,dim))
+						  `(,(elt (elt indices dim) i) 
+						     from (aref ,start ,i ,dim) below (aref ,end ,i ,dim) and)))) 
 			     do
 			       ,@acc))))))
-      `(symbol-macrolet (,@(loop for (name ends starts indices) in spec collect
-				`(,name (aref ,name ,@(loop for ind in indices collect ind)))))
-	 (let (())
-	  ,(first (rec dim spec)))))))
+      `(symbol-macrolet (,@(loop for name in names and i from 0 collect
+				`(,name (aref ,name ,@(loop for ind in (elt indices i) collect ind)))))
+	 ,(first (rec (1- dim) body))))))
 
 #+nil
 (do-region (3 (src (5 4 2) (0 0 0)) (dst (10 8 4) (0 0 0)))
