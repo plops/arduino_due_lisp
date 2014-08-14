@@ -20,32 +20,31 @@
 		   (t (rec (car x) (rec (cdr x) acc))))))
     (rec x nil)))
 
-(defmacro do-region ((&rest rest) &body body)
+(defmacro do-region ((dim &rest rest) &body body)
   (let ((spec (loop for (name ends starts) in rest collect 
 		   (let ((indices (loop for e in ends collect (gensym))))
 		     (list name (reverse ends) (reverse starts) (reverse indices))))))
-    (labels ((rec (spec acc)
-	       (if (null (second (first spec)))
+    (labels ((rec (dim spec acc)
+	       (if (= dim 1) ;(null (second (first spec)))
 		   acc
-		   (rec (loop for (name ends starts indices) in spec collect
+		   (rec (1- dim)
+			(loop for (name ends starts indices) in spec collect
 			     (list name (cdr ends) (cdr starts) (cdr indices)))
 			`((loop for
 			       ,@(flatten 
 				  (loop for i from (1- (length spec)) downto 0 and
-					       (name ends starts indices) in spec collect 
+				       (name ends starts indices) in spec collect 
 				       (if (= i 0)
 					   `(,(car indices) from ,(car starts) below ,(car ends))
 					   `(,(car indices) from ,(car starts) below ,(car ends) and)))) 
 			     do
 			       ,@acc))))))
       `(symbol-macrolet (,@(loop for (name ends starts indices) in spec collect
-				`(,name '(aref ,name ,@(loop for ind in indices collect ind)))
-				))
-	 ,(first (rec spec body))))))
+				`(,name (aref ,name ,@(loop for ind in indices collect ind)))))
+	 ,(first (rec dim spec body))))))
 
 #+nil
-(do-region ((src (5 4 2) (0 0 0))
-	     (dst (10 8 4) (0 0 0)))
+(do-region (3 (src (5 4 2) (0 0 0)) (dst (10 8 4) (0 0 0)))
   (setf dst src))
 
 
