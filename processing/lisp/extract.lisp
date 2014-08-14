@@ -24,8 +24,8 @@
   (let ((spec (loop for (name ends starts) in rest collect 
 		   (let ((indices (loop for e in ends collect (gensym))))
 		     (list name (reverse ends) (reverse starts) (reverse indices))))))
-    (labels ((rec (dim spec acc)
-	       (if (= dim 1) ;(null (second (first spec)))
+    (labels ((rec (dim acc)
+	       (if (= dim 1)
 		   acc
 		   (rec (1- dim)
 			(loop for (name ends starts indices) in spec collect
@@ -41,12 +41,12 @@
 			       ,@acc))))))
       `(symbol-macrolet (,@(loop for (name ends starts indices) in spec collect
 				`(,name (aref ,name ,@(loop for ind in indices collect ind)))))
-	 ,(first (rec dim spec body))))))
+	 (let (())
+	  ,(first (rec dim spec)))))))
 
 #+nil
 (do-region (3 (src (5 4 2) (0 0 0)) (dst (10 8 4) (0 0 0)))
   (setf dst src))
-
 
 (defun fun-do-region (rest body)
   (let ((spec (loop for (name ends starts) in rest collect 

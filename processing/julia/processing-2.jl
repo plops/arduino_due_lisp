@@ -39,7 +39,17 @@ size(a[:,:,1,:,:])
 
 using View5D
 
-view5d(squeeze(q[:,:,1,:,:],3))
+view5d(squeeze(abs2(a[:,:,1,20,16]),[3,4,5]))
+
+begin
+#    ap = squeeze(a[:,:,1,20,16],[3,4,5]);
+    ap=squeeze(mean(map((x)->div(abs2(x),1),squeeze(a[:,:,2,:,:],3)),[3 4]),[3 4])
+    kap= fft(ap);
+    cor= ifft(kap .* kap)
+    view5d(abs(fftshift(cor)))
+end
+# find the center of the first order:
+# results: 1 [44 45], 2 [41 43], 3 [36 42]
 
 view5d((squeeze(a[:,:,1,:,:],[3])))
 
