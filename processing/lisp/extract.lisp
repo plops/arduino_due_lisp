@@ -71,7 +71,7 @@
 				 2))))
   (let* ((srccenter (.round center))
 	 (srcstart (.- srccenter (.floor size 2)))
-	 (srcend (.+ srcstart (.- size 1)))
+	 (srcend (.+ srcstart size))
 	 (dststart (loop for e in srcstart collect
 			(if (< e 0)
 			    (- e)
@@ -79,19 +79,21 @@
 	 (dstend (loop for s in size
 		    and se in srcend
 		    and is in (array-dimensions a) collect
-		      (+ s -1
+		      (+ s 
 			 (if (<= is se)
-			     (+ (- se ) is -1)
+			     (+ (- se ) is )
 			     0))))
 	 (srcend2 (loop for se in srcend
 		     and is in (array-dimensions a) collect
 		       (if (<= is se)
-			   (- is 1)
+			   is
 			   se)))
 	 (srcstart2 (loop for ss in srcstart collect
 			 (if (< ss 0) 0 ss))))
-    (let ((dst (make-array dstend :element-type (array-element-type a)
-			 :initial-element border)))
+    (format t "~a~%" (list 'src srcstart srcend 'dst dststart dstend
+			 'src2 srcstart2 srcend2))
+    (let ((dst (make-array size :element-type (array-element-type a)
+			   :initial-element border)))
       (let* ((dim 2)
 	     (start-l (list srcstart2 dststart))
 	     (end-l (list srcend2 dstend))
@@ -113,21 +115,10 @@
 	  (t (error "array dimension not supported.")))
 	dst))))
 
-#+nil
-(let ((a (make-array (list 10)))
-      (a2 (make-array (list 10 10) :element-type '(complex double-float))))
-  (typecase a
-    ((array t 2) 2)
-    ((array t 1) 1)
-    ((array * 2) 's2)
-    ((array * 1) 's1)
-    (t 'nix)))
-
 #+il
-(let ((a (make-array (list 10 10) :initial-contents (loop for i below 10 collect
+(let ((a (make-array (list 5 10) :initial-contents (loop for i below 5 collect
 							 (loop for j below 10 collect (+ 100 (* 10 i) j))))))
-  (extract a '(3 10) '(5 5))
-  )
+  (extract a '(5 10) '(2 5)))
 
 #+il
 (let ((a (make-array 10)))
