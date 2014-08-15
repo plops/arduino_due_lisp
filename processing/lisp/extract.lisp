@@ -124,12 +124,14 @@
     (t 'nix)))
 
 #+il
-(let ((a (make-array (list 10 10))))
-  (extract a '(3 3)))
+(let ((a (make-array (list 10 10) :initial-contents (loop for i below 10 collect
+							 (loop for j below 10 collect (+ 100 (* 10 i) j))))))
+  (extract a '(3 10) '(5 5))
+  )
 
 #+il
-(let ((a (make-array (list 10))))
-  (eval (extract a '(3))))
+(let ((a (make-array 10)))
+  (eval (extract a '(2))))
 
 #+nil
 (let ((a 3)
