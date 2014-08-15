@@ -34,7 +34,7 @@
 	 (indices (loop for d below dim collect
 		       (loop for i below n collect (gensym)))))
     (labels ((rec (dim acc)
-	       (if (= dim 0)
+	       (if (= dim -1)
 		   acc
 		   (rec (1- dim)
 			`((loop for
@@ -47,8 +47,8 @@
 						     from (aref ,start ,i ,dim) below (aref ,end ,i ,dim) and)))) 
 			     do
 			       ,@acc))))))
-      `(symbol-macrolet (,@(loop for name in names and i from 0 collect
-				`(,name (aref ,name ,@(loop for d below dim collect (elt (elt indices dim) i))))))
+      `(symbol-macrolet (,@(loop for name in names and i from 0 below n collect
+				`(,name (aref ,name ,@(loop for d below dim collect (elt (elt indices d) i))))))
 	 ,(first (rec (1- dim) body))))))
 
 #+nil
