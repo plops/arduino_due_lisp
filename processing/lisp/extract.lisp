@@ -81,7 +81,7 @@
 		    and is in (array-dimensions a) collect
 		      (+ s 
 			 (if (<= is se)
-			     (+ (- se ) is )
+			     (+ (- se ) is)
 			     0))))
 	 (srcend2 (loop for se in srcend
 		     and is in (array-dimensions a) collect
@@ -101,9 +101,9 @@
 	     (start (make-array (list n dim) :element-type 'fixnum :initial-contents start-l))
 	     (end (make-array (list n dim) :element-type 'fixnum :initial-contents end-l)))
 	(typecase a
-	  ((array * 2) (do-region (2 (a dst) start end)
-			 (setf (dst) (a))))
 	  ((array * 1) (do-region (1 (a dst) start end)
+			 (setf (dst) (a))))
+	  ((array * 2) (do-region (2 (a dst) start end)
 			 (setf (dst) (a))))
 	  ((array * 3) (do-region (3 (a dst) start end)
 			 (setf (dst) (a))))
