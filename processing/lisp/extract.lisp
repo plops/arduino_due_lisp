@@ -38,8 +38,10 @@
 						     from (aref ,start ,i ,dim) below (aref ,end ,i ,dim) and)))) 
 			     do
 			       ,@acc))))))
-      (first (rec (1- dim) `((symbol-macrolet (,@(loop for name in names and i from 0 below n collect
-						      `(,(intern (format nil "~a-A" name)) (aref ,name ,@(loop for d below dim collect (elt (elt indices d) i))))))
+      (first (rec (1- dim) `((macrolet (,@(loop for name in names and i from 0 below n collect
+						      `(,name (&optional ,@(loop for d below dim collect (list (intern (format nil "O-~a" d)) 0)))
+							      '(aref ,name ,@(loop for d below dim collect `(+ ,(intern (format nil "O-~a" d))
+													       ,(elt (elt indices d) i)))))))
 			       ,@body)))))))
 
 #+nil
@@ -52,7 +54,7 @@
        (dst (make-array (list 3 3 3) :element-type 'single-float))
        (src (make-array (list 3 3 3) :element-type 'single-float)))
   (do-region (3 (src dst) astart aend)
-    (setf dst-a src-a)))
+    (setf (dst) (src))))
 
 
 (defun extract (a size &optional
@@ -95,7 +97,8 @@
 	     (start (make-array (list n dim) :element-type 'fixnum :initial-contents start-l))
 	     (end (make-array (list n dim) :element-type 'fixnum :initial-contents end-l)))
 	(do-region (2 (a dst) start end)
-	  (setf dst a))))))
+	  (setf (dst) (a)))
+	dst))))
 
 #+nil
 (let ((a (make-array (list 10)))
@@ -108,8 +111,8 @@
     (t 'nix)))
 
 #+il
-(let ((a (make-array (list 10))))
-  (extract a '(3)))
+(let ((a (make-array (list 10 10))))
+  (extract a '(3 3)))
 
 #+il
 (let ((a (make-array (list 10))))
