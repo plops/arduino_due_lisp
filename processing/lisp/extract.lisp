@@ -39,7 +39,7 @@
 			     do
 			       ,@acc))))))
       (first (rec (1- dim) `((symbol-macrolet (,@(loop for name in names and i from 0 below n collect
-						      `(,name (aref ,name ,@(loop for d below dim collect (elt (elt indices d) i))))))
+						      `(,(intern (format nil "~a-A" name)) (aref ,name ,@(loop for d below dim collect (elt (elt indices d) i))))))
 			       ,@body)))))))
 
 #+nil
@@ -52,7 +52,7 @@
        (dst (make-array (list 3 3 3) :element-type 'single-float))
        (src (make-array (list 3 3 3) :element-type 'single-float)))
   (do-region (3 (src dst) astart aend)
-    (setf dst src)))
+    (setf dst-a src-a)))
 
 
 (defun extract (a size &optional
