@@ -124,47 +124,60 @@ begin
     img = zeros(4,3)
     center = map((x)->div(x,2),size(img))
     asize = [5 5]
-
     if size(asize,1) > 1
         asize = asize'
     end
-
     if size(center,1) > 1
         center = center'
     end
-
     isize = size(img)
     if length(asize) < length(isize)
         for d = length(asize)+1:length(isize)
             asize(d)=size(img,d);
         end
     end
-
     if length(center) < length(isize)
         for d = length(center)+1:length(isize)
             center(d)=div(size(img,d),2);
         end
     end
-    
     srccenter=center'
     if length(asize) > length(srccenter)
         srccenter[end+1:length(asize)]=0
         isize[end+1:length(asize)]=1
     end
-
     srcstart = map((x,y)->x-div(y,2),srccenter,asize)
     srcend=srcstart+asize
-
     dststart=zeros(length(asize))
 end
 
 
 
-
-
-function extract(img,asize,center=floor(size(img)/2),value=0)
-    
+function asize(a)
+    [size(a)...]
 end
+
+function extract(a,size,center=floor(size(img)/2),value=0)
+    if length(size) < ndims(a)
+        append!(size,size(a)[length(size)+1:end])
+    end
+    size
+end
+
+extract(zeros(10,10),4)
+
+begin
+    a = zeros(10,10)
+    sizea = 10
+#    if length(sizea) < length(size(a))
+#        append!(sizea,map(identity,size(a)[length(sizea)+1:end]))
+#    end
+    sizea
+    map(identity,size(a))
+end
+
+
+
 
 
 
