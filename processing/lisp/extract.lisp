@@ -39,9 +39,11 @@
 			     do
 			       ,@acc))))))
       (first (rec (1- dim) `((macrolet (,@(loop for name in names and i from 0 below n collect
-						      `(,name (&optional ,@(loop for d below dim collect (list (intern (format nil "O-~a" d)) 0)))
-							      '(aref ,name ,@(loop for d below dim collect `(+ ,(intern (format nil "O-~a" d))
-													       ,(elt (elt indices d) i)))))))
+					       (let ((offsets (loop for d below dim collect (gensym))))
+						 `(,name (&optional ,@(loop for o in offsets collect (list o 0)))
+							 (list 'aref ',name ,@(loop for o in offsets and d from 0 collect
+									    `(list '+ ,o ',(elt (elt indices d) i))
+										   ))))))
 			       ,@body)))))))
 
 #+nil
@@ -96,8 +98,19 @@
 	     (n (length end-l))
 	     (start (make-array (list n dim) :element-type 'fixnum :initial-contents start-l))
 	     (end (make-array (list n dim) :element-type 'fixnum :initial-contents end-l)))
-	(do-region (2 (a dst) start end)
-	  (setf (dst) (a)))
+	(typecase a
+	  ((array * 2) (do-region (2 (a dst) start end)
+			 (setf (dst) (a))))
+	  ((array * 1) (do-region (1 (a dst) start end)
+			 (setf (dst) (a))))
+	  ((array * 3) (do-region (3 (a dst) start end)
+			 (setf (dst) (a))))
+	  ((array * 4) (do-region (4 (a dst) start end)
+			 (setf (dst) (a))))((array * 2) (do-region (2 (a dst) start end)
+			 (setf (dst) (a))))
+	  ((array * 5) (do-region (5 (a dst) start end)
+			 (setf (dst) (a))))
+	  (t (error "array dimension not supported.")))
 	dst))))
 
 #+nil
