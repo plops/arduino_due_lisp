@@ -31,7 +31,7 @@
 			`((loop for
 			       ,@(reduce #'append
 					 (loop for i below n collect
-					      (if (= i (1- n))
+		 			      (if (= i (1- n))
 						  `(,(elt (elt indices dim) i) 
 						     from (aref ,start ,i ,dim) below (aref ,end ,i ,dim))
 						  `(,(elt (elt indices dim) i) 
@@ -41,6 +41,7 @@
       (first (rec (1- dim) `((macrolet (,@(loop for name in names and i from 0 below n collect
 					       (let ((offsets (loop for d below dim collect (gensym))))
 						 `(,name (&optional ,@(loop for o in offsets collect (list o 0)))
+							 (declare (type fixnum ,@offsets))
 							 (list 'aref ',name ,@(loop for o in offsets and d from 0 collect
 									    `(list '+ ,o ',(elt (elt indices d) i))
 										   ))))))
@@ -55,9 +56,8 @@
        (aend (make-array (list n dim) :element-type 'fixnum :initial-contents end-l))
        (dst (make-array (list 3 3 3) :element-type 'single-float))
        (src (make-array (list 3 3 3) :element-type 'single-float)))
-  (do-region (3 (src dst) astart aend)
-    (setf (dst) (src))))
-
+  (do-region (2 (src dst) astart aend)
+    (setf (dst) (- (src) (src 0 0 1)))))
 
 (defun extract (a size &optional
 			 (center (.floor (array-dimensions a) 2))
@@ -90,35 +90,60 @@
 			   se)))
 	 (srcstart2 (loop for ss in srcstart collect
 			 (if (< ss 0) 0 ss))))
-    (format t "~a~%" (list 'src srcstart srcend 'dst dststart dstend
-			 'src2 srcstart2 srcend2))
     (let ((dst (make-array size :element-type (array-element-type a)
-			   :initial-element border)))
+			   :initial-element (coerce border (array-element-type a)))))
       (let* ((dim 2)
 	     (start-l (list srcstart2 dststart))
 	     (end-l (list srcend2 dstend))
 	     (n (length end-l))
 	     (start (make-array (list n dim) :element-type 'fixnum :initial-contents start-l))
 	     (end (make-array (list n dim) :element-type 'fixnum :initial-contents end-l)))
+	(declare (type (simple-array fixnum 2) start end))
 	(typecase a
+	  ((array fixnum 2) 
+	   (progn
+	     (declaim (type (simple-array fixnum 2) a dst))
+	     (do-region (2 (a dst) start end)
+	       (setf (dst) (a)))))
 	  ((array * 1) (do-region (1 (a dst) start end)
-			 (setf (dst) (a))))
+	  		 (setf (dst) (a))))
 	  ((array * 2) (do-region (2 (a dst) start end)
-			 (setf (dst) (a))))
+	  		 (setf (dst) (a))))
 	  ((array * 3) (do-region (3 (a dst) start end)
-			 (setf (dst) (a))))
+	  		 (setf (dst) (a))))
 	  ((array * 4) (do-region (4 (a dst) start end)
-			 (setf (dst) (a))))((array * 2) (do-region (2 (a dst) start end)
-			 (setf (dst) (a))))
+	  		 (setf (dst) (a))))((array * 2) (do-region (2 (a dst) start end)
+	  		 (setf (dst) (a))))
 	  ((array * 5) (do-region (5 (a dst) start end)
-			 (setf (dst) (a))))
+	  		 (setf (dst) (a))))
 	  (t (error "array dimension not supported.")))
 	dst))))
 
 #+il
-(let ((a (make-array (list 5 10) :initial-contents (loop for i below 5 collect
+(let ((a (make-array (list 1024 1024) :initial-contents (loop for i below 10 collect
 							 (loop for j below 10 collect (+ 100 (* 10 i) j))))))
-  (extract a '(5 10) '(2 5)))
+  (extract a '(1 12) '(5 5)))
+
+#+nil
+(require :sb-sprof)
+#+nil
+(let ((a (make-array (list 1024 1024) :element-type 'fixnum
+		     :initial-contents (loop for i below 1024 collect
+					    (loop for j below 1024 collect (+ (* 1024 i) j))))))
+  (sb-sprof:with-profiling (:max-samples 1000
+					 :report :flat
+					 :loop nil)
+    (dotimes (i 500) (extract a '(512 512) '(472 340))))
+  nil)
+
+#+nil
+(let ((a (make-array (list 1024 1024) :element-type 'fixnum
+		     :initial-contents (loop for i below 1024 collect
+					    (loop for j below 1024 collect (+ (* 1024 i) j))))))
+  (dotimes (i 500) (extract a '(512 512) '(472 340)))
+  nil)
+
+
 
 #+il
 (let ((a (make-array 10)))
