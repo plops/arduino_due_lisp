@@ -168,7 +168,7 @@ end
 
 function fill_from_array(dim,arr,fun=identity)
     # if dim is a vector with a smaller size than the array rank, copy
-    # the dimensions from the array and optionally apply fun
+    # the dimensions from the array (and optionally apply fun)
     if length(dim) < ndims(arr)
         append!(dim,map(fun,asize(arr)[length(dim)+1:end]))
     end
@@ -191,9 +191,21 @@ function extract(a,newsize,center=div(asize(a),2),value=0)
     # make sure src isn't accessed outside the array dimensions
     srcend[srcend.>=asize(a)] = asize(a)[srcend.>=asize(a)]-1
     srcstart[srcstart.<0]=0
+    srcrange = map(range,srcstart,srcend)
+    dstrange = map(range,dststart,dstend)
+    out[dstrange] = a[srcrange]
+#    out = zeros(eltype(a),newsize)
 end
 
-extract(zeros(50,60,70,23),120,[3.5,2.4])
+extract(zeros(50,60,70,23),120,[3,4])
+
+
+map(range,[1 2 3],[4 5 6])
+
+a = rand(4,3)
+b = rand(2,2)
+b[:,:]=a[[1:2 2:3]]
+
 
 size([1,2,3])
 
