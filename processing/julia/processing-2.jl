@@ -177,7 +177,7 @@ end
 
 function expand_ranges(starts,ends)
     # given two arrays starts and ends, expand the corresponding ranges
-    map((x,y)->Int64[z for (i,z) in enumerate(range(x,y))],starts,ends)
+    r=map((x,y)->Int64[z for (i,z) in enumerate(range(x,y))],starts,ends)
     len = reduce(+,map(length,r))
     lin = zeros(Int64,len)
     cnt = 1
@@ -187,7 +187,8 @@ function expand_ranges(starts,ends)
             cnt = cnt+1
         end
     end
-    lin
+    #reshape(lin,apply(tuple,map(length,r)))
+    map((x)->apply(tuple,x),r)
 end
 
 
@@ -215,18 +216,37 @@ function extract(a,newsize,center=div(asize(a),2),value=0)
     srcend[srcend.>=asize(a)] = asize(a)[srcend.>=asize(a)]-1
     srcstart[srcstart.<0]=0
     # create an array of ranges 
-    srcrange = expand_ranges(srcstart,srcend)
-    dstrange = expand_ranges(dststart,dstend)
-    out = zeros(eltype(a),apply(tuple,newsize))+value
-    out[dstrange] = a[srcrange]
-    out
+    #srcrange = expand_ranges(srcstart,srcend)
+    #dstrange = expand_ranges(dststart,dstend)
+    out = zeros(eltype(a),tuple(newsize ...))+value
+    #out[dstrange] = a[srcrange]
+    #out
+    #dstrange
 end
 
 extract(rand(10,10),[5,5],[5,5])
 
+a=rand(5,5)
+b=zeros(2,2)
 
+b[:,:]=a[[(1,2),(1,2)]]
 
+b[:,:]=a[range(1,2),range(1,2)]
 
+tuple([1,2,3]...)
+
+q=[1,2,3]
+tuple(q...)
+
+apply((x,y)->slice(a,x,y),[range(1,2),range(1,2)])
+
+[range(1,2), range(1,3)]
+
+map(range,[1,1],[2,2])
+
+b[:,:]=a[expand_ranges([1,1],[2,2])]
+
+expand_ranges([1,1],[2,2])
 
 begin
     a = zeros(10,10)
