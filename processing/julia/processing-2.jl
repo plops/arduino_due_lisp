@@ -74,7 +74,7 @@ typeof(convert(Array{Float64,2},ka))
 a1 = reshape(a[:,:,1,:,:],90*90,47*37);
 
 
-
+<
 function avg_endface(a,cam)
     mean(abs2(ifft(a[:,:,cam,:,:],[1 2])),[4 5])
 end
@@ -154,18 +154,25 @@ end
 
 
 function asize(a)
+    # return size of array as an array (instead of tuple)
     [size(a)...]
 end
 
 function ensure_array(a)
-    ""
+    # if a is a scalar, return an array containing th scalar
     if 1 == length(a)  
        a = [a]
     end
     a
 end
 
+ensure_array([1 2 3])
+
+[1,2,3]
+
 function fill_from_array(dim,arr,fun=identity)
+    # if dim is a vector with a smaller size than the array rank, copy
+    # the dimensions from the array and optionally apply fun
     if length(dim) < ndims(arr)
         append!(dim,map(fun,asize(arr)[length(dim)+1:end]))
     end
@@ -176,11 +183,22 @@ function extract(a,newsize,center=div(asize(a),2),value=0)
     # if only a single number is given as newsize, turn it into array
     # if dimension of newsize is insufficeint copy missing part from array
     newsize = fill_from_array(ensure_array(newsize),a)
-    # use similar code to fill up center if necessary
-    center  = fill_from_array(ensure_array(center),a,(x)->div(x,2))
+    # use similar code to fill up center if necessary, the center is
+    # by default set to the middle of the array
+    center = fill_from_array(ensure_array(center),a,(x)->div(x,2))
+    srccenter = int(round(center)) # convert to int, in case center
+                                   # contains floating point
+    srcstart = srccenter - div(newsize,2)
+    srcend   = srcstart  + newsize - 1
+    dststart = zeros(srcstart)
+    dststart[srcstart.<0] = -srcstart[srcstart.<0]
+    dstend = newsize-1
+    dstend[srcend.>=asize(a)]=dstend
 end
 
-extract(zeros(50,60,70),4,3)
+extract(zeros(50,60,70,23),120,[3.5,2.4])
+
+size([1,2,3])
 
 begin
     a = zeros(10,10)
