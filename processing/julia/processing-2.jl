@@ -174,7 +174,23 @@ function fill_from_array(dim,arr,fun=identity)
     end
     dim
 end
-    
+
+function expand_ranges(starts,ends)
+    # given two arrays starts and ends, expand the corresponding ranges
+    map((x,y)->Int64[z for (i,z) in enumerate(range(x,y))],starts,ends)
+    len = reduce(+,map(length,r))
+    lin = zeros(Int64,len)
+    cnt = 1
+    for j=1:length(r)
+        for i=1:length(r[j])
+            lin[cnt]= r[j][i]
+            cnt = cnt+1
+        end
+    end
+    lin
+end
+
+
 function extract(a,newsize,center=div(asize(a),2),value=0)
     # create a new array with dimensions NEWSIZE and copy data from
     # array A. the code tries to be intelligent in acting according to
@@ -209,44 +225,8 @@ end
 extract(rand(10,10),[5,5],[5,5])
 
 
-apply(tuple,[1,2,3])
-
-a = rand(4,3,4)
-b = rand(2,2,2)
-q = [1:2,1:2,1:2]
-rs=[1,2,3]
-re=[2,3,4]
-r = 
-
-reshape(r,reduce(+,map(length,r)))
-
-function expand_ranges(starts,ends)
-    # given two arrays starts and ends, expand the corresponding ranges
-    map((x,y)->Int64[z for (i,z) in enumerate(range(x,y))],starts,ends)
-    len = reduce(+,map(length,r))
-    lin = zeros(Int64,len)
-    cnt = 1
-    for j=1:length(r)
-        for i=1:length(r[j])
-            lin[cnt]= r[j][i]
-            cnt = cnt+1
-        end
-    end
-    lin
-end
-
-        
 
 
-rr = [1:2,2:3,3:4]
-
-b[q]=a[r]
-
-[x for (i,x) in enumerate(r[3])]
-
-
-
-size([1,2,3])
 
 begin
     a = zeros(10,10)
