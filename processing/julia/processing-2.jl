@@ -176,6 +176,11 @@ function fill_from_array(dim,arr,fun=identity)
 end
     
 function extract(a,newsize,center=div(asize(a),2),value=0)
+    # create a new array with dimensions NEWSIZE and copy data from
+    # array A. the code tries to be intelligent in acting according to
+    # the arguments and will hopefully do the right thing even if you
+    # hand over incomplete arguments for NEWSIZE or CENTER (or a
+    # floating point CENTER)
     # if only a single number is given as newsize, turn it into array
     # if dimension of newsize is insufficeint copy missing part from array
     newsize = fill_from_array(ensure_array(newsize),a)
@@ -187,24 +192,34 @@ function extract(a,newsize,center=div(asize(a),2),value=0)
     srcstart = srccenter - div(newsize,2)
     srcend   = srcstart  + newsize - 1
     dststart = [ss<0?-ss:0 for ss in srcstart]
-    dstend   = [newsize[i]-1+((asize(a)[i]<=srcend[i])?asize(a)[i]-1-srcend[i]:0) for i=1:length(srcstart)]
+    dstend   = [newsize[i]-1+
+                ((asize(a)[i]<=srcend[i])?asize(a)[i]-1-srcend[i]:0)
+                for i=1:length(srcstart)]
     # make sure src isn't accessed outside the array dimensions
     srcend[srcend.>=asize(a)] = asize(a)[srcend.>=asize(a)]-1
     srcstart[srcstart.<0]=0
+    # create an array of ranges 
     srcrange = map(range,srcstart,srcend)
     dstrange = map(range,dststart,dstend)
-    out[dstrange] = a[srcrange]
-#    out = zeros(eltype(a),newsize)
+#    out = zeros(eltype(a),apply(tuple,newsize))+value
+#    out[dstrange] = a[srcrange]
+#    out
 end
 
-extract(zeros(50,60,70,23),120,[3,4])
+extract(rand(10,10),[5,5],[5,5])
 
 
-map(range,[1 2 3],[4 5 6])
+apply(tuple,[1,2,3])
 
-a = rand(4,3)
-b = rand(2,2)
-b[:,:]=a[[1:2 2:3]]
+a = rand(4,3,4)
+b = rand(2,2,2)
+q = [1:2,1:2,1:2]
+rs=[1,2,3]
+re=[2,3,4]
+r = map((x,y)->map(identity,range(x,y)),rs,re) #map(identity,map(range,rs,re))
+b[q]=a[r]
+
+
 
 
 size([1,2,3])
