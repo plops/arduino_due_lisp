@@ -175,23 +175,6 @@ function fill_from_array(dim,arr,fun=identity)
     dim
 end
 
-function expand_ranges(starts,ends)
-    # given two arrays starts and ends, expand the corresponding ranges
-    r=map((x,y)->Int64[z for (i,z) in enumerate(range(x,y))],starts,ends)
-    len = reduce(+,map(length,r))
-    lin = zeros(Int64,len)
-    cnt = 1
-    for j=1:length(r)
-        for i=1:length(r[j])
-            lin[cnt]= r[j][i]
-            cnt = cnt+1
-        end
-    end
-    #reshape(lin,apply(tuple,map(length,r)))
-    map((x)->apply(tuple,x),r)
-end
-
-
 function extract(a,newsize,center=div(asize(a),2),value=0)
     # create a new array with dimensions NEWSIZE and copy data from
     # array A. the code tries to be intelligent in acting according to
@@ -207,24 +190,24 @@ function extract(a,newsize,center=div(asize(a),2),value=0)
     srccenter = int(round(center)) # convert to int, in case center
                                    # contains floating point
     srcstart = srccenter - div(newsize,2)
-    srcend   = srcstart  + newsize - 1
-    dststart = [ss<0?-ss:0 for ss in srcstart]
+    srcend   = srcstart  + newsize -1
+    dststart = [(ss<1)?-ss:1 for ss in srcstart]
     dstend   = [newsize[i]-1+
-                ((asize(a)[i]<=srcend[i])?asize(a)[i]-1-srcend[i]:0)
+                ((asize(a)[i]<=srcend[i])?-srcend[i]+asize(a)[i]-1:1)
                 for i=1:length(srcstart)]
     # make sure src isn't accessed outside the array dimensions
-    srcend[srcend.>=asize(a)] = asize(a)[srcend.>=asize(a)]-1
-    srcstart[srcstart.<0]=0
+    srcend[srcend.>=asize(a)] = asize(a)[srcend.>=asize(a)]
+    srcstart[srcstart.<1]=1
     # create an array of ranges 
-    #srcrange = expand_ranges(srcstart,srcend)
-    #dstrange = expand_ranges(dststart,dstend)
-    out = zeros(eltype(a),tuple(newsize ...))+value
-    #out[dstrange] = a[srcrange]
-    #out
-    #dstrange
+    srcrange = map(range,srcstart,srcend)
+    dstrange = map(range,dststart,dstend)
+    out = zeros(eltype(a),newsize...)+value
+#    [dstrange srcrange]
+    out[dstrange...] = a[srcrange...]
+    out
 end
 
-extract(rand(10,10),[5,5],[5,5])
+extract(rand(5,5),[7,7])
 
 a=rand(5,5)
 b=zeros(2,2)
