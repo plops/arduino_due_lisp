@@ -166,10 +166,6 @@ function ensure_array(a)
     a
 end
 
-ensure_array([1 2 3])
-
-[1,2,3]
-
 function fill_from_array(dim,arr,fun=identity)
     # if dim is a vector with a smaller size than the array rank, copy
     # the dimensions from the array and optionally apply fun
@@ -190,10 +186,11 @@ function extract(a,newsize,center=div(asize(a),2),value=0)
                                    # contains floating point
     srcstart = srccenter - div(newsize,2)
     srcend   = srcstart  + newsize - 1
-    dststart = zeros(srcstart)
-    dststart[srcstart.<0] = -srcstart[srcstart.<0]
-    dstend = newsize-1
-    dstend[srcend.>=asize(a)]=dstend
+    dststart = [ss<0?-ss:0 for ss in srcstart]
+    dstend   = [newsize[i]-1+((asize(a)[i]<=srcend[i])?asize(a)[i]-1-srcend[i]:0) for i=1:length(srcstart)]
+    # make sure src isn't accessed outside the array dimensions
+    srcend[srcend.>=asize(a)] = asize(a)[srcend.>=asize(a)]-1
+    srcstart[srcstart.<0]=0
 end
 
 extract(zeros(50,60,70,23),120,[3.5,2.4])
