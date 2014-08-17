@@ -199,11 +199,11 @@ function extract(a,newsize,center=div(asize(a),2),value=0)
     srcend[srcend.>=asize(a)] = asize(a)[srcend.>=asize(a)]-1
     srcstart[srcstart.<0]=0
     # create an array of ranges 
-    srcrange = map(range,srcstart,srcend)
-    dstrange = map(range,dststart,dstend)
-#    out = zeros(eltype(a),apply(tuple,newsize))+value
-#    out[dstrange] = a[srcrange]
-#    out
+    srcrange = expand_ranges(srcstart,srcend)
+    dstrange = expand_ranges(dststart,dstend)
+    out = zeros(eltype(a),apply(tuple,newsize))+value
+    out[dstrange] = a[srcrange]
+    out
 end
 
 extract(rand(10,10),[5,5],[5,5])
@@ -216,9 +216,33 @@ b = rand(2,2,2)
 q = [1:2,1:2,1:2]
 rs=[1,2,3]
 re=[2,3,4]
-r = map((x,y)->map(identity,range(x,y)),rs,re) #map(identity,map(range,rs,re))
+r = 
+
+reshape(r,reduce(+,map(length,r)))
+
+function expand_ranges(starts,ends)
+    # given two arrays starts and ends, expand the corresponding ranges
+    map((x,y)->Int64[z for (i,z) in enumerate(range(x,y))],starts,ends)
+    len = reduce(+,map(length,r))
+    lin = zeros(Int64,len)
+    cnt = 1
+    for j=1:length(r)
+        for i=1:length(r[j])
+            lin[cnt]= r[j][i]
+            cnt = cnt+1
+        end
+    end
+    lin
+end
+
+        
+
+
+rr = [1:2,2:3,3:4]
+
 b[q]=a[r]
 
+[x for (i,x) in enumerate(r[3])]
 
 
 
