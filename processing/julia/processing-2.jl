@@ -157,14 +157,30 @@ function asize(a)
     [size(a)...]
 end
 
-function extract(a,size,center=floor(size(img)/2),value=0)
-    if length(size) < ndims(a)
-        append!(size,size(a)[length(size)+1:end])
+function ensure_array(a)
+    ""
+    if 1 == length(a)  
+       a = [a]
     end
-    size
+    a
 end
 
-extract(zeros(10,10),4)
+function fill_from_array(dim,arr,fun=identity)
+    if length(dim) < ndims(arr)
+        append!(dim,map(fun,asize(arr)[length(dim)+1:end]))
+    end
+    dim
+end
+    
+function extract(a,newsize,center=div(asize(a),2),value=0)
+    # if only a single number is given as newsize, turn it into array
+    # if dimension of newsize is insufficeint copy missing part from array
+    newsize = fill_from_array(ensure_array(newsize),a)
+    # use similar code to fill up center if necessary
+    center  = fill_from_array(ensure_array(center),a,(x)->div(x,2))
+end
+
+extract(zeros(50,60,70),4,3)
 
 begin
     a = zeros(10,10)
