@@ -233,6 +233,29 @@ b[:,:]=a[[(1,2),(1,2)]]
 
 b[:,:]=a[range(1,2),range(1,2)]
 
+begin
+    qq=1
+    bb=2
+    b[:,:]=a[range(qq,bb),range(qq,bb)]
+end
+
+
+begin
+    qq=1
+    bb=2
+    q=map(range,[qq qq],[bb bb])
+    #b[:,:]=a[q]
+    b[:,:]=getindex(a,q...)
+end
+
+
+begin
+    qq=1
+    bb=2
+    q=range(qq,bb)
+    b[:,:]=a[q,q]
+end
+
 tuple([1,2,3]...)
 
 q=[1,2,3]
@@ -240,7 +263,7 @@ tuple(q...)
 
 apply((x,y)->slice(a,x,y),[range(1,2),range(1,2)])
 
-[range(1,2), range(1,3)]
+tuple([range(1,2), range(1,2)]...)
 
 map(range,[1,1],[2,2])
 
