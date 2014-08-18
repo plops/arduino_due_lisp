@@ -1,7 +1,3 @@
-function extract(a,newsize,center=div(asize(a),2),value=0)
-    
-end
-
 function asize(a::Array)
     # return size of array as an array (instead of tuple)
     [size(a)...]
