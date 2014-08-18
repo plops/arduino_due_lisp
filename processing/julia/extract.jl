@@ -1,33 +1,32 @@
-function asize(a)
+function extract(a,newsize,center=div(asize(a),2),value=0)
+    
+end
+
+function asize(a::Array)
     # return size of array as an array (instead of tuple)
     [size(a)...]
 end
-function ensure_array(a)
-    # if a is a scalar, return an array containing th scalar
-    if 1 == length(a)  
-       a = [a]
-    end
-    a
-end
-function fill_from_array(dim,arr,fun=identity)
+function pad_dimensions_from_array(dim::Array, arr::Array, fun=identity)
     # if dim is a vector with a smaller size than the array rank, copy
     # the dimensions from the array (and optionally apply fun)
     if length(dim) < ndims(arr)
-        append!(dim,map(fun,asize(arr)[length(dim)+1:end]))
+        append!(dim, map(fun, asize(arr)[length(dim)+1:end]))
     end
     dim
 end
-function extract(a,newsize,center=div(asize(a),2),value=0)
+
+function extract{T}(a::Array{T}, newsize::Array, center::Array, value::T)
+    asz = asize(a)
     # create a new array with dimensions NEWSIZE and copy data from
     # array A. the code tries to be intelligent in acting according to
     # the arguments and will hopefully do the right thing even if you
     # hand over incomplete arguments for NEWSIZE or CENTER (or a
-    # floating point CENTER)
-    # if only a single number is given as newsize, turn it into array
-    # if dimension of newsize is insufficeint copy missing part from array
-    # this code was created by 2014 Martin Kielhorn based on Matlab
-    # code by Rainer Heintzmann
-    newsize = fill_from_array(ensure_array(newsize),a)
+    # floating point CENTER) if only a single number is given as
+    # newsize, turn it into array if dimension of newsize is
+    # insufficient, copy missing part from array. This code was
+    # created by 2014 Martin Kielhorn based on Matlab code by Rainer
+    # Heintzmann
+    newsize = pad_dimensions_from_array(newsize, a)
     # use similar code to fill up center if necessary, the center is
     # by default set to the middle of the array
     center = fill_from_array(ensure_array(center),a,(x)->div(x,2))
@@ -65,6 +64,19 @@ function extract(a,newsize,center=div(asize(a),2),value=0)
     out[dstrange...] = a[srcrange...]
     out
 end
+function extract(a::Array, newsize::Array, center::Array=div(asize(a), 2), value=0)
+    extract(a, newsize, int(round(center)), value)
+end
+function extract(a::Array, newsize::Number, center::Array=div(asize(a), 2), value=0)
+    extract(a, [newsize], int(round(center)), value)
+end
+function extract(a::Array, newsize::Array, center::Number, value=0)
+    extract(a, newsize, [center], value)
+end
+function extract(a::Array, newsize::Number, center::Number, value=0)
+    extract(a, [newsize], [center], value)
+end
+
 
 # example use:
 # [x*10+y for x=1:9,y=1:9]
