@@ -205,8 +205,8 @@ function extract(a,newsize,center=div(asize(a),2),value=0)
     # the result can be too big and outside the range of valid
     # coordinates of array a. the largest legal value for srcend is
     # asize(a).  if dstend is within the array bounds srcend<=size(a),
-    # the coordinates are calculated as before for srcend (but
-    # dststart is assumed 1).
+    # the coordinates are calculated as in the previous line for
+    # srcend.
     dstend   = [dststart[i]+newsize[i]-1+
                 ((size(a)[i]<srcend[i])?-srcend[i]+size(a)[i]:0)
                 for i=1:length(srcstart)]
