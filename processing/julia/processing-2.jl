@@ -189,25 +189,35 @@ function extract(a,newsize,center=div(asize(a),2),value=0)
     center = fill_from_array(ensure_array(center),a,(x)->div(x,2))
     srccenter = int(round(center)) # convert to int, in case center
                                    # contains floating point
-    srcstart = srccenter - div(newsize,2)
-    srcend   = srcstart  + newsize -1
-    dststart = [(ss<1)?-ss:1 for ss in srcstart]
+    srcstart = srccenter-div(newsize,2)
+    srcend   = srcstart+newsize-1
+    dststart = [(ss<1)?1-ss:1 for ss in srcstart]
     dstend   = [newsize[i]-1+
-                ((asize(a)[i]<=srcend[i])?-srcend[i]+asize(a)[i]-1:1)
+                ((size(a)[i]<=srcend[i])?-srcend[i]+size(a)[i]-1:1)
                 for i=1:length(srcstart)]
     # make sure src isn't accessed outside the array dimensions
     srcend[srcend.>=asize(a)] = asize(a)[srcend.>=asize(a)]
     srcstart[srcstart.<1]=1
     # create an array of ranges 
-    srcrange = map(range,srcstart,srcend)
-    dstrange = map(range,dststart,dstend)
+    srcrange = map(colon,srcstart,srcend)
+    dstrange = map(colon,dststart,dstend)
     out = zeros(eltype(a),newsize...)+value
-#    [dstrange srcrange]
+    println([srcstart srcstart+newsize-1 map(range,srcstart,srcend) srcstart newsize srccenter center dstrange srcrange])
     out[dstrange...] = a[srcrange...]
     out
 end
 
-extract(rand(5,5),[7,7])
+range(1,3)
+
+range(2,4)
+
+colon(2,4)
+
+map(range,[1,2],[3,4])
+
+[x*10+y for x=1:9,y=1:9]
+
+extract([x*10+y for x=1:9,y=1:9],[8,8])
 
 a=rand(5,5)
 b=zeros(2,2)
