@@ -25,6 +25,8 @@ function extract(a,newsize,center=div(asize(a),2),value=0)
     # floating point CENTER)
     # if only a single number is given as newsize, turn it into array
     # if dimension of newsize is insufficeint copy missing part from array
+    # this code was created by 2014 Martin Kielhorn based on Matlab
+    # code by Rainer Heintzmann
     newsize = fill_from_array(ensure_array(newsize),a)
     # use similar code to fill up center if necessary, the center is
     # by default set to the middle of the array
