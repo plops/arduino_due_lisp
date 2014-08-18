@@ -25,7 +25,7 @@ function extract{T}(a::Array{T}, newsize::Array, center::Array, value::T)
     # newsize, turn it into array if dimension of newsize is
     # insufficient, copy missing part from array. This code was
     # created by 2014 Martin Kielhorn based on Matlab code by Rainer
-    # Heintzmann
+    # Heintzmann (with help from Hauke and Simon)
     newsize = pad_dimensions_from_array(newsize, a)
     # use similar code to fill up center if necessary, the center is
     # by default set to the middle of the array
