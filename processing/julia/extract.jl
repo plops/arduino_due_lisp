@@ -11,7 +11,7 @@ function pad_dimensions_from_array(dim::Array, arr::Array, fun=identity)
     dim
 end
 
-function extract_hauke{T}(a::Array{T}, newsize::Array, center::Array, value::T)
+function extract{T}(a::Array{T}, newsize::Array, center::Array, value::T)
   # create a new array with dimensions NEWSIZE and copy data from
   # array A.
   #
@@ -32,14 +32,13 @@ function extract_hauke{T}(a::Array{T}, newsize::Array, center::Array, value::T)
   # create an array of ranges
   srcrange = map(colon, srcstart, srcend)
   dstrange = map(colon, dststart, dstend)
-  println([srcrange dstrange])
   out = fill(value, newsize...)
   out[dstrange...] = a[srcrange...]
   out
 end
 
 
-function extract{T}(a::Array{T}, newsize::Array, center::Array, value::T)
+function extract_martin{T}(a::Array{T}, newsize::Array, center::Array, value::T)
     # create a new array with dimensions NEWSIZE and copy data from
     # array A. the code tries to be intelligent in acting according to
     # the arguments and will hopefully do the right thing even if you
@@ -50,30 +49,24 @@ function extract{T}(a::Array{T}, newsize::Array, center::Array, value::T)
     # created by 2014 Martin Kielhorn based on Matlab code by Rainer
     # Heintzmann (with help from Hauke and Simon)
     newsize = pad_dimensions_from_array(newsize, a)
-    println("newsize $newsize")
     # use similar code to fill up center if necessary, the center is
     # by default set to the middle of the array
     center = pad_dimensions_from_array(center,a,(x)->div(x,2)+1)
     # convert to int, in case center contains floating point
     srccenter = int(round(center))
-    println("srccenter $srccenter")
     # originating from the center find the coordinates of the first
     # pixel of the source. 
     srcstart = srccenter-div(newsize,2)
-    println("srcstart $srcstart")
     # the coordinates of the last pixel of the source. the colon
     # function takes inclusive range as an argument. that explains the
     # -1.    
     srcend   = srcstart+newsize-1
-    println("srcend $srcend")
     # the result can be <1. in this case the destination needs to be
     # shifted in the positive direction to create an appropriate
     # padding band:
     dststart = [(ss<1)?2-ss:1 for ss in srcstart]
-    println("dststart $dststart")
     # limit the left border of srcstart
     srcstart[srcstart.<1]=1
-    println("srcstart $srcstart")
     # the result can be too big and outside the range of valid
     # coordinates of array a. the largest legal value for srcend is
     # asize(a).  if dstend is within the array bounds srcend<=size(a),
@@ -82,18 +75,14 @@ function extract{T}(a::Array{T}, newsize::Array, center::Array, value::T)
     dstend   = [newsize[i]+
                 ((size(a)[i]<srcend[i])?-srcend[i]+size(a)[i]:0)
                 for i=1:length(srcstart)]
-    println("dstend $dstend")
     # limit the right border of srcend
     outranged = srcend.>asize(a)
     srcend[outranged] = asize(a)[outranged]
-    println("srcend $srcend")
     # create an array of ranges 
     srcrange = map(colon,srcstart,srcend)
     dstrange = map(colon,dststart,dstend)
     out = fill(value,newsize...)
-    println([center srcrange dstrange])
     out[dstrange...] = a[srcrange...]
-    println(out)
     out
 end
 function extract(a::Array, newsize::Array, center::Array=div(asize(a)+1, 2), value=0)
