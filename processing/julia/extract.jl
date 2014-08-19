@@ -59,16 +59,16 @@ function extract{T}(a::Array{T}, newsize::Array, center::Array, value::T)
     # the result can be <1. in this case the destination needs to be
     # shifted in the positive direction to create an appropriate
     # padding band:
-    dststart = [(ss<1)?1-ss:1 for ss in srcstart]
+    dststart = [(ss<1)?2-ss:1 for ss in srcstart]
     println("dststart $dststart")
-    # limit the left border of srcstart
-    srcstart[srcstart.<1]=1
-    println("srcstart $srcstart")
     # the coordinates of the last pixel of the source. the colon
     # function takes inclusive range as an argument. that explains the
     # -1.    
     srcend   = srcstart+newsize-1
     println("srcend $srcend")
+    # limit the left border of srcstart
+    srcstart[srcstart.<1]=1
+    println("srcstart $srcstart")
     # the result can be too big and outside the range of valid
     # coordinates of array a. the largest legal value for srcend is
     # asize(a).  if dstend is within the array bounds srcend<=size(a),
