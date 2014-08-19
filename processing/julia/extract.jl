@@ -25,7 +25,7 @@ function extract{T}(a::Array{T}, newsize::Array, center::Array, value::T)
     newsize = pad_dimensions_from_array(newsize, a)
     # use similar code to fill up center if necessary, the center is
     # by default set to the middle of the array
-    center = fill_from_array(ensure_array(center),a,(x)->div(x,2))
+    center = pad_dimensions_from_array(ensure_array(center),a,(x)->div(x,2))
     # convert to int, in case center contains floating point
     srccenter = int(round(center))
     # originating from the center find the coordinates of the first
@@ -77,3 +77,7 @@ end
 # example use:
 # [x*10+y for x=1:9,y=1:9]
 # extract([x*10+y for x=1:9,y=1:9],[11,11])
+
+@test
+
+extract([x*10+y for x=1:3,y=1:3],[3,3])
