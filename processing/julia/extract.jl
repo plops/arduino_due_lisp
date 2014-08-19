@@ -12,26 +12,32 @@ function pad_dimensions_from_array(dim::Array, arr::Array, fun=identity)
 end
 
 function extract_hauke{T}(a::Array{T}, newsize::Array, center::Array, value::T)
-      newsize = pad_dimensions_from_array(newsize, a)
-      center = pad_dimensions_from_array(center, a, (x)->div(x, 2))
-      # coordinates of the first pixel of the source.
-      srcstart = center - div(newsize, 2) + (newsize % 2)
-      # coordinates of the last pixel of the source.
-      srcend = srcstart + newsize - 1
-      # limit the left border of srcstart
-      srcstart = max(srcstart, 1)
-      # limit the right border of srcend
-      srcend = min(srcend, asize(a))
-      # the result can exceed the range of valid coordinates of array a.
-      dststart = max(1, 2-srcstart)
-      dstend = dststart + (srcend - srcstart)
-    # create an array of ranges
-    srcrange = map(colon, srcstart, srcend)
-    dstrange = map(colon, dststart, dstend)
-    println([srcrange dstrange])
-    out = fill(value, newsize...)
-    out[dstrange...] = a[srcrange...]
-    out
+  # create a new array with dimensions NEWSIZE and copy data from
+  # array A.
+  #
+  # if dimensions of newsize and/or center are insufficient,
+  # pad trailing dimensions from array
+  newsize = pad_dimensions_from_array(newsize, a)
+  center = pad_dimensions_from_array(center, a, (x)->div(x, 2))
+  shift = div(newsize, 2) - center + 1
+
+  # coordinates of the first pixel of the source.
+  srcstart = center - div(newsize, 2)
+  # coordinates of the last pixel of the source.
+  srcend = srcstart + newsize - 1
+  # limit borders
+  srcstart = max(srcstart, 1)
+  srcend = min(srcend, asize(a))
+  dststart = srcstart + shift
+  dstend = srcend + shift
+
+  # create an array of ranges
+  srcrange = map(colon, srcstart, srcend)
+  dstrange = map(colon, dststart, dstend)
+  println([srcrange dstrange])
+  out = fill(value, newsize...)
+  out[dstrange...] = a[srcrange...]
+  out
 end
 
 
@@ -92,10 +98,10 @@ function extract{T}(a::Array{T}, newsize::Array, center::Array, value::T)
     println(out)
     out
 end
-function extract(a::Array, newsize::Array, center::Array=div(asize(a), 2)+1, value=0)
+function extract(a::Array, newsize::Array, center::Array=div(asize(a)+1, 2), value=0)
     extract(a, newsize, int(round(center)), value)
 end
-function extract(a::Array, newsize::Number, center::Array=div(asize(a), 2)+1, value=0)
+function extract(a::Array, newsize::Number, center::Array=div(asize(a)+1, 2), value=0)
     extract(a, [newsize], int(round(center)), value)
 end
 function extract(a::Array, newsize::Array, center::Number, value=0)
@@ -106,8 +112,7 @@ function extract(a::Array, newsize::Number, center::Number, value=0)
 end
 
 
-
-extract([x*10+y for x=1:3,y=1:3],[7,7])   
+extract([x*10+y for x=1:3,y=1:3],[3,3])   
 
 # example use:
 # [x*10+y for x=1:9,y=1:9]
