@@ -18,9 +18,8 @@ function extract_hauke{T}(a::Array{T}, newsize::Array, center::Array, value::T)
   # if dimensions of newsize and/or center are insufficient,
   # pad trailing dimensions from array
   newsize = pad_dimensions_from_array(newsize, a)
-  center = pad_dimensions_from_array(center, a, (x)->div(x, 2))
+  center = pad_dimensions_from_array(center, a, (x)->div(x+1, 2))
   shift = div(newsize, 2) - center + 1
-
   # coordinates of the first pixel of the source.
   srcstart = center - div(newsize, 2)
   # coordinates of the last pixel of the source.
@@ -30,7 +29,6 @@ function extract_hauke{T}(a::Array{T}, newsize::Array, center::Array, value::T)
   srcend = min(srcend, asize(a))
   dststart = srcstart + shift
   dstend = srcend + shift
-
   # create an array of ranges
   srcrange = map(colon, srcstart, srcend)
   dstrange = map(colon, dststart, dstend)
@@ -112,7 +110,9 @@ function extract(a::Array, newsize::Number, center::Number, value=0)
 end
 
 
-extract([x*10+y for x=1:3,y=1:3],[3,3])   
+extract([x*10+y for x=1:3,y=1:3],[3,3])
+
+extract_hauke([x*10+y for x=1:3,y=1:3],[3,3],[2,2],0)   
 
 # example use:
 # [x*10+y for x=1:9,y=1:9]
@@ -155,16 +155,16 @@ using Base.Test
  21  22;])
 
 
-@test(extract([x*10+y for x=1:3,y=1:3],[2,2],[1,1])!=
-[ 11  12;
- 21  22;])
+@test(extract([x*10+y for x=1:3,y=1:3],[2,2],[1,1])==
+[0 0
+ 0 11])
  
-@test(extract([x*10+y for x=1:3,y=1:3],[5,3],[1,1])!=
-[  0   0   0;
- 11  12  13;
- 21  22  23;
- 31  32  33;
-  0   0   0;])
+@test(extract([x*10+y for x=1:3,y=1:3],[5,3],[1,1])==
+[0 0 0
+ 0 0 0
+ 0 11 12
+ 0 21 22
+ 0 31 32])
 
 @test(extract([x*10+y for x=1:3,y=1:3],[5,3])==
 [  0   0   0;
@@ -179,10 +179,10 @@ using Base.Test
  0  21  22  23  0;
  0  31  32  33  0;])
  
-@test(extract([x*10+y for x=1:3,y=1:3],[3,5],[2,1])!=
-[0  11  12  13  0;
- 0  21  22  23  0;
- 0  31  32  33  0;])
+@test(extract([x*10+y for x=1:3,y=1:3],[3,5],[2,1])==
+[0 0 11 12 13
+ 0 0 21 22 23
+ 0 0 31 32 33]);
  
 @test(extract([x*10+y for x=1:3,y=1:4],[3,7],[2,4])==
 [11  12  13  14  0  0  0;
@@ -193,4 +193,3 @@ using Base.Test
 [12  13  0;
  22  23  0;
  32  33  0;])
-
