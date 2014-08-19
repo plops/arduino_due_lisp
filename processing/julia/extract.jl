@@ -105,6 +105,7 @@ extract([x*10+y for x=1:3,y=1:3],[3,3],[2,2])
 
 using Base.Test
 
+# i'm not sure about the direction of the following test
 @test(extract([x*10+y for x=1:3,y=1:3],[3,3],[2,1])==
 [0 11  12; 
  0 21  22;
