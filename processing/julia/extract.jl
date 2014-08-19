@@ -12,7 +12,6 @@ function pad_dimensions_from_array(dim::Array, arr::Array, fun=identity)
 end
 
 function extract{T}(a::Array{T}, newsize::Array, center::Array, value::T)
-    asz = asize(a)
     # create a new array with dimensions NEWSIZE and copy data from
     # array A. the code tries to be intelligent in acting according to
     # the arguments and will hopefully do the right thing even if you
@@ -57,6 +56,7 @@ function extract{T}(a::Array{T}, newsize::Array, center::Array, value::T)
     dstrange = map(colon,dststart,dstend)
     out = zeros(eltype(a),newsize...)+value
     out[dstrange...] = a[srcrange...]
+    println([srcrange dstrange])
     out
 end
 function extract(a::Array, newsize::Array, center::Array=div(asize(a), 2), value=0)
@@ -73,11 +73,19 @@ function extract(a::Array, newsize::Number, center::Number, value=0)
 end
 
 
+extract([x*10+y for x=1:3,y=1:3],[3,3],[2,1])    
+
 # example use:
 # [x*10+y for x=1:9,y=1:9]
 # extract([x*10+y for x=1:9,y=1:9],[11,11])
 
 using Base.Test
+
+@test(extract([x*10+y for x=1:3,y=1:3],[3,3],[2,1])==
+[0 11  12; 
+ 0 21  22;
+ 0 31  32])
+
 
 @test(extract([x*10+y for x=1:3,y=1:3],[3,3])==
 [11  12  13;
@@ -142,7 +150,3 @@ using Base.Test
  22  23  0;
  32  33  0;])
 
-@test(extract([x*10+y for x=1:3,y=1:3],[3,3],[2,1])==
-[0 11  12; 
- 0 21  22;
- 0 31  32])
