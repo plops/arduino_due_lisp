@@ -11,6 +11,30 @@ function pad_dimensions_from_array(dim::Array, arr::Array, fun=identity)
     dim
 end
 
+function extract_hauke{T}(a::Array{T}, newsize::Array, center::Array, value::T)
+      newsize = pad_dimensions_from_array(newsize, a)
+      center = pad_dimensions_from_array(center, a, (x)->div(x, 2))
+      # coordinates of the first pixel of the source.
+      srcstart = center - div(newsize, 2) + (newsize % 2)
+      # coordinates of the last pixel of the source.
+      srcend = srcstart + newsize - 1
+      # limit the left border of srcstart
+      srcstart = max(srcstart, 1)
+      # limit the right border of srcend
+      srcend = min(srcend, asize(a))
+      # the result can exceed the range of valid coordinates of array a.
+      dststart = max(1, 2-srcstart)
+      dstend = dststart + (srcend - srcstart)
+    # create an array of ranges
+    srcrange = map(colon, srcstart, srcend)
+    dstrange = map(colon, dststart, dstend)
+    println([srcrange dstrange])
+    out = fill(value, newsize...)
+    out[dstrange...] = a[srcrange...]
+    out
+end
+
+
 function extract{T}(a::Array{T}, newsize::Array, center::Array, value::T)
     # create a new array with dimensions NEWSIZE and copy data from
     # array A. the code tries to be intelligent in acting according to
@@ -54,7 +78,7 @@ function extract{T}(a::Array{T}, newsize::Array, center::Array, value::T)
     # create an array of ranges 
     srcrange = map(colon,srcstart,srcend)
     dstrange = map(colon,dststart,dstend)
-    out = zeros(eltype(a),newsize...)+value
+    out = fill(value,newsize...)
     out[dstrange...] = a[srcrange...]
     println([srcrange dstrange])
     out
@@ -73,7 +97,7 @@ function extract(a::Array, newsize::Number, center::Number, value=0)
 end
 
 
-extract([x*10+y for x=1:3,y=1:3],[3,3],[2,1])    
+extract([x*10+y for x=1:3,y=1:3],[3,3],[2,2])   
 
 # example use:
 # [x*10+y for x=1:9,y=1:9]
@@ -85,8 +109,7 @@ using Base.Test
 [0 11  12; 
  0 21  22;
  0 31  32])
-
-
+ 
 @test(extract([x*10+y for x=1:3,y=1:3],[3,3])==
 [11  12  13;
  21  22  23;
