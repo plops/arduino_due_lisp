@@ -55,7 +55,6 @@ function extract{T}(a::Array{T}, newsize::Array, center::Array, value::T)
     # create an array of ranges 
     srcrange = map(colon,srcstart,srcend)
     dstrange = map(colon,dststart,dstend)
-    println([srcrange dstrange])
     out = zeros(eltype(a),newsize...)+value
     out[dstrange...] = a[srcrange...]
     out
@@ -78,6 +77,62 @@ end
 # [x*10+y for x=1:9,y=1:9]
 # extract([x*10+y for x=1:9,y=1:9],[11,11])
 
-@test
+using Base.Test
 
-extract([x*10+y for x=1:3,y=1:3],[3,3])
+@test(extract([x*10+y for x=1:3,y=1:3],[3,3])==
+[11  12  13;
+ 21  22  23;
+ 31  32  33;])
+
+
+@test(extract([x*10+y for x=1:3,y=1:3],[4,4])==
+[ 0   0   0   0;
+ 0  11  12  13;
+ 0  21  22  23;
+ 0  31  32  33;])
+
+@test(extract([x*10+y for x=1:3,y=1:3],[5,5])==
+[ 0   0   0   0  0;
+ 0  11  12  13  0;
+ 0  21  22  23  0;
+ 0  31  32  33  0;
+ 0   0   0   0  0])
+
+@test(extract([x*10+y for x=1:3,y=1:3],[2,2])==
+[ 11  12;
+ 21  22;])
+
+
+@test(extract([x*10+y for x=1:3,y=1:3],[2,2],[1,1])!=
+[ 11  12;
+ 21  22;])
+ 
+@test(extract([x*10+y for x=1:3,y=1:3],[5,3],[1,1])!=
+[  0   0   0;
+ 11  12  13;
+ 21  22  23;
+ 31  32  33;
+  0   0   0;])
+
+@test(extract([x*10+y for x=1:3,y=1:3],[5,3])==
+[  0   0   0;
+ 11  12  13;
+ 21  22  23;
+ 31  32  33;
+  0   0   0;])
+
+
+@test(extract([x*10+y for x=1:3,y=1:3],[3,5])==
+[ 0  11  12  13  0;
+ 0  21  22  23  0;
+ 0  31  32  33  0;])
+ 
+@test(extract([x*10+y for x=1:3,y=1:3],[3,5],[2,1])!=
+[0  11  12  13  0;
+ 0  21  22  23  0;
+ 0  31  32  33  0;])
+ 
+@test(extract([x*10+y for x=1:3,y=1:4],[3,7],[2,4])==
+[11  12  13  14  0  0  0;
+ 21  22  23  24  0  0  0;
+ 31  32  33  34  0  0  0])
