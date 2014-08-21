@@ -124,7 +124,7 @@ Wait n microseconds.
 
 ```(dac a b)```
 
-Write analog voltage using a MAX432 DAC. The parameters a, b are
+Write analog voltage using a MAX532 DAC. The parameters a, b are
 numbers in the range [0.2047]. Note: This needs extra hardware to be
 attached to the Arduino Due.
 
