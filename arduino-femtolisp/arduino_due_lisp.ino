@@ -127,7 +127,7 @@ enum {
     // functions
     F_EQ, F_ATOM, F_CONS, F_CAR, F_CDR, F_READ, F_EVAL, F_PRINT, F_SET, F_NOT,
     F_LOAD, F_SYMBOLP, F_NUMBERP, F_ADD, F_SUB, F_MUL, F_DIV, F_LT, F_PROG1,
-    F_APPLY, F_RPLACA, F_RPLACD, F_BOUNDP, F_PINMODE,F_DIGITALWRITE,F_ANALOGREAD,F_DELAYMICROSECONDS,F_DELAY,F_MICROS,F_ROOM , N_BUILTINS
+    F_APPLY, F_RPLACA, F_RPLACD, F_BOUNDP, F_PINMODE,F_DIGITALWRITE,F_ANALOGWRITE,F_ANALOGREAD,F_DELAYMICROSECONDS,F_DELAY,F_MICROS,F_ROOM , N_BUILTINS
 };
 #define isspecial(v) (intval(v) <= (int)F_PROGN)
 
@@ -135,7 +135,7 @@ static char *builtin_names[] =
     { "quote", "cond", "if", "and", "or", "while", "lambda", "macro", "label",
       "progn", "eq", "atom", "cons", "car", "cdr", "read", "eval", "print",
       "set", "not", "load", "symbolp", "numberp", "+", "-", "*", "/", "<",
-      "prog1", "apply", "rplaca", "rplacd", "boundp", "pin-mode","digital-write","adc","delay-microseconds","delay","micros","room" };
+      "prog1", "apply", "rplaca", "rplacd", "boundp", "pin-mode","digital-write","analog-write","adc","delay-microseconds","delay","micros","room" };
 
 static char *stack_bottom;
 #define PROCESS_STACK_SIZE (1024)
@@ -277,6 +277,11 @@ value_t pinMode_fun (uint8_t pin,uint8_t mode)
 value_t digitalWrite_fun (uint32_t ulPin,uint32_t ulVal) 
 {
   digitalWrite(ulPin,ulVal);
+  return T;
+}
+value_t analogWrite_fun (uint32_t ulPin,uint32_t ulVal) 
+{
+  analogWrite(ulPin,ulVal);
   return T;
 }
 value_t analogRead_fun (uint32_t ulPin) 
@@ -975,6 +980,10 @@ value_t eval_sexpr(value_t e, value_t *penv)
 case F_DIGITALWRITE: {
   argcount("digital-write",nargs,2); 
   v= digitalWrite_fun(tonumber(Stack[SP-2],"digital-write"),tonumber(Stack[SP-1],"digital-write"));
+}  break;
+case F_ANALOGWRITE: {
+  argcount("analog-write",nargs,2); 
+  v= analogWrite_fun(tonumber(Stack[SP-2],"analog-write"),tonumber(Stack[SP-1],"analog-write"));
 }  break;
 case F_ANALOGREAD: {
   argcount("adc",nargs,1); 

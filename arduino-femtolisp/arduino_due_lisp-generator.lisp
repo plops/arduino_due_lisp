@@ -133,10 +133,14 @@
 			      :to-setup "
   pinMode_fun(8,1);
   digitalWrite_fun(8,1);")
-
+		
 		(gen-c-chunks ("digital-write" "digitalWrite") ("uint32_t ulPin" "uint32_t ulVal")
 			      :fun "
   digitalWrite(ulPin,ulVal);
+  return T;")
+		(gen-c-chunks ("analog-write" "analogWrite") ("uint32_t ulPin" "uint32_t ulVal")
+			      :fun "
+  analogWrite(ulPin,ulVal);
   return T;")
 
 		(gen-c-chunks ("adc" "analogRead") ("uint32_t ulPin")
