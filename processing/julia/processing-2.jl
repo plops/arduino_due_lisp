@@ -1,4 +1,5 @@
-
+#push!(LOAD_PATH,".")
+include("extract.jl")
 # this function opens a file searches from the beginning for the
 # string "end" and returns the position
 function find_ics_raw_start(fn)
@@ -23,8 +24,8 @@ function read_ics(fn)
     a
 end
 
-ics_file = "/media/sdc1/dat/0805/o9.ics"
-a = read_ics(ics_file)
+ics_file = "/home/martin/mit/o9.ics"
+@time a = read_ics(ics_file);
 #ics_file = "/media/sdc1/dat/0805/orot9.ics"
 #ar = read_ics(ics_file)
 #ics_file = "/media/sdc1/dat/0805/o8.ics"
@@ -40,6 +41,15 @@ size(a[:,:,1,:,:])
 using View5D
 
 view5d(squeeze(abs2(a[:,:,1,20,16]),[3,4,5]))
+
+view5d(squeeze(abs2(a[:,:,2,:,:]),[3]))
+
+view5d(abs2(fft(squeeze(a[:,:,1,20,16],[3,4,5]))))
+
+b=fft(squeeze(a[:,:,1,20,16],[3,4,5]))
+
+extract(b,[3,3],[45,45],complex(0.0))
+
 
 begin
 #    ap = squeeze(a[:,:,1,20,16],[3,4,5]);
@@ -74,7 +84,6 @@ typeof(convert(Array{Float64,2},ka))
 a1 = reshape(a[:,:,1,:,:],90*90,47*37);
 
 
-<
 function avg_endface(a,cam)
     mean(abs2(ifft(a[:,:,cam,:,:],[1 2])),[4 5])
 end
