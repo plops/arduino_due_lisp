@@ -38,7 +38,7 @@ function extract{T}(a::Array{T}, newsize::Array, center::Array, value::T)
 end
 
 
-function extract_martin{T}(a::Array{T}, newsize::Array, center::Array, value::T)
+function extract_martin(a, newsize, center, value)
     # create a new array with dimensions NEWSIZE and copy data from
     # array A. the code tries to be intelligent in acting according to
     # the arguments and will hopefully do the right thing even if you
@@ -85,6 +85,7 @@ function extract_martin{T}(a::Array{T}, newsize::Array, center::Array, value::T)
     out[dstrange...] = a[srcrange...]
     out
 end
+
 function extract(a::Array, newsize::Array, center::Array=div(asize(a)+1, 2), value=0)
     extract(a, newsize, int(round(center)), value)
 end

@@ -48,7 +48,7 @@ view5d(abs2(fft(squeeze(a[:,:,1,20,16],[3,4,5]))))
 
 b=fft(squeeze(a[:,:,1,20,16],[3,4,5]))
 
-extract(b,[3,3],[45,45],complex(0.0))
+view5d(abs2(ifft(extract_martin(b,[256,256],[45,45],complex(0.0)))))
 
 
 begin
