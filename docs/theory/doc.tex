@@ -41,8 +41,9 @@ Amplituden der einzelnen Fasermoden. Die Propagation durch ein gerades
 Faserst\"uck der L\"ange $L$ erfolgt durch Multiplikation mit einen
 Phasenfaktor $e^{i\beta_i L}$ f\"ur jede Mode. Hierbei ist $\beta_i$
 die jeweils zur $i-$ten Mode geh\"orige Ausbreitungskonstante. Damit
-l\"a\ss t sich die Propagation der Modenverteilung ${\bf E_\textrm{in}}$ durch
-eine Multiplikation mit der Diagonalmatrix $P_L$ ausdr\"ucken:
+l\"a\ss t sich die Propagation der Modenverteilung ${\bf
+  E_\textrm{in}}$ durch eine Multiplikation mit der positiv definiten
+Diagonalmatrix $P_L$ ausdr\"ucken:
 
 \begin{align}
   P_L =
@@ -60,12 +61,88 @@ Feld hinter dem Knick:
 \begin{align}
   {\bf E_\textrm{half}} = T_\theta P_{L_1} {\bf E_\textrm{in}} 
 \end{align}
-Wobei die
+Wobei die Matrix $T_\theta$ die Kopplung der Moden am Knick
+beschreibt.
 
-Ich gehe davon aus, dass der Knickwinkel $\theta$ zwischen den zwei
-Faserst\"ucken hinreichend klein ist: $\theta \ll \lambda/a$. In
-diesem Fall l\"asst sich der
-[1988Hill]
+F\"ur kleinen Knickwinkel $\theta \ll \lambda/a$ ergibt sich jede
+Komponente $T_{\theta,\mu\nu}$ aus dem Integral \"uber ein Produkt aus
+vier Termen \"uber den Faserquerschnitt ([1988Hill]). Der normierten
+Feldverteilung der beiden Moden $\mu$ und $\nu$; dem Skalarprodukt
+${\bf e_\mu\cdot e_\nu}$ der Einheitsfeldvektoren, die die
+Polarisationsrichtung angeben und einem linearen Phasenfaktor
+$e^{ik_\textrm{co}\theta x}$. Da beide Moden $\mu$ und $\nu$
+symmetrisch in den Gleichungen vorkommen, ist auch die Kopplungsmatrix
+symmetrisch:
+\begin{align}
+  T_\theta=T_\theta^T  
+\end{align}
+
+
+F\"ur den Spezialfall von schwach f\"uhrenden Wellenleitern mit
+kreisf\"ormigen Querschnitt gibt [Marcuse1973] einen analytischen
+Ausdruck des Modenkopplungsintegrals an. In diesem Fall koppeln
+aufgrund der Rotationssymmetrie nur Moden mit gleicher azimuthaler
+Quantenzahl ($l$) aber beliebiger radialer Quantenzahl $m$:
+$\mu=\nu\pm m$. Das heisst, viele Entr\"age der Matrix $T_\theta$
+verschwinden.
+
+Damit kann das auf den Spiegel fallende Feld ausgedr\"uckt werden als:
+\begin{align}
+  {\bf E_\textrm{mirror}}= \underbrace{P_{L_2} T_\theta P_{L_1}}_M {\bf E_\textrm{in}} 
+\end{align}
+wobei ich mit $M$ die Transfermatrix vom Fasereingang zum
+Faseraustritt bezeichne.
+
+Der Spiegel bewirkt einen modenunabh\"angigen Phasensprung und koppelt
+alle einlaufenden Moden in r\"ucklaufende Moden. Die zugeh\"orige
+lineare Operation wird durch die Matrix 
+\begin{align}
+  R&=e^{i\pi}
+  \begin{pmatrix}
+    1 & 0 & \cdots  \\
+  0 & 1 & \cdots  \\
+  \vdots            &  & \ddots &   \\
+ \end{pmatrix}
+\end{align}
+beschrieben.
+
+Damit kann die Modenverteilung ${\bf E_\textrm{out}}$, die auf der
+Fasereintrittseite wieder austritt beschrieben werden durch:
+
+\begin{align}
+  {\bf E_\textrm{out}} &=  \underbrace{P_{L_1} T_\theta P_{L_2}}_{M'} R  \underbrace{P_{L_2} T_\theta P_{L_1}}_M  {\bf E_\textrm{in}}
+\end{align}
+Ein interessantes Zwischenergebnis ist, dass $M'=M^T$. Dies
+folgt aus der Symmetrie von $P_L$, $T_\theta$ und $R$ und dem Satz
+$(AB)^T=B^TA^T$.
+
+F\"ur mein Problem der Endoskopbildgebung ist eine wichtige Frage, ob
+man aus einer Messung von $M^TRM$ auf $M$ schlie\ss en kann. Diese
+Frage kann ich zur Zeit noch nicht beantworten.
+
+Dieses Modell mit einem planaren Knick hat drei freie Parameter:
+$L_1$, $L_2$ und $\theta$. Wenn die Transmissionsfunktion von
+mindestens drei Fasermoden bekannt ist, k\"onnen diese Parameter
+bestimmt werden. Hierbei ist jedoch zu bedenken, dass meine
+holographische Vermessung der Faser die Phasen der Felder nur modulo
+$2\pi$ bestimmt. Weiterhin setze ich zur Zeit kein ``common path''
+Interferometer ein, so dass die absolute Phase zwischen den Messungen
+driften kann. Ausserdem bin ich mir noch nicht sicher wie ich die
+Modenverteilungen der Faser hinreichend genau bestimmen (numerisch
+oder durch Kalibrierung) kann. Insbesondere ist unklar welche Moden
+bei verschiedenen Winkeleinstellungen des fast steering mirrors
+gestartet werden.
+
+Alle diese technischen Probleme sollten sich jedoch l\"osen lassen,
+zum Beispiel durch Verwendung mehrerer Laserwellenl\"angen und/oder
+einem SLM basierten Aufbau wie in [2011Dholakia].
+
+In Bild \ref{fig:model3} zeige ich wie das Modell des einzelnen Knicks
+auf beliebig gebogene Fasern verallgemeinert werden kann durch viele
+equidistant verteilte Knicke. Im allgemeinen Fall m\"ussen an jedem
+Knick zwei Winkel bestimmt werden. Die Form der Faser kann umso besser
+abgetastet werden, je mehr Moden vermessen werden k\"onnen.
+
 
 \begin{figure}[htbp]
   \centering
@@ -74,6 +151,15 @@ diesem Fall l\"asst sich der
   \label{fig:model3}
 \end{figure}
 
+Es w\"are interessant, einen Algorithmus zu entwickeln, der aus $M$
+auf die $\theta_i$ schliesst. In diesem Zusammenhang k\"onnte man auch
+analysieren wie lang eine Faser mit 10000 Moden sein kann, damit alle
+$\theta_i$ bestimmt werden k\"onnen.
+
+In einem n\"achsten Schritt w\"are zu untersuchen, ob man eine
+kalibrierte Faser (mit bekannten $\theta_i$) die nur leicht verschoben
+wird durch die Messung von nur wenigen Moden die Winkel $\theta_i$
+rekalibrieren kann.
 
 \section{multimode faser imaging im jones kalkuel}
 
