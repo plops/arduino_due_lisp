@@ -17,8 +17,10 @@
 \maketitle
 
 \section{Einfaches Modell zur Propagation durch eine gest\"orte Faser}
-Die  Endoskops 
-
+Ich versuche mit mehreren einfachen Modellen zu verstehen, wie Licht
+durch eine gekr\"ummte Faser propagiert. Zun\"achst betrachte ich als
+einfachsten Fall eine Faser mit einem Knick (siehe Bild
+\ref{fig:model}).
 \begin{figure}[htbp]
   \centering
   \input{model.pdf_tex}
@@ -26,6 +28,44 @@ Die  Endoskops
   \label{fig:model}
 \end{figure}
 
+Das eingestrahlte $E_\textrm{in}$ sei durch eine Superposition von
+gef\"uhrten Moden $\phi_i$ der Faser ausgedr\"uckt.
+
+\begin{align}
+  E_\textrm{in} = \sum_i A_i \phi_i
+\end{align}
+
+F\"ur die weitere Diskussion sei ${\bf
+  E_\textrm{in}}=(A_0,A_1,\ldots)$ der Vektor mit den komplexwertigen
+Amplituden der einzelnen Fasermoden. Die Propagation durch ein gerades
+Faserst\"uck der L\"ange $L$ erfolgt durch Multiplikation mit einen
+Phasenfaktor $e^{i\beta_i L}$ f\"ur jede Mode. Hierbei ist $\beta_i$
+die jeweils zur $i-$ten Mode geh\"orige Ausbreitungskonstante. Damit
+l\"a\ss t sich die Propagation der Modenverteilung ${\bf E_\textrm{in}}$ durch
+eine Multiplikation mit der Diagonalmatrix $P_L$ ausdr\"ucken:
+
+\begin{align}
+  P_L =
+ \begin{pmatrix}
+  e^{i\beta_0 L } & 0 & 0 & \cdots  \\
+  0 & e^{i\beta_1 L } & 0 & \cdots  \\
+  0 & 0 & e^{i\beta_2 L } & \cdots  \\
+  \vdots  & \vdots  &  & \ddots &   \\
+ \end{pmatrix}
+\end{align}
+
+Der Knick mit Winkel $\theta$ kann auch durch eine lineare Operation
+auf den Modenverteilungen ausgedr\"uckt werden. Damit gilt f\"ur das
+Feld hinter dem Knick:
+\begin{align}
+  {\bf E_\textrm{half}} = T_\theta P_{L_1} {\bf E_\textrm{in}} 
+\end{align}
+Wobei die
+
+Ich gehe davon aus, dass der Knickwinkel $\theta$ zwischen den zwei
+Faserst\"ucken hinreichend klein ist: $\theta \ll \lambda/a$. In
+diesem Fall l\"asst sich der
+[1988Hill]
 
 \begin{figure}[htbp]
   \centering
