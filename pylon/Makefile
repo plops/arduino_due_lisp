@@ -2,7 +2,7 @@
 .PHONY			: all clean
 
 # Installation directories for GenICam and Pylon
-PYLON_ROOT		?= /home/martin/pylon-3.2.1-x86_64/pylon3
+PYLON_ROOT		?= /home/martin/pylon-4.0.0.62-x86_64/pylon4
 GENICAM_ROOT	?= $(PYLON_ROOT)/genicam
 
 # Build tools and flags
@@ -15,7 +15,7 @@ LDFLAGS			:= -L$(PYLON_ROOT)/lib64 \
 				   -L$(GENICAM_ROOT)/bin/Linux64_x64 \
 				   -L$(GENICAM_ROOT)/bin/Linux64_x64/GenApi/Generic \
 				   -Wl,-E
-LIBS			:= -lpylonbase -lGenApi_gcc40_v2_3 -lGCBase_gcc40_v2_3 -lLog_gcc40_v2_3 -lMathParser_gcc40_v2_3 -lXerces-C_gcc40_v2_7 -llog4cpp_gcc40_v2_3
+LIBS			:= -lpylonbase -lGenApi_gcc40_v2_3 -lGCBase_gcc40_v2_3 -lLog_gcc40_v2_3 -lMathParser_gcc40_v2_3  -llog4cpp_gcc40_v2_3
 
 # Rules for building
 all				: libpylon_wrapper.so #test_pylon_wrapper

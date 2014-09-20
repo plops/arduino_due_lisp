@@ -64,7 +64,7 @@
 (arduino-serial-sbcl:talk-arduino
    ( second *ard*) 
    (first *ard*)
-   "(dac 1200 1200)")
+   "(dac 1500 2500)")
 
 #+nil
 (loop for r from 100 below 400 by 20 do ;dotimes (seq 10)
