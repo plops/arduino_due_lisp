@@ -519,7 +519,8 @@ extern "C" {
 	*camera = cameraContextValue;
 	cout << "Camera " <<  cameraContextValue << ": " << (*cameras)[ cameraContextValue ].GetDeviceInfo().GetFullName() << endl;
 	cout << "GrabSucceeded: " << ptrGrabResult->GrabSucceeded() 
-	     << " fnr=" << ptrGrabResult->GetFrameNumber() 
+	  //	     << " fnr=" << ptrGrabResult->GetFrameNumber() 
+	     << " bid=" << ptrGrabResult->GetBlockID() 
 	     << " ts=" << ptrGrabResult->GetTimeStamp()  
 	     << " id=" << ptrGrabResult->GetID()  
 	     << " inr=" << ptrGrabResult->GetImageNumber()  
@@ -565,14 +566,15 @@ extern "C" {
 	*camera = cameraContextValue;
 	cout << "Camera " <<  cameraContextValue << ": " << (*cameras)[ cameraContextValue ].GetDeviceInfo().GetFullName() << endl;
 	cout << "GrabSucceeded: " << ptrGrabResult->GrabSucceeded() 
-	     << " fnr=" << ptrGrabResult->GetFrameNumber() 
+	  //<< " fnr=" << ptrGrabResult->GetFrameNumber() 
+	     << " bid=" << ptrGrabResult->GetBlockID() 
 	     << " ts=" << ptrGrabResult->GetTimeStamp()  
 	     << " id=" << ptrGrabResult->GetID()  
 	     << " inr=" << ptrGrabResult->GetImageNumber()  
 	     << " skip=" << ptrGrabResult->GetNumberOfSkippedImages()  << endl;
 
 	*success_p = ptrGrabResult->GrabSucceeded();
-	*framenr = ptrGrabResult->GetFrameNumber();
+	*framenr = ptrGrabResult->GetBlockID();
 	if(!ptrGrabResult->GrabSucceeded()){
 	  std::cout << "Error: " << ptrGrabResult->GetErrorCode() << " " << ptrGrabResult->GetErrorDescription();
 	  *camera = -1;
@@ -648,7 +650,8 @@ extern "C" {
 	*camera = cameraContextValue;
 	cout << "Camera " <<  cameraContextValue << ": " << (*cameras)[ cameraContextValue ].GetDeviceInfo().GetFullName() << endl;
 	cout << "GrabSucceeded: " << ptrGrabResult->GrabSucceeded() 
-	     << " fnr=" << ptrGrabResult->GetFrameNumber() 
+	  //	     << " fnr=" << ptrGrabResult->GetFrameNumber() 
+	     << " bid=" << ptrGrabResult->GetBlockID() 
 	     << " ts=" << ptrGrabResult->GetTimeStamp()  
 	     << " id=" << ptrGrabResult->GetID()  
 	     << " inr=" << ptrGrabResult->GetImageNumber()  
@@ -658,7 +661,7 @@ extern "C" {
 	*timestamp = ptrGrabResult->GetTimeStamp();
 
 	*success_p = ptrGrabResult->GrabSucceeded();
-	*imagenr = ptrGrabResult->GetFrameNumber();
+	*imagenr = ptrGrabResult->GetBlockID();
 	if(!ptrGrabResult->GrabSucceeded()){
 	  std::cout << "Error: " << ptrGrabResult->GetErrorCode() << " " << ptrGrabResult->GetErrorDescription();
 	  return;

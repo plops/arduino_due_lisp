@@ -36,4 +36,4 @@ const char* pylon_wrapper_cam_get_full_name(void*cams,int cam);
 int pylon_wrapper_command_isdone(void*cams,int cam,const char*node);
 int pylon_wrapper_command_execute(void*cams,int cam,const char*node);
 void helper_subtract_bg_multiply_window(float* __restrict__ a, const float* __restrict__ b, const float* __restrict__ w, int n);
-void helper_extract_csf(std::complex<float>* __restrict__ in, std::complex<float> * __restrict out, int x, int y, int iw, int ih, int w, int h);
+//void helper_extract_csf(std::complex<float>* __restrict__ in, std::complex<float> * __restrict out, int x, int y, int iw, int ih, int w, int h);

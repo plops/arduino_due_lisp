@@ -22,9 +22,7 @@
   (asdf:load-system "pylon")
   (asdf:load-system "ics")
   (asdf:load-system "arduino-serial-sbcl")
-  (asdf:load-system "image-processing")
-  
-  )
+  (asdf:load-system "image-processing"))
 
 
 (defpackage :pylon-test
@@ -64,7 +62,7 @@
 (arduino-serial-sbcl:talk-arduino
    ( second *ard*) 
    (first *ard*)
-   "(dac 1500 2500)")
+   "(dac 1600 2500)")
 
 #+nil
 (loop for r from 100 below 400 by 20 do ;dotimes (seq 10)
@@ -390,9 +388,9 @@
       (list 66 (+ 45 184) (+ 45 126)))
 
 (defparameter *cam-parameters*
-  `((21433565    1    1  1024 1024 nil  170  47 346 818  90   0   875 "transmission with polrot (top)")
-    (21433566    1    1   512  512 nil  339 345 229 171  90   0  4000 "backreflection with polrot")  
-    (21433540    1    1  1024 1024 t    476  56 175 167  90   0   875 "transmission same pol"))
+  `((21433565    1    1  1920 1080 nil  0     0 346 818  90   0   280 "transmission with polrot (top)")
+    (21433566    1    1  1920 1080 nil  0     0 229 171  90   0  9485 "backreflection with polrot")  
+    (21433540    1    1  1920 1080 t    0     0 175 167  90   0   280 "transmission same pol"))
   "    id      binx  biny  w    h  rev   x    y  kx  ky   d   g   e   name")
 ;; i reverseX the 40 to compensate for the pbs
 ;; 33040
@@ -476,8 +474,8 @@
 (defparameter *buf-s* (make-array (list 1 1) :element-type 'single-float))
  
 
-(let ((w 1024)
-      (h 1024))
+(let ((w 1920)
+      (h 1080))
   (defparameter *buf-c1* (make-array (* w h) :element-type '(complex double-float)))
   (defparameter *out-cs1* (make-array (* w h) :element-type '(complex single-float)))
   (defparameter *out-c1* (make-array (* w h) :element-type '(complex double-float)))
@@ -1026,7 +1024,7 @@ rectangular, for alpha=1 Hann window."
 
 
 #+nil
-(capture-dark-images 300)
+(capture-dark-images 3)
 
 #+nil
 (sb-sprof:with-profiling (:max-samples 1000
@@ -1123,4 +1121,3 @@ rectangular, for alpha=1 Hann window."
        (format s "~a" (list (get-cam-parameters cam)
 			    (loop for (a b c d e im) in (aref *bla* cam) collect
 				 (list a b c d e))))))))
-
