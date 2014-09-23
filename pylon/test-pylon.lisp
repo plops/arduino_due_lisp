@@ -798,9 +798,64 @@ rectangular, for alpha=1 Hann window."
 	     (.accum a (.abs2 (aref *result* i k))))
 	(write-pgm8 (format nil "/dev/shm/o~3,'0d.pgm" k) (.uint8 (.abs (fftw::ftf a)))))))
 
+#+nil
+(defparameter *bla* (open "/media/sdd3/b/bla" :direction :output))
+
+(sb-sys:fd-stream-fd *bla*)
+
+(defun run-several-s-without-ft ()
+  (declare (optimize (debug 3) (speed 3)))
+  (defparameter *diff* nil)
+  (dotimes (i 3)
+    (pylon:set-value-e *cams* i "TriggerMode" 1))
+  (let* ((step 10)
+	 (starti 450)
+	 (maxi 2800)
+	 (stepi step)
+	 (startj 1100)
+	 (maxj 2950)
+	 (stepj step)
+	 (count-first (let ((count 0))
+			(loop for j from starti below maxi by stepi do
+			     (incf count)) 
+			count))
+	 (count-second (let ((count 0))
+			 (loop for yj from startj below maxj by stepj do
+			      (incf count)) 
+			 count))
+	 (fda (loop for i below 3 collect (open (format nil "/media/sdd3/b/cam~d" i)
+						:direction :output
+						:if-exists :supersede)))
+	 (fds (mapcar #'sb-sys:fd-stream-fd fda)))
+    (unwind-protect 
+	 (progn
+	   (dotimes (i 3)
+	     (pylon::command-execute *cams* i "GevTimestampControlReset"))
+	   (pylon:start-grabbing *cams*)
+	   (let ((th (sb-thread:make-thread 
+		      #'(lambda ()
+			  (loop for yj from startj below maxj by stepj and yji from 0 collect ;; second
+			       (loop for j from starti below maxi by stepi and ji from 0 collect ;; first
+				    (loop for i below 3 do
+					 (multiple-value-bind (cam success-p w h framenr timestamp) 
+					     (pylon::grab-store *cams* fds))))))
+		      :name "camera-acquisition")))
+	     (sleep .001)
+	     (trigger-all-cameras-seq-2d-scan :starti starti :startj startj
+					      :maxi maxi :maxj maxj
+					      :stepj step :stepi step :delay-ms 40 :line-delay-ms 100)
+	     (defparameter *steering-params* (list 'i starti maxi stepi
+						   'j startj maxj stepj))
+	     (sb-thread:join-thread th)))
+      (pylon:stop-grabbing *cams*)
+      
+      (sb-ext:gc :full t)
+      (tilt-mirror 0 0))
+    (mapcar #'close fda)))
 
 
-
+#+nil
+(run-several-s-without-ft)
 
 #+nil
 (time
@@ -1024,7 +1079,9 @@ rectangular, for alpha=1 Hann window."
 
 
 #+nil
-(capture-dark-images 3)
+(progn
+ (capture-dark-images 300)
+ nil)
 
 #+nil
 (sb-sprof:with-profiling (:max-samples 1000

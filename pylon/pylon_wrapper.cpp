@@ -526,6 +526,7 @@ extern "C" {
 	     << " inr=" << ptrGrabResult->GetImageNumber()  
 	     << " skip=" << ptrGrabResult->GetNumberOfSkippedImages()  << endl;
 	*success_p = ptrGrabResult->GrabSucceeded();
+	*framenr = ptrGrabResult->GetBlockID();
 	if(!ptrGrabResult->GrabSucceeded()){
 	  std::cout << "Error: " << ptrGrabResult->GetErrorCode() << " " << ptrGrabResult->GetErrorDescription();
 	  return;
