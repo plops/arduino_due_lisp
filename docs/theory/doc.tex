@@ -91,7 +91,8 @@ Damit kann das auf den Spiegel fallende Feld ausgedr\"uckt werden als:
   {\bf E_\textrm{mirror}}= \underbrace{P_{L_2} T_\theta P_{L_1}}_M {\bf E_\textrm{in}} 
 \end{align}
 wobei ich mit $M$ die Transfermatrix vom Fasereingang zum
-Faseraustritt bezeichne.
+Faseraustritt bezeichne. Ihre Gr\"o\ss e ist $n\times n$, wobei $n$ die
+Anzahl der gef\"uhrten Moden in der Faser sind.
 
 Der Spiegel bewirkt einen modenunabh\"angigen Phasensprung und koppelt
 alle einlaufenden Moden in r\"ucklaufende Moden. Die zugeh\"orige
@@ -104,7 +105,10 @@ lineare Operation wird durch die Matrix
   \vdots            &  & \ddots &   \\
  \end{pmatrix}
 \end{align}
-beschrieben.
+beschrieben. Bei genauerer Betrachtung vermute ich, dass insbesondere
+f\"ur Moden mit hoher azimuthaler Quantenzahl auch etwas Energie in
+die r\"ucklaufende Mode mit entgegengesetzte Polarisation gekoppelt
+werden k\"onnte. D.h.~ $R$ ist nicht exakt diagonal.
 
 Damit kann die Modenverteilung ${\bf E_\textrm{out}}$, die auf der
 Fasereintrittseite wieder austritt beschrieben werden durch:
@@ -113,13 +117,22 @@ Fasereintrittseite wieder austritt beschrieben werden durch:
   {\bf E_\textrm{out}} &=  \underbrace{P_{L_1} T_\theta P_{L_2}}_{M'} R  \underbrace{P_{L_2} T_\theta P_{L_1}}_M  {\bf E_\textrm{in}}
 \end{align}
 Ein interessantes Zwischenergebnis ist, dass $M'=M^T$. Dies
-folgt aus der Symmetrie von $P_L$, $T_\theta$ und $R$ und dem Satz
+folgt aus der Symmetrie von $P_L$ und $T_\theta$ und dem Satz
 $(AB)^T=B^TA^T$.
 
 F\"ur mein Problem der Endoskopbildgebung ist eine wichtige Frage, ob
 man aus einer Messung von $M^TRM$ auf $M$ schlie\ss en kann. Diese
-Frage kann ich zur Zeit noch nicht beantworten.
+Frage kann ich zur Zeit noch nicht beantworten. Ein interessanter
+Ansatz ist, die Singul\"arwertzerlegung von $M^TRM$ zu betrachten:
+\begin{align}
+  \textrm{svd}(M^TRM) = U \Sigma V^*
+\end{align}
+Hierbei sind in unserem Fall $U$ eine unit\"are $n\times n$ Matrix
+($U^*U=1$), $V^*$ die adjungierte (Eintr\"age konjugiert und dann
+transponiert) einer unit\"aren $n\times n$ Matrix und $\Sigma$ eine
+reelle Diagonalmatrix.
 
+ 
 Dieses Modell mit einem planaren Knick hat drei freie Parameter:
 $L_1$, $L_2$ und $\theta$. Wenn die Transmissionsfunktion von
 mindestens drei Fasermoden bekannt ist, k\"onnen diese Parameter
