@@ -9,6 +9,8 @@
 #-sbcl
 (load "~/quicklisp/setup.lisp")
 
+;(ql:quickload "cffi")
+;(ql:quickload "trivial-garbage")
 
 (eval-when (:execute :load-toplevel :compile-toplevel)
   (setf asdf:*central-registry*
