@@ -10,7 +10,7 @@
 
 const char *RUN_LIBRARY = "./librun.so";
 
-#define d(e) do{if(1)(e);}while(0)
+#define d(e) do{if(0)(e);}while(0)
 
 struct run {
   void *handle;

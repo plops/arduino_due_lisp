@@ -1,4 +1,4 @@
-CFLAGS=-ggdb -Wall -Wextra -O0 -march=native -pedantic  -fPIC -D_BSD_SOURCE -std=c99
+CFLAGS=-ggdb -Wall -Wextra -O2 -march=native -pedantic  -fPIC -D_BSD_SOURCE -std=c99
 LDLIBS=-ldl
 
 all: main librun.so
