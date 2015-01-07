@@ -1,0 +1,5 @@
+*~
+*.pdf_tex
+*.o
+*.so
+*.fasl
