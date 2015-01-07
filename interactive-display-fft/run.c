@@ -52,7 +52,7 @@ int r_step(struct run_state *state)
       b[p+0]=b[p+1]=b[p+2]=i%255;
     } 
   char s[100];
-  snprintf(s,100,"bla %d\n",count++);
+  snprintf(s,100,"count: %d\n",count++);
   rfbDrawString(state->server,&radonFont,20,100,s,0xffffff);
   rfbMarkRectAsModified(state->server,0,0,w,h);
   long usec = state->server->deferUpdateTime*1000;
