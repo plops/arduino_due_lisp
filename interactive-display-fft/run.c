@@ -30,14 +30,6 @@ void r_finalize(struct run_state *state)
   rfbScreenCleanup(state->server);
   free(state);
 }
-void r_reload(struct run_state *state)
-{
-  //  printf("reload\n");
-}
-void r_unload(struct run_state *state)
-{
-  //  printf("unload\n");
-}
 static int count = 0;
 int r_step(struct run_state *state)
 {
@@ -59,6 +51,14 @@ int r_step(struct run_state *state)
   rfbProcessEvents(state->server,usec);
 
   return 1; 
+}
+void r_reload(struct run_state *state)
+{
+  //  printf("reload\n");
+}
+void r_unload(struct run_state *state)
+{
+  //  printf("unload\n");
 }
 
 
