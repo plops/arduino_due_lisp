@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <malloc.h>
 #include <rfb/rfb.h>
-
+#include "radon.h"
 struct run_state{
   rfbScreenInfoPtr server;
 };
@@ -25,7 +25,9 @@ struct run_state * r_init()
 void r_finalize(struct run_state *state)
 {
   printf("finalize\n");
+  rfbShutdownServer(state->server,TRUE);
   free(state->server->frameBuffer);
+  rfbScreenCleanup(state->server);
   free(state);
 }
 void r_reload(struct run_state *state)
@@ -36,6 +38,7 @@ void r_unload(struct run_state *state)
 {
   //  printf("unload\n");
 }
+static int count = 0;
 int r_step(struct run_state *state)
 {
   //  printf("step\n");
@@ -48,7 +51,13 @@ int r_step(struct run_state *state)
       int p=4*(i+w*j);
       b[p+0]=b[p+1]=b[p+2]=i%255;
     } 
-  
+  char s[100];
+  snprintf(s,100,"bla %d\n",count++);
+  rfbDrawString(state->server,&radonFont,20,100,s,0xffffff);
+  rfbMarkRectAsModified(state->server,0,0,w,h);
+  long usec = state->server->deferUpdateTime*1000;
+  rfbProcessEvents(state->server,usec);
+
   return 1; 
 }
 
