@@ -1,10 +1,10 @@
 
 Here I show how you can interactively create a graphical computer
-program using libvncserver http://libvnc.github.io/ .
+program using libvncserver [http://libvnc.github.io/](http://libvnc.github.io/) .
 
 
 
-A while ago, I read this post: http://nullprogram.com/blog/2014/12/23/
+A while ago, I read this post: [http://nullprogram.com/blog/2014/12/23/](http://nullprogram.com/blog/2014/12/23/)
 and learned a simple method how to interactively develop a C
 program. For this, one compiles code as a shared library and has it
 continuously reloaded after each recompilation.
@@ -106,4 +106,4 @@ an incrementing counter.
 
 In this post I only presented a few major snippets of the code. The
 full source with makefile is in this directory on github:
-https://github.com/plops/arduino_due_lisp/tree/3c21d70a9f1b214e39fa3dfb07704c06ed1e2cb9/interactive-display-fft
+[https://github.com/plops/arduino_due_lisp/tree/3c21d70a9f1b214e39fa3dfb07704c06ed1e2cb9/interactive-display-fft](https://github.com/plops/arduino_due_lisp/tree/3c21d70a9f1b214e39fa3dfb07704c06ed1e2cb9/interactive-display-fft)
