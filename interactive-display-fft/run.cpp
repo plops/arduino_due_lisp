@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <malloc.h>
 #include <rfb/rfb.h>
+//#include <pylon/PylonIncludes.h>
 #include "radon.h"
 struct run_state{
   rfbScreenInfoPtr server;
@@ -11,7 +12,7 @@ const  int w=512,h=512;
 
 struct run_state * r_init()
 {
-  struct run_state *state = malloc(sizeof(*state));
+  struct run_state *state = (run_state*)malloc(sizeof(*state));
   printf("init\n");
   state->server=rfbGetScreen(0,NULL,w,h,8,3,4);
   if(!state->server)
@@ -62,12 +63,20 @@ void r_unload(struct run_state *state)
 }
 
 
+// const struct run_api RUN_API = {
+//   .init = r_init,
+//   .finalize = r_finalize,
+//   .reload = r_reload,
+//   .unload = r_unload,
+//   .step = r_step
+// };
+
 const struct run_api RUN_API = {
-  .init = r_init,
-  .finalize = r_finalize,
-  .reload = r_reload,
-  .unload = r_unload,
-  .step = r_step
+  r_init,
+  r_finalize,
+  r_reload,
+  r_unload,
+  r_step
 };
 
 
