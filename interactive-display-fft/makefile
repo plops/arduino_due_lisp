@@ -4,8 +4,7 @@ GENICAM_ROOT	?= $(PYLON_ROOT)/genicam
 
 CFLAGS=-ggdb -Wall -Wextra -O2 -march=native \
 -pedantic  -fPIC -D_BSD_SOURCE -std=c99
-CXXFLAGS=-ggdb -Wall -Wextra -O2 -march=native \
--pedantic  -fPIC \
+CXXFLAGS=-ggdb -O2 -march=native -fPIC \
 -I$(GENICAM_ROOT)/library/CPP/include \
 -I$(PYLON_ROOT)/include -DUSE_GIGE
 

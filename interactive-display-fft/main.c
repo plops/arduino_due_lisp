@@ -55,7 +55,7 @@ static void run_load_if_new_lib(struct run*run)
   if(!handle){
     run->handle = NULL;
     run->id = 0;
-    d(printf("error during dlopen.\n"));
+    d(printf("error during dlopen check with strace, perhaps your library dependencies are not in LD_LIBRARY_PATH.\n"));
     return;
   }
   run->handle = handle;

@@ -2,10 +2,11 @@
 #include <stdio.h>
 #include <malloc.h>
 #include <rfb/rfb.h>
-//#include <pylon/PylonIncludes.h>
+#include <pylon/PylonIncludes.h>
 #include "radon.h"
+
 struct run_state{
-  rfbScreenInfoPtr server;
+    rfbScreenInfoPtr server;
 };
 
 const  int w=512,h=512;
@@ -61,15 +62,6 @@ void r_unload(struct run_state *state)
 {
   //  printf("unload\n");
 }
-
-
-// const struct run_api RUN_API = {
-//   .init = r_init,
-//   .finalize = r_finalize,
-//   .reload = r_reload,
-//   .unload = r_unload,
-//   .step = r_step
-// };
 
 const struct run_api RUN_API = {
   r_init,
