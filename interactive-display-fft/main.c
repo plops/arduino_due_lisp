@@ -62,7 +62,7 @@ static void run_load_if_new_lib(struct run*run)
   }
   run->handle = handle;
   run->id = attr.st_ino;
-  d(printf("load the struct\n"));
+  printf("load the struct\n");
   const struct run_api *api =
     dlsym(run->handle,"RUN_API");
   if(api == NULL){

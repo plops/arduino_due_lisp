@@ -21,6 +21,7 @@ struct run_state{
 };
 
 const  int w=280,h=280;
+static int count = 0;
 
 struct run_state * r_init()
 {
@@ -34,7 +35,13 @@ struct run_state * r_init()
   state->server->alwaysShared=(1==1);
   rfbInitServer(state->server);
   
+  return state;
+}
 
+void r_reload(struct run_state *state)
+{
+  count = 0;
+  
   /* initialize camera */
   d(PylonInitialize(););
   CTlFactory& tlFactory = CTlFactory::GetInstance();
@@ -58,9 +65,10 @@ struct run_state * r_init()
     );
   d(cameras->StartGrabbing(););
   state->cameras = cameras;
-
-  return state;
+  
 }
+
+
 void r_finalize(struct run_state *state)
 {
   printf("finalize\n");
@@ -69,16 +77,10 @@ void r_finalize(struct run_state *state)
   free(state->server->frameBuffer);
   rfbScreenCleanup(state->server);
 
-  /* close camera */
-  if(state->cameras){
-    delete state->cameras;
-    state->cameras = 0;
-  }
-  d(PylonTerminate(););
   
   free(state);
 }
-static int count = 0;
+
 int r_step(struct run_state *state)
 {
   //  printf("step\n");
@@ -95,8 +97,8 @@ int r_step(struct run_state *state)
     // to determine the camera that produced the grab result.
     intptr_t cameraContextValue = res->GetCameraContext();
     // Print the index and the model name of the camera.
-    cout << "Camera " << cameraContextValue << ": " 
-	 << (*(state->cameras))[ cameraContextValue ].GetDeviceInfo().GetFullName() << endl;
+    f(cout << "Camera " << cameraContextValue << ": " 
+      << (*(state->cameras))[ cameraContextValue ].GetDeviceInfo().GetFullName() << endl);
     // Now, the image data can be processed.
     f(cout << "GrabSucceeded: " << res->GrabSucceeded() << endl);
     int ww = res->GetWidth(), hh = res->GetHeight();
@@ -119,7 +121,15 @@ int r_step(struct run_state *state)
 	q=4*(((j+1)%ww)+ w * ((j+1)/ww));
       b[p+0]=b[p+1]=b[p+2]=(unsigned char)(255./4095.*((ab<<4)+d));
       b[q+0]=b[q+1]=b[q+2]=(unsigned char)(255./4095.*((ef<<4)+c));
+
+      
     }
+    
+    // if(state->cameras){
+    //   INodeMap &control = (*(state->cameras))[cameraContextValue].GetNodeMap();
+    //   const CFloatPtr nod=control.GetNode("ExposureTime");
+    //   cout << "ExposureTime: " <<  nod->GetValue(1,1) << endl;
+    // }
   }
   char s[100];
   snprintf(s,100,"count: %d\n",count++);
@@ -127,16 +137,18 @@ int r_step(struct run_state *state)
   rfbMarkRectAsModified(state->server,0,0,w,h);
   long usec = state->server->deferUpdateTime*1000;
   rfbProcessEvents(state->server,usec);
-  
+
+
   return 1; 
-}
-void r_reload(struct run_state *state)
-{
-  //  printf("reload\n");
 }
 void r_unload(struct run_state *state)
 {
-  //  printf("unload\n");
+  /* close camera */
+  if(state->cameras){
+    delete state->cameras;
+    state->cameras = 0;
+  }
+  d(PylonTerminate(););
 }
 
 const struct run_api RUN_API = {
