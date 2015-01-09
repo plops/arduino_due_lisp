@@ -34,6 +34,7 @@ static void run_load_if_new_lib(struct run*run)
 {
   struct stat attr;
   d(printf("trying to load library\n"));
+
   if(stat(RUN_LIBRARY,&attr)!=0){
     d(printf("RUN_LIBRARY doesn't exist.\n"));
     return;
@@ -45,6 +46,7 @@ static void run_load_if_new_lib(struct run*run)
     d(printf("file didn't change\n"));
     return;
   }
+  printf("trying to reload library\n");
   if(run->handle){
     d(printf("library was already open, closing it.\n"));
     run->api.unload(run->state);
@@ -91,7 +93,6 @@ int main(void)
 {
   struct run run = {0};
   for(;;){
-    d(printf("try to reload\n"));
     run_load_if_new_lib(&run);
     d(printf("call step\n"));
     if(run.handle){
@@ -107,13 +108,13 @@ int main(void)
       
       {
 	int ret = run.api.step(run.state);
-	d(printf("step returned %d\n",ret));
+	//d(printf("step returned %d\n",ret));
 	if(!ret)
 	  break;
       }
     }
-    d(printf("sleep\n"));
-    usleep(100000);
+    // d(printf("sleep\n"));
+    usleep(32000);
   }
   d(printf("unload\n"));
   run_unload(&run);
