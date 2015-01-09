@@ -84,6 +84,7 @@ void r_reload(struct run_state *state)
     );
   d(cameras->StartGrabbing(););
   state->cameras = cameras;
+
 }
 
 void r_unload(struct run_state *state)
@@ -151,8 +152,6 @@ int r_step(struct run_state *state)
 	q=4*(((j+1)%ww)+ w * ((j+1)/ww));
       b[p+0]=b[p+1]=b[p+2]=(unsigned char)(255./4095.*((ab<<4)+d));
       b[q+0]=b[q+1]=b[q+2]=(unsigned char)(255./4095.*((ef<<4)+c));
-
-      
     }
   }
   char s[100];
@@ -162,12 +161,14 @@ int r_step(struct run_state *state)
   long usec = state->server->deferUpdateTime*1000;
   rfbProcessEvents(state->server,usec);
 
-  // if(state->cameras){
-  //   INodeMap &control = (*(state->cameras))[0].GetNodeMap();
-  //   d(const CFloatPtr nod=control.GetNode("ExposureTime");
-  //     cout << "ExposureTime: " <<  nod->GetValue(1,1) << endl;);
-  // }
-
+  if(state->cameras && state->cameras->GetSize()!=0){
+     INodeMap &control = (*(state->cameras))[0].GetNodeMap();
+     d(const CIntegerPtr nod=control.GetNode("ExposureTimeRaw");
+       int inc = nod->GetInc();
+       nod->SetValue(inc*(100/inc));
+       cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " " << endl;);
+   }
+   cout << "step" << endl;
 
   return 1; 
 }
