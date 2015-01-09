@@ -4,6 +4,7 @@
 #include <rfb/rfb.h>
 #include <pylon/PylonIncludes.h>
 #include "radon.h"
+#include <signal.h>
 
 using namespace Pylon;
 using namespace GenApi;
@@ -18,11 +19,25 @@ printf( "Exception caught in %s msg=%s",__func__, e.what());	\
 struct run_state{
   rfbScreenInfoPtr server;
   CInstantCameraArray *cameras;
+  int count;
 };
+struct run_state * global_state;
 
-const  int w=280,h=280;
-static int count = 0;
+const  int w=512,h=512;
 
+void r_finalize(struct run_state *state);
+void r_reload(struct run_state *state);
+void r_unload(struct run_state *state);
+int r_step(struct run_state *state);
+
+void signalHandler(int a)
+{
+  // in case i press Ctrl+c
+  r_finalize(global_state);
+}
+    
+
+  
 struct run_state * r_init()
 {
   /* initialize VNC server */
@@ -35,15 +50,19 @@ struct run_state * r_init()
   state->server->alwaysShared=(1==1);
   rfbInitServer(state->server);
   
+  /* initialize camera */
+  d(PylonInitialize(););
+  
+  global_state = state;
+  signal(SIGTERM, signalHandler);
+
   return state;
 }
 
 void r_reload(struct run_state *state)
 {
-  count = 0;
+  state->count = 0;
   
-  /* initialize camera */
-  d(PylonInitialize(););
   CTlFactory& tlFactory = CTlFactory::GetInstance();
 
   // Get all attached devices and exit application if no device is found.
@@ -65,9 +84,17 @@ void r_reload(struct run_state *state)
     );
   d(cameras->StartGrabbing(););
   state->cameras = cameras;
-  
 }
 
+void r_unload(struct run_state *state)
+{
+  /* close camera */
+  if(state->cameras){
+    state->cameras->StopGrabbing();
+    delete state->cameras;
+    state->cameras = 0;
+  }
+}
 
 void r_finalize(struct run_state *state)
 {
@@ -77,9 +104,12 @@ void r_finalize(struct run_state *state)
   free(state->server->frameBuffer);
   rfbScreenCleanup(state->server);
 
+  r_unload(state);
+  d(PylonTerminate(););
   
   free(state);
 }
+
 
 int r_step(struct run_state *state)
 {
@@ -124,31 +154,22 @@ int r_step(struct run_state *state)
 
       
     }
-    
-    // if(state->cameras){
-    //   INodeMap &control = (*(state->cameras))[cameraContextValue].GetNodeMap();
-    //   const CFloatPtr nod=control.GetNode("ExposureTime");
-    //   cout << "ExposureTime: " <<  nod->GetValue(1,1) << endl;
-    // }
   }
   char s[100];
-  snprintf(s,100,"count: %d\n",count++);
+  snprintf(s,100,"count: %d\n",state->count++);
   rfbDrawString(state->server,&radonFont,20,100,s,0xffffff);
   rfbMarkRectAsModified(state->server,0,0,w,h);
   long usec = state->server->deferUpdateTime*1000;
   rfbProcessEvents(state->server,usec);
 
+  // if(state->cameras){
+  //   INodeMap &control = (*(state->cameras))[0].GetNodeMap();
+  //   d(const CFloatPtr nod=control.GetNode("ExposureTime");
+  //     cout << "ExposureTime: " <<  nod->GetValue(1,1) << endl;);
+  // }
+
 
   return 1; 
-}
-void r_unload(struct run_state *state)
-{
-  /* close camera */
-  if(state->cameras){
-    delete state->cameras;
-    state->cameras = 0;
-  }
-  d(PylonTerminate(););
 }
 
 const struct run_api RUN_API = {
