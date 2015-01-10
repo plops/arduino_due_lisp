@@ -127,28 +127,29 @@ int main(void)
       }
       
       {
-	//int ret = run.api.step(run.state);
-	int (*step)(struct run_state *) =  dlsym(run.handle,"r_step");
-	int ret = step(run.state);
+	int ret = run.api.step(run.state);
+	//int (*step)(struct run_state *) =  dlsym(run.handle,"r_step");
+	//int ret = step(run.state);
         
 	if(!ret)
 	  break;
 
-	Dl_info info;
-	ret = dladdr(run.api.step,&info);
-	if(ret==0){
-	  printf("error in dladdr\n");
-	} else {
-	  printf("dladdr run.api.step fname=%s base=%lx sname=%s saddr=%lx \n",
-		 info.dli_fname,info.dli_fbase,info.dli_sname,info.dli_saddr); 
-	}
-	ret = dladdr(step,&info);
-	if(ret==0){
-	  printf("error in dladdr\n");
-	} else {
-	  printf("dladdr         step fname=%s base=%lx sname=%s saddr=%lx \n",
-		 info.dli_fname,info.dli_fbase,info.dli_sname,info.dli_saddr); 
-	}
+	
+	/* Dl_info info; */
+	/* ret = dladdr(run.api.step,&info); */
+	/* if(ret==0){ */
+	/*   printf("error in dladdr\n"); */
+	/* } else { */
+	/*   printf("dladdr run.api.step fname=%s base=%lx sname=%s saddr=%lx \n", */
+	/* 	 info.dli_fname,info.dli_fbase,info.dli_sname,info.dli_saddr);  */
+	/* } */
+	/* ret = dladdr(step,&info); */
+	/* if(ret==0){ */
+	/*   printf("error in dladdr\n"); */
+	/* } else { */
+	/*   printf("dladdr         step fname=%s base=%lx sname=%s saddr=%lx \n", */
+	/* 	 info.dli_fname,info.dli_fbase,info.dli_sname,info.dli_saddr);  */
+	/* } */
       }
     }
     usleep(32000);

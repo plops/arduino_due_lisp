@@ -10,7 +10,9 @@
 using namespace Pylon;
 using namespace GenApi;
 using namespace std;
- 
+
+const int pylon = 0;
+
 // this is for setenv
 #define e(q) do{if(0!=(q)) printf("error in %s",__func__);}while(0)
 
@@ -74,59 +76,61 @@ extern "C" void r_reload(struct run_state *state)
 {
   state->count = 0;
 
-  /* initialize camera */
-  d(PylonInitialize(););
-
-  
-  CTlFactory& tlFactory = CTlFactory::GetInstance();
-
-  // Get all attached devices and exit application if no device is found.
-  DeviceInfoList_t devices;
-  d(
-  if ( tlFactory.EnumerateDevices(devices) == 0 ) {
-    printf("no cameras: %ld\n",devices.size());
-  });
+  if(pylon){
+    /* initialize camera */
+    d(PylonInitialize(););
     
-  CInstantCameraArray *cameras= new CInstantCameraArray( min( devices.size(), (long unsigned int) 1));
-  d(
-    // Create and attach all Pylon Devices.
-    for ( size_t i = 0; i < cameras->GetSize(); ++i){
-      (*cameras)[ i ].Attach( tlFactory.CreateDevice( devices[ i ]));
-    // Print the model name of the camera.
-    cout  << "FullName " << (*cameras)[ i ].GetDeviceInfo().GetFullName()
-	  << " Serial " << (*cameras)[ i ].GetDeviceInfo().GetSerialNumber() << endl;
+    CTlFactory& tlFactory = CTlFactory::GetInstance();
+    
+    // Get all attached devices and exit application if no device is found.
+    DeviceInfoList_t devices;
+    d(
+      if ( tlFactory.EnumerateDevices(devices) == 0 ) {
+	printf("no cameras: %ld\n",devices.size());
+      });
+    
+    CInstantCameraArray *cameras= new CInstantCameraArray( min( devices.size(), (long unsigned int) 1));
+    d(
+      // Create and attach all Pylon Devices.
+      for ( size_t i = 0; i < cameras->GetSize(); ++i){
+	(*cameras)[ i ].Attach( tlFactory.CreateDevice( devices[ i ]));
+	// Print the model name of the camera.
+	cout  << "FullName " << (*cameras)[ i ].GetDeviceInfo().GetFullName()
+	      << " Serial " << (*cameras)[ i ].GetDeviceInfo().GetSerialNumber() << endl;
+      }
+      );
+    
+    state->cameras = cameras;
+    
+    cameras->Open();
+    
+    if(1)
+      if(state->cameras && state->cameras->GetSize()!=0){
+	INodeMap &control = (*(state->cameras))[0].GetNodeMap();
+	d(const CIntegerPtr nod=control.GetNode("ExposureTimeRaw");
+	  int inc = nod->GetInc();
+	  nod->SetValue(inc*(3000/inc));
+	  cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " " << endl;
+	  );
+      }
+    
+    
+    d(cameras->StartGrabbing(););
   }
-    );
-
-  state->cameras = cameras;
-
-  cameras->Open();
-
-  if(1)
-  if(state->cameras && state->cameras->GetSize()!=0){
-     INodeMap &control = (*(state->cameras))[0].GetNodeMap();
-     d(const CIntegerPtr nod=control.GetNode("ExposureTimeRaw");
-       int inc = nod->GetInc();
-       nod->SetValue(inc*(3000/inc));
-       cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " " << endl;
-       );
-   }
-
-
-  d(cameras->StartGrabbing(););
-
 
 }
 
 extern "C" void r_unload(struct run_state *state)
 {
-  /* close camera */
-  if(state->cameras){
-    state->cameras->StopGrabbing();
-    delete state->cameras;
-    state->cameras = 0;
+  if(pylon){
+    /* close camera */
+    if(state->cameras){
+      state->cameras->StopGrabbing();
+      delete state->cameras;
+      state->cameras = 0;
+    }
+    d(PylonTerminate(););
   }
-  d(PylonTerminate(););
 }
 
 extern "C" void r_finalize(struct run_state *state)
@@ -150,47 +154,49 @@ extern "C" int r_step(struct run_state *state)
   if(!rfbIsActive(state->server))
     return 0;
   int ma=0, mi=5000;
-  if(state->cameras && state->cameras->IsGrabbing()){
-    CGrabResultPtr res;
-    state->cameras->RetrieveResult( 5000, res, TimeoutHandling_ThrowException);
-    // When the cameras in the array are created the camera context value
-    // is set to the index of the camera in the array.
-    // The camera context is a user settable value.
-    // This value is attached to each grab result and can be used
-    // to determine the camera that produced the grab result.
-    intptr_t cameraContextValue = res->GetCameraContext();
-    // Print the index and the model name of the camera.
-    f(cout << "Camera " << cameraContextValue << ": " 
-      << (*(state->cameras))[ cameraContextValue ].GetDeviceInfo().GetFullName() << endl);
-    // Now, the image data can be processed.
-    f(cout << "GrabSucceeded: " << res->GrabSucceeded() << endl);
-    int ww = res->GetWidth(), hh = res->GetHeight();
-    f(cout << "Size: " << ww << "x" << hh << endl);
-  
-    const uint8_t *im = (uint8_t *) res->GetBuffer();
-    int i,j;
-    char *b=state->server->frameBuffer;
-    /// convert mono12p into real part of complex double float
-    // i .. index for byte
-    // j .. index for 12bit
-    static int oma,omi;
-    for(i=0,j=0;j< ww*hh;i+=3,j+=2) {
-      unsigned char
-	ab = im[i],
-	c = im[i+1] & 0x0f,
-	d = (im[i+1] & 0xf0)>>4,
-	ef = im[i+2];
-      int
-	p=4*((j%ww)+ w * (j/ww)), 
-	q=4*(((j+1)%ww)+ w * ((j+1)/ww));
-      int v1 = (ab<<4)+d, v2 = (ef<<4)+c;
-      mi = min(mi,min(v1,v2));
-      ma = max(ma,max(v1,v2));
-      b[p+0]=b[p+1]=b[p+2]=(unsigned char)min(255.0,max(0.0,(255.*(v1-omi)/(1.0*(oma-omi)))));
-      b[q+0]=b[q+1]=b[q+2]=(unsigned char)min(255.0,max(0.0,(255.*(v2-omi)/(1.0*(oma-omi)))));
+  if(pylon){
+    if(state->cameras && state->cameras->IsGrabbing()){
+      CGrabResultPtr res;
+      state->cameras->RetrieveResult( 5000, res, TimeoutHandling_ThrowException);
+      // When the cameras in the array are created the camera context value
+      // is set to the index of the camera in the array.
+      // The camera context is a user settable value.
+      // This value is attached to each grab result and can be used
+      // to determine the camera that produced the grab result.
+      intptr_t cameraContextValue = res->GetCameraContext();
+      // Print the index and the model name of the camera.
+      f(cout << "Camera " << cameraContextValue << ": " 
+	<< (*(state->cameras))[ cameraContextValue ].GetDeviceInfo().GetFullName() << endl);
+      // Now, the image data can be processed.
+      f(cout << "GrabSucceeded: " << res->GrabSucceeded() << endl);
+      int ww = res->GetWidth(), hh = res->GetHeight();
+      f(cout << "Size: " << ww << "x" << hh << endl);
+      
+      const uint8_t *im = (uint8_t *) res->GetBuffer();
+      int i,j;
+      char *b=state->server->frameBuffer;
+      /// convert mono12p into real part of complex double float
+      // i .. index for byte
+      // j .. index for 12bit
+      static int oma,omi;
+      for(i=0,j=0;j< ww*hh;i+=3,j+=2) {
+	unsigned char
+	  ab = im[i],
+	  c = im[i+1] & 0x0f,
+	  d = (im[i+1] & 0xf0)>>4,
+	  ef = im[i+2];
+	int
+	  p=4*((j%ww)+ w * (j/ww)), 
+	  q=4*(((j+1)%ww)+ w * ((j+1)/ww));
+	int v1 = (ab<<4)+d, v2 = (ef<<4)+c;
+	mi = min(mi,min(v1,v2));
+	ma = max(ma,max(v1,v2));
+	b[p+0]=b[p+1]=b[p+2]=(unsigned char)min(255.0,max(0.0,(255.*(v1-omi)/(1.0*(oma-omi)))));
+	b[q+0]=b[q+1]=b[q+2]=(unsigned char)min(255.0,max(0.0,(255.*(v2-omi)/(1.0*(oma-omi)))));
+      }
+      oma = ma;
+      omi = mi;
     }
-    oma = ma;
-    omi = mi;
   }
   char s[100];
   snprintf(s,100,"count: %d max %d min %d\n",state->count++,ma,mi);
