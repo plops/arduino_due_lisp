@@ -55,11 +55,11 @@ static void run_load_if_new_lib(struct run*run)
   }
 
   //d(printf("dlopen library\n"));
-  void *handle = dlopen(RUN_LIBRARY,RTLD_LAZY| RTLD_GLOBAL | RTLD_DEEPBIND);
+  void *handle = dlopen(RUN_LIBRARY,RTLD_NOW);
   if(!handle){
     run->handle = NULL;
     run->id = 0;
-    d(printf("error during dlopen check with strace, perhaps your library dependencies are not in LD_LIBRARY_PATH.\n"));
+    d(printf("error during dlopen %s, check with strace, perhaps your library dependencies are not in LD_LIBRARY_PATH.\n",dlerror()));
     return;
   }
   run->handle = handle;

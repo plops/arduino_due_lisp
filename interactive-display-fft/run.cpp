@@ -23,21 +23,21 @@ using namespace std;
 printf( "Exception caught in %s msg=%s\n",__func__, e.what());	\
 }} while(0)
 
-struct run_state{
+extern "C" struct run_state{
   rfbScreenInfoPtr server;
   CInstantCameraArray *cameras;
   int count;
 };
-struct run_state * global_state;
+extern "C" struct run_state * global_state;
 
 const  int w=512,h=512;
 
-void r_finalize(struct run_state *state);
-void r_reload(struct run_state *state);
-void r_unload(struct run_state *state);
-int r_step(struct run_state *state);
+extern "C" void r_finalize(struct run_state *state);
+extern "C" void r_reload(struct run_state *state);
+extern "C" void r_unload(struct run_state *state);
+extern "C" int r_step(struct run_state *state);
 
-void signalHandler(int a)
+extern "C" void signalHandler(int a)
 {
   // in case i press Ctrl+c
   r_finalize(global_state);
@@ -45,7 +45,7 @@ void signalHandler(int a)
     
 
   
-struct run_state * r_init()
+extern "C" struct run_state * r_init()
 {
   /* define environment */
   e(setenv("PYLON_ROOT","/home/martin/pylon-4.0.0.62-x86_64/pylon4",1));
@@ -72,7 +72,7 @@ struct run_state * r_init()
   return state;
 }
 
-void r_reload(struct run_state *state)
+extern "C" void r_reload(struct run_state *state)
 {
   state->count = 0;
   
@@ -113,7 +113,7 @@ void r_reload(struct run_state *state)
 
 }
 
-void r_unload(struct run_state *state)
+extern "C" void r_unload(struct run_state *state)
 {
   /* close camera */
   if(state->cameras){
@@ -123,7 +123,7 @@ void r_unload(struct run_state *state)
   }
 }
 
-void r_finalize(struct run_state *state)
+extern "C" void r_finalize(struct run_state *state)
 {
   printf("finalize\n");
   /* close VNC server */
@@ -138,7 +138,7 @@ void r_finalize(struct run_state *state)
 }
 
 
-int r_step(struct run_state *state)
+extern "C" int r_step(struct run_state *state)
 {
   //  printf("step\n");
   if(!rfbIsActive(state->server))
@@ -187,7 +187,7 @@ int r_step(struct run_state *state)
     omi = mi;
   }
   char s[100];
-  snprintf(s,100,"count: %d max %d min %d\n",state->count++,ma,mi);
+  snprintf(s,100," count: %d max %d min %d\n",state->count++,ma,mi);
   rfbDrawString(state->server,&radonFont,20,270,s,0xffffff);
   rfbMarkRectAsModified(state->server,0,0,w,h);
   long usec = state->server->deferUpdateTime*1000;
@@ -198,7 +198,7 @@ int r_step(struct run_state *state)
   return 1; 
 }
 
-const struct run_api RUN_API = {
+extern "C" const struct run_api RUN_API = {
   r_init,
   r_finalize,
   r_reload,
