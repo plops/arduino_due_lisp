@@ -1,6 +1,6 @@
 // http://nullprogram.com/blog/2014/12/23/
 
-
+#define _GNU_SOURCE 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -51,7 +51,12 @@ static void run_load_if_new_lib(struct run*run)
   if(run->handle){
     d(printf("library was already open, closing it.\n"));
     run->api.unload(run->state);
-    dlclose(run->handle);
+    if(0!=dlclose(run->handle))
+      printf("error with dlclose\n");
+    if(0!=dlclose(run->handle))
+      printf("error with dlclose\n");
+    if(0!=dlclose(run->handle))
+      printf("error with dlclose\n");
   }
 
   //d(printf("dlopen library\n"));
@@ -125,8 +130,25 @@ int main(void)
 	//int ret = run.api.step(run.state);
 	int (*step)(struct run_state *) =  dlsym(run.handle,"r_step");
 	int ret = step(run.state);
+        
 	if(!ret)
 	  break;
+
+	Dl_info info;
+	ret = dladdr(run.api.step,&info);
+	if(ret==0){
+	  printf("error in dladdr\n");
+	} else {
+	  printf("dladdr run.api.step fname=%s base=%lx sname=%s saddr=%lx \n",
+		 info.dli_fname,info.dli_fbase,info.dli_sname,info.dli_saddr); 
+	}
+	ret = dladdr(step,&info);
+	if(ret==0){
+	  printf("error in dladdr\n");
+	} else {
+	  printf("dladdr         step fname=%s base=%lx sname=%s saddr=%lx \n",
+		 info.dli_fname,info.dli_fbase,info.dli_sname,info.dli_saddr); 
+	}
       }
     }
     usleep(32000);
