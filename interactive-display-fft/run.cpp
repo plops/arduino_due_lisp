@@ -20,7 +20,7 @@ using namespace std;
 // this is to call pylon functions:
 #define d(cmd)  do{ try{ cmd }			\
   catch (GenICam::GenericException& e) {        \
-printf( "Exception caught in %s msg=%s",__func__, e.what());	\
+printf( "Exception caught in %s msg=%s\n",__func__, e.what());	\
 }} while(0)
 
 struct run_state{
@@ -95,8 +95,21 @@ void r_reload(struct run_state *state)
 	  << " Serial " << (*cameras)[ i ].GetDeviceInfo().GetSerialNumber() << endl;
   }
     );
-  d(cameras->StartGrabbing(););
+
   state->cameras = cameras;
+
+  if(state->cameras && state->cameras->GetSize()!=0){
+     INodeMap &control = (*(state->cameras))[0].GetNodeMap();
+     d(const CIntegerPtr nod=control.GetNode("ExposureTimeRaw");
+       int inc = nod->GetInc();
+       nod->SetValue(inc*(100/inc));
+       cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " " << endl;
+       );
+   }
+
+
+  d(cameras->StartGrabbing(););
+
 
 }
 
@@ -154,6 +167,7 @@ int r_step(struct run_state *state)
     /// convert mono12p into real part of complex double float
     // i .. index for byte
     // j .. index for 12bit
+    static int oma,omi;
     for(i=0,j=0;j< ww*hh;i+=3,j+=2) {
       unsigned char
 	ab = im[i],
@@ -166,26 +180,21 @@ int r_step(struct run_state *state)
       int v1 = (ab<<4)+d, v2 = (ef<<4)+c;
       mi = min(mi,min(v1,v2));
       ma = max(ma,max(v1,v2));
-      b[p+0]=b[p+1]=b[p+2]=(unsigned char)(255./4095.*v1);
-      b[q+0]=b[q+1]=b[q+2]=(unsigned char)(255./4095.*v2);
+      b[p+0]=b[p+1]=b[p+2]=(unsigned char)(255.*(v1-omi)/(1.0*(oma-omi)));
+      b[q+0]=b[q+1]=b[q+2]=(unsigned char)(255.*(v2-omi)/(1.0*(oma-omi)));
     }
+    oma = ma;
+    omi = mi;
   }
   char s[100];
-  snprintf(s,100,"count: %12d max %12d min %12d\n",state->count++,ma,mi);
-  rfbDrawString(state->server,&radonFont,20,290,s,0xffffff);
+  snprintf(s,100,"count: %d max %d min %d\n",state->count++,ma,mi);
+  rfbDrawString(state->server,&radonFont,20,270,s,0xffffff);
   rfbMarkRectAsModified(state->server,0,0,w,h);
   long usec = state->server->deferUpdateTime*1000;
   rfbProcessEvents(state->server,usec);
 
-  if(0)
-  if(state->cameras && state->cameras->GetSize()!=0){
-     INodeMap &control = (*(state->cameras))[0].GetNodeMap();
-     d(const CIntegerPtr nod=control.GetNode("ExposureTimeRaw");
-       int inc = nod->GetInc();
-       nod->SetValue(inc*(200/inc));
-       cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " " << endl;);
-   }
-
+  
+  
   return 1; 
 }
 

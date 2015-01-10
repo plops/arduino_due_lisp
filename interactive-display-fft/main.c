@@ -41,7 +41,7 @@ static void run_load_if_new_lib(struct run*run)
     return;
   }
   //d(printf("check if inode was modified\n"));
-  if (1 || run->id == attr.st_ino) { // note: id is initially 0 and the
+  if (0 && run->id == attr.st_ino) { // note: id is initially 0 and the
 				 // file should therefore be loaded at
 				 // first call
     //d(printf("file didn't change\n"));
@@ -55,7 +55,7 @@ static void run_load_if_new_lib(struct run*run)
   }
 
   //d(printf("dlopen library\n"));
-  void *handle = dlopen(RUN_LIBRARY,RTLD_NOW | RTLD_DEEPBIND);
+  void *handle = dlopen(RUN_LIBRARY,RTLD_LAZY| RTLD_GLOBAL | RTLD_DEEPBIND);
   if(!handle){
     run->handle = NULL;
     run->id = 0;
@@ -109,7 +109,7 @@ int main(void)
   signal(SIGUSR1,signalHandler);
   run_load_if_new_lib(&run);
   for(;;){
-    // run_load_if_new_lib(&run);
+    //run_load_if_new_lib(&run);
 
     if(run.handle){
       if(run.api.step==NULL){
