@@ -122,7 +122,9 @@ int main(void)
       }
       
       {
-	int ret = run.api.step(run.state);
+	//int ret = run.api.step(run.state);
+	int (*step)(struct run_state *) =  dlsym(run.handle,"r_step");
+	int ret = step(run.state);
 	if(!ret)
 	  break;
       }

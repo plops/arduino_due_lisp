@@ -63,8 +63,6 @@ extern "C" struct run_state * r_init()
   state->server->alwaysShared=(1==1);
   rfbInitServer(state->server);
   
-  /* initialize camera */
-  d(PylonInitialize(););
   
   global_state = state;
   signal(SIGTERM, signalHandler);
@@ -75,6 +73,10 @@ extern "C" struct run_state * r_init()
 extern "C" void r_reload(struct run_state *state)
 {
   state->count = 0;
+
+  /* initialize camera */
+  d(PylonInitialize(););
+
   
   CTlFactory& tlFactory = CTlFactory::GetInstance();
 
@@ -98,12 +100,14 @@ extern "C" void r_reload(struct run_state *state)
 
   state->cameras = cameras;
 
-  if(0)
+  cameras->Open();
+
+  if(1)
   if(state->cameras && state->cameras->GetSize()!=0){
      INodeMap &control = (*(state->cameras))[0].GetNodeMap();
      d(const CIntegerPtr nod=control.GetNode("ExposureTimeRaw");
        int inc = nod->GetInc();
-       nod->SetValue(inc*(100/inc));
+       nod->SetValue(inc*(3000/inc));
        cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " " << endl;
        );
    }
@@ -122,6 +126,7 @@ extern "C" void r_unload(struct run_state *state)
     delete state->cameras;
     state->cameras = 0;
   }
+  d(PylonTerminate(););
 }
 
 extern "C" void r_finalize(struct run_state *state)
@@ -133,7 +138,7 @@ extern "C" void r_finalize(struct run_state *state)
   rfbScreenCleanup(state->server);
 
   r_unload(state);
-  d(PylonTerminate(););
+
   
   free(state);
 }
@@ -181,8 +186,8 @@ extern "C" int r_step(struct run_state *state)
       int v1 = (ab<<4)+d, v2 = (ef<<4)+c;
       mi = min(mi,min(v1,v2));
       ma = max(ma,max(v1,v2));
-      b[p+0]=b[p+1]=b[p+2]=(unsigned char)(255.*(v1-omi)/(1.0*(oma-omi)));
-      b[q+0]=b[q+1]=b[q+2]=(unsigned char)(255.*(v2-omi)/(1.0*(oma-omi)));
+      b[p+0]=b[p+1]=b[p+2]=(unsigned char)min(255.0,max(0.0,(255.*(v1-omi)/(1.0*(oma-omi)))));
+      b[q+0]=b[q+1]=b[q+2]=(unsigned char)min(255.0,max(0.0,(255.*(v2-omi)/(1.0*(oma-omi)))));
     }
     oma = ma;
     omi = mi;
@@ -193,8 +198,6 @@ extern "C" int r_step(struct run_state *state)
   rfbMarkRectAsModified(state->server,0,0,w,h);
   long usec = state->server->deferUpdateTime*1000;
   rfbProcessEvents(state->server,usec);
-
-  
   
   return 1; 
 }
