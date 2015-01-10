@@ -1,0 +1,3 @@
+export PYLON_ROOT=${HOME}/pylon-4.0.0.62-x86_64/pylon4
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PYLON_ROOT}/genicam/bin/Linux64_x64
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PYLON_ROOT}/lib64

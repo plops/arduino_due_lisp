@@ -5,12 +5,19 @@
 #include <pylon/PylonIncludes.h>
 #include "radon.h"
 #include <signal.h>
+#include <stdlib.h>
 
 using namespace Pylon;
 using namespace GenApi;
 using namespace std;
  
+// this is for setenv
+#define e(q) do{if(0!=(q)) printf("error in %s",__func__);}while(0)
+
+// this is to optionally comment out code
 #define f(e) do{if(0)(e);}while(0)
+
+// this is to call pylon functions:
 #define d(cmd)  do{ try{ cmd }			\
   catch (GenICam::GenericException& e) {        \
 printf( "Exception caught in %s msg=%s",__func__, e.what());	\
@@ -40,6 +47,12 @@ void signalHandler(int a)
   
 struct run_state * r_init()
 {
+  /* define environment */
+  e(setenv("PYLON_ROOT","/home/martin/pylon-4.0.0.62-x86_64/pylon4",1));
+  e(setenv("GENICAM_ROOT_V2_3","/home/martin/pylon-4.0.0.62-x86_64/pylon4/genicam",1));
+  e(setenv("GENICAM_CACHE_V2_3","/home/martin/genicam_xml_cache",1));
+  e(setenv("LANG","C",1));
+
   /* initialize VNC server */
   struct run_state *state = (run_state*)malloc(sizeof(*state));
   printf("init\n");
@@ -117,7 +130,7 @@ int r_step(struct run_state *state)
   //  printf("step\n");
   if(!rfbIsActive(state->server))
     return 0;
-  
+  int ma=0, mi=5000;
   if(state->cameras && state->cameras->IsGrabbing()){
     CGrabResultPtr res;
     state->cameras->RetrieveResult( 5000, res, TimeoutHandling_ThrowException);
@@ -150,25 +163,28 @@ int r_step(struct run_state *state)
       int
 	p=4*((j%ww)+ w * (j/ww)), 
 	q=4*(((j+1)%ww)+ w * ((j+1)/ww));
-      b[p+0]=b[p+1]=b[p+2]=(unsigned char)(255./4095.*((ab<<4)+d));
-      b[q+0]=b[q+1]=b[q+2]=(unsigned char)(255./4095.*((ef<<4)+c));
+      int v1 = (ab<<4)+d, v2 = (ef<<4)+c;
+      mi = min(mi,min(v1,v2));
+      ma = max(ma,max(v1,v2));
+      b[p+0]=b[p+1]=b[p+2]=(unsigned char)(255./4095.*v1);
+      b[q+0]=b[q+1]=b[q+2]=(unsigned char)(255./4095.*v2);
     }
   }
   char s[100];
-  snprintf(s,100,"count: %d\n",state->count++);
-  rfbDrawString(state->server,&radonFont,20,100,s,0xffffff);
+  snprintf(s,100,"count: %12d max %12d min %12d\n",state->count++,ma,mi);
+  rfbDrawString(state->server,&radonFont,20,290,s,0xffffff);
   rfbMarkRectAsModified(state->server,0,0,w,h);
   long usec = state->server->deferUpdateTime*1000;
   rfbProcessEvents(state->server,usec);
 
+  if(0)
   if(state->cameras && state->cameras->GetSize()!=0){
      INodeMap &control = (*(state->cameras))[0].GetNodeMap();
      d(const CIntegerPtr nod=control.GetNode("ExposureTimeRaw");
        int inc = nod->GetInc();
-       nod->SetValue(inc*(100/inc));
+       nod->SetValue(inc*(200/inc));
        cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " " << endl;);
    }
-   cout << "step" << endl;
 
   return 1; 
 }

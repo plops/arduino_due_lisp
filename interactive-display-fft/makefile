@@ -25,6 +25,8 @@ main: main.c api.h
 
 librun.so: run.cpp api.h
 	$(CXX) $(CXXFLAGS) -shared  $(LDFLAGS) -o $@  $< $(LDLIBS)
+	killall -s SIGUSR1 main
+
 
 clean:
 	rm main librun.so

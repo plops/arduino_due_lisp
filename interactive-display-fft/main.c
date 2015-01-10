@@ -6,11 +6,12 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <dlfcn.h>
+#include <signal.h>
 #include "api.h"
 
 const char *RUN_LIBRARY = "./librun.so";
 
-#define d(e) do{if(0)(e);}while(0)
+#define d(e) do{if(1)(e);}while(0)
 
 struct run {
   void *handle;
@@ -33,27 +34,28 @@ static void run_unload(struct run*run)
 static void run_load_if_new_lib(struct run*run)
 {
   struct stat attr;
-  d(printf("trying to load library\n"));
+  //d(printf("trying to load library\n"));
 
   if(stat(RUN_LIBRARY,&attr)!=0){
     d(printf("RUN_LIBRARY doesn't exist.\n"));
     return;
   }
-  d(printf("check if inode was modified\n"));
-  if (run->id == attr.st_ino) { // note: id is initially 0 and the
+  //d(printf("check if inode was modified\n"));
+  if (1 || run->id == attr.st_ino) { // note: id is initially 0 and the
 				 // file should therefore be loaded at
 				 // first call
-    d(printf("file didn't change\n"));
+    //d(printf("file didn't change\n"));
     return;
   }
-  printf("trying to reload library\n");
+  //printf("trying to reload library\n");
   if(run->handle){
     d(printf("library was already open, closing it.\n"));
     run->api.unload(run->state);
     dlclose(run->handle);
   }
-  d(printf("dlopen library\n"));
-  void *handle = dlopen(RUN_LIBRARY,RTLD_NOW);
+
+  //d(printf("dlopen library\n"));
+  void *handle = dlopen(RUN_LIBRARY,RTLD_NOW | RTLD_DEEPBIND);
   if(!handle){
     run->handle = NULL;
     run->id = 0;
@@ -62,7 +64,7 @@ static void run_load_if_new_lib(struct run*run)
   }
   run->handle = handle;
   run->id = attr.st_ino;
-  printf("load the struct\n");
+  //printf("load the struct\n");
   const struct run_api *api =
     dlsym(run->handle,"RUN_API");
   if(api == NULL){
@@ -72,8 +74,9 @@ static void run_load_if_new_lib(struct run*run)
     d(printf("error during dlsym of api struct.\n"));
     return ;
   }
-  d(printf("copy the data\n"));
+  //d(printf("copy the data\n"));
   run->api = *api;
+  // printf("reload %lx\n step %lx\n",(unsigned long)run->api.reload,(unsigned long)run->api.step);
   if(run->state == NULL){
     d(printf("set state by calling init\n"));
     if(run->api.init)
@@ -89,14 +92,26 @@ static void run_load_if_new_lib(struct run*run)
   }
 }
 
+struct run run = {0};
+
+void signalHandler(int a)
+{
+  (void)a;
+  // in case i send sigusr1 to the process, reload library
+  run_load_if_new_lib(&run);
+}
+
+
+#define e(q) do{if(0!=(q)) printf("error in %s",__func__);}while(0)
 int main(void)
 {
-  struct run run = {0};
+  
+  signal(SIGUSR1,signalHandler);
+  run_load_if_new_lib(&run);
   for(;;){
-    run_load_if_new_lib(&run);
-    d(printf("call step\n"));
+    // run_load_if_new_lib(&run);
+
     if(run.handle){
-      //      d(printf("step is pointer to this address: %lx %lx %lx\n", run.api, run.api.step, run.state));
       if(run.api.step==NULL){
 	d(printf("step is undefined\n"));
 	break;
@@ -108,12 +123,10 @@ int main(void)
       
       {
 	int ret = run.api.step(run.state);
-	//d(printf("step returned %d\n",ret));
 	if(!ret)
 	  break;
       }
     }
-    // d(printf("sleep\n"));
     usleep(32000);
   }
   d(printf("unload\n"));
