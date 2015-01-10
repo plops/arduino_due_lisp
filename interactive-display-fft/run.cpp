@@ -28,7 +28,7 @@ extern "C" struct run_state{
   CInstantCameraArray *cameras;
   int count;
 };
-extern "C" struct run_state * global_state;
+struct run_state * global_state;
 
 const  int w=512,h=512;
 
@@ -98,6 +98,7 @@ extern "C" void r_reload(struct run_state *state)
 
   state->cameras = cameras;
 
+  if(0)
   if(state->cameras && state->cameras->GetSize()!=0){
      INodeMap &control = (*(state->cameras))[0].GetNodeMap();
      d(const CIntegerPtr nod=control.GetNode("ExposureTimeRaw");
@@ -187,7 +188,7 @@ extern "C" int r_step(struct run_state *state)
     omi = mi;
   }
   char s[100];
-  snprintf(s,100," count: %d max %d min %d\n",state->count++,ma,mi);
+  snprintf(s,100,"count: %d max %d min %d\n",state->count++,ma,mi);
   rfbDrawString(state->server,&radonFont,20,270,s,0xffffff);
   rfbMarkRectAsModified(state->server,0,0,w,h);
   long usec = state->server->deferUpdateTime*1000;
@@ -198,7 +199,7 @@ extern "C" int r_step(struct run_state *state)
   return 1; 
 }
 
-extern "C" const struct run_api RUN_API = {
+const struct run_api RUN_API = {
   r_init,
   r_finalize,
   r_reload,
