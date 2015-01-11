@@ -11,7 +11,7 @@ using namespace Pylon;
 using namespace GenApi;
 using namespace std;
 
-const int pylon = 0;
+const int pylon = 1;
 
 // this is for setenv
 #define e(q) do{if(0!=(q)) printf("error in %s",__func__);}while(0)

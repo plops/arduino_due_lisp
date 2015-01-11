@@ -9,7 +9,8 @@
 #include <signal.h>
 #include "api.h"
 
-const char *RUN_LIBRARY = "./librun.so";
+const char *RUN_LIBRARY1 = "./librun.so";
+const char *RUN_LIBRARY2 = "./librun2.so";
 
 #define d(e) do{if(1)(e);}while(0)
 
@@ -31,16 +32,16 @@ static void run_unload(struct run*run)
   }
 }
 
-static void run_load_if_new_lib(struct run*run)
+static void run_load_if_new_lib(struct run*run,const char*fn)
 {
   struct stat attr;
   //d(printf("trying to load library\n"));
 
-  if(stat(RUN_LIBRARY,&attr)!=0){
+  if(stat(fn,&attr)!=0){
     d(printf("RUN_LIBRARY doesn't exist.\n"));
     return;
   }
-  //d(printf("check if inode was modified\n"));
+  d(printf("inode of new file: %ld\n",attr.st_ino));
   if (0 && run->id == attr.st_ino) { // note: id is initially 0 and the
 				 // file should therefore be loaded at
 				 // first call
@@ -60,7 +61,7 @@ static void run_load_if_new_lib(struct run*run)
   }
 
   //d(printf("dlopen library\n"));
-  void *handle = dlopen(RUN_LIBRARY,RTLD_NOW);
+  void *handle = dlopen(fn,RTLD_NOW);
   if(!handle){
     run->handle = NULL;
     run->id = 0;
@@ -103,7 +104,13 @@ void signalHandler(int a)
 {
   (void)a;
   // in case i send sigusr1 to the process, reload library
-  run_load_if_new_lib(&run);
+  run_load_if_new_lib(&run,RUN_LIBRARY1);
+}
+void signalHandler2(int a)
+{
+  (void)a;
+  // in case i send sigusr1 to the process, reload library
+  run_load_if_new_lib(&run,RUN_LIBRARY2);
 }
 
 
@@ -112,7 +119,8 @@ int main(void)
 {
   
   signal(SIGUSR1,signalHandler);
-  run_load_if_new_lib(&run);
+  signal(SIGUSR2,signalHandler2);
+  run_load_if_new_lib(&run,RUN_LIBRARY1);
   for(;;){
     //run_load_if_new_lib(&run);
 
@@ -135,14 +143,14 @@ int main(void)
 	  break;
 
 	
-	Dl_info info;
-	ret = dladdr(run.api.step,&info);
-	if(ret==0){
-	  printf("error in dladdr\n");
-	} else {
-	  printf("dladdr run.api.step fname=%s base=%lx sname=%s saddr=%lx \n",
-		 info.dli_fname,info.dli_fbase,info.dli_sname,info.dli_saddr);
-	}
+	/* Dl_info info; */
+	/* ret = dladdr(run.api.step,&info); */
+	/* if(ret==0){ */
+	/*   printf("error in dladdr\n"); */
+	/* } else { */
+	/*   printf("dladdr run.api.step fname=%s base=%lx sname=%s saddr=%lx \n", */
+	/* 	 info.dli_fname,info.dli_fbase,info.dli_sname,info.dli_saddr); */
+	/* } */
 	/* ret = dladdr(step,&info); */
 	/* if(ret==0){ */
 	/*   printf("error in dladdr\n"); */
