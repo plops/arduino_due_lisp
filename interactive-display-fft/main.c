@@ -100,17 +100,28 @@ static void run_load_if_new_lib(struct run*run,const char*fn)
 
 struct run run = {0};
 
+enum {
+  NOTHING,
+  LOAD1,
+  LOAD2,
+};
+
+int whattodo = NOTHING;
+
+
 void signalHandler(int a)
 {
   (void)a;
   // in case i send sigusr1 to the process, reload library
-  run_load_if_new_lib(&run,RUN_LIBRARY1);
+  whattodo = LOAD1;
+  //run_load_if_new_lib(&run,RUN_LIBRARY1);
 }
 void signalHandler2(int a)
 {
   (void)a;
   // in case i send sigusr1 to the process, reload library
-  run_load_if_new_lib(&run,RUN_LIBRARY2);
+  whattodo = LOAD2;
+  //run_load_if_new_lib(&run,RUN_LIBRARY2);
 }
 
 
@@ -161,6 +172,14 @@ int main(void)
       }
     }
     usleep(32000);
+    {
+      switch(whattodo){
+      case NOTHING: break;
+      case LOAD1: run_load_if_new_lib(&run,RUN_LIBRARY1); break;
+      case LOAD2: run_load_if_new_lib(&run,RUN_LIBRARY2); break;
+      }
+      whattodo = 0;
+    }
   }
   d(printf("unload\n"));
   run_unload(&run);

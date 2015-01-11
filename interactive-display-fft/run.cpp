@@ -212,7 +212,7 @@ extern "C" int r_step(struct run_state *state)
     }
   }
   char s[100];
-  snprintf(s,100,"count: %d max %d min %d\n",state->count++,ma,mi);
+  snprintf(s,100,"q  count: %d max %d min %d\n",state->count++,ma,mi);
   rfbDrawString(state->server,&radonFont,20,270,s,0xffffff);
   rfbMarkRectAsModified(state->server,0,0,w,h);
   long usec = state->server->deferUpdateTime*1000;
