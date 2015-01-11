@@ -135,20 +135,20 @@ int main(void)
 	  break;
 
 	
-	/* Dl_info info; */
-	/* ret = dladdr(run.api.step,&info); */
-	/* if(ret==0){ */
-	/*   printf("error in dladdr\n"); */
-	/* } else { */
-	/*   printf("dladdr run.api.step fname=%s base=%lx sname=%s saddr=%lx \n", */
-	/* 	 info.dli_fname,info.dli_fbase,info.dli_sname,info.dli_saddr);  */
-	/* } */
+	Dl_info info;
+	ret = dladdr(run.api.step,&info);
+	if(ret==0){
+	  printf("error in dladdr\n");
+	} else {
+	  printf("dladdr run.api.step fname=%s base=%lx sname=%s saddr=%lx \n",
+		 info.dli_fname,info.dli_fbase,info.dli_sname,info.dli_saddr);
+	}
 	/* ret = dladdr(step,&info); */
 	/* if(ret==0){ */
 	/*   printf("error in dladdr\n"); */
 	/* } else { */
 	/*   printf("dladdr         step fname=%s base=%lx sname=%s saddr=%lx \n", */
-	/* 	 info.dli_fname,info.dli_fbase,info.dli_sname,info.dli_saddr);  */
+	/* 	 info.dli_fname,info.dli_fbase,info.dli_sname,info.dli_saddr); */
 	/* } */
       }
     }
