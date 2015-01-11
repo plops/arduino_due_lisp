@@ -157,7 +157,20 @@ extern "C" int r_step(struct run_state *state)
   if(pylon){
     if(state->cameras && state->cameras->IsGrabbing()){
       CGrabResultPtr res;
-      state->cameras->RetrieveResult( 5000, res, TimeoutHandling_ThrowException);
+      int ret,gi=0;
+      do{
+	gi++;
+	ret = state->cameras->RetrieveResult( 5000, res, TimeoutHandling_ThrowException);
+	if(ret==0){
+	  printf(".");
+	  fflush(stdout);
+	}
+      } while (ret != 0 && gi<10);
+      if(!res.IsValid()){
+	printf("error no image grabbed\n");
+	return 1;
+      }
+      
       // When the cameras in the array are created the camera context value
       // is set to the index of the camera in the array.
       // The camera context is a user settable value.
