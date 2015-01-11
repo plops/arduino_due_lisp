@@ -41,7 +41,7 @@ static void run_load_if_new_lib(struct run*run,const char*fn)
     d(printf("RUN_LIBRARY doesn't exist.\n"));
     return;
   }
-  d(printf("inode of new file: %ld\n",attr.st_ino));
+  d(printf("inode of new file: %ld\n",attr.st_ino) );
   if (0 && run->id == attr.st_ino) { // note: id is initially 0 and the
 				 // file should therefore be loaded at
 				 // first call
