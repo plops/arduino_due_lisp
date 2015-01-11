@@ -25,9 +25,12 @@ main: main.c api.h
 
 librun.so: run.cpp api.h
 	touch librun.so
-	rm librun.so
-	$(CXX) $(CXXFLAGS) -shared  $(LDFLAGS) -o $@  $< $(LDLIBS)
+	rm librun.so librun2.so
+	$(CXX) $(CXXFLAGS) -shared  $(LDFLAGS) -o o.so  $< $(LDLIBS)
+	cp o.so librun.so
+	cp o.so librun2.so
 	killall -s SIGUSR1 main
+	killall -s SIGUSR2 main
 
 
 clean:
