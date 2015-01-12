@@ -6,10 +6,14 @@
 #include "radon.h"
 #include <signal.h>
 #include <stdlib.h>
+#include "/home/martin/src/CImg/CImg.h"
+
+// http://cimg.sourceforge.net/reference/group__cimg__storage.html
 
 using namespace Pylon;
 using namespace GenApi;
 using namespace std;
+using namespace cimg_library;
 
 const int pylon = 1;
 
