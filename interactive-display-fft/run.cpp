@@ -93,10 +93,12 @@ extern "C" void r_reload(struct run_state *state)
     d(
       // Create and attach all Pylon Devices.
       for ( size_t i = 0; i < cameras->GetSize(); ++i){
-	(*cameras)[ i ].Attach( tlFactory.CreateDevice( devices[ i ]));
-	// Print the model name of the camera.
-	cout  << "FullName " << (*cameras)[ i ].GetDeviceInfo().GetFullName()
-	      << " Serial " << (*cameras)[ i ].GetDeviceInfo().GetSerialNumber() << endl;
+	if(0==devices[i].GetSerialNumber().compare("21433565")){
+	  (*cameras)[ 0 ].Attach( tlFactory.CreateDevice( devices[ i ]));
+	  // Print the model name of the camera.
+	  cout  << "FullName " << (*cameras)[ i ].GetDeviceInfo().GetFullName()
+		<< " Serial " << (*cameras)[ i ].GetDeviceInfo().GetSerialNumber() << endl;
+	}
       }
       );
     
@@ -109,7 +111,7 @@ extern "C" void r_reload(struct run_state *state)
 	INodeMap &control = (*(state->cameras))[0].GetNodeMap();
 	d(const CIntegerPtr nod=control.GetNode("ExposureTimeRaw");
 	  int inc = nod->GetInc();
-	  nod->SetValue(inc*(3000/inc));
+	  nod->SetValue(inc*(30000/inc));
 	  cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " " << endl;
 	  );
       }
