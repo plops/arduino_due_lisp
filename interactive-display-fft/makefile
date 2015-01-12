@@ -25,7 +25,7 @@ main: main.c api.h
 
 librun.so: run.cpp api.h
 	touch librun.so
-	$(CXX) $(CXXFLAGS) -shared  $(LDFLAGS) -o o.so  $< $(LDLIBS)
+	$(CXX) $(CXXFLAGS) -shared  $(LDFLAGS) -o o.so  $< $(LDLIBS) -Dcimg_use_fftw3 -lX11
 	cp o.so librun.so
 	cp o.so librun2.so
 	killall -s SIGUSR1 main

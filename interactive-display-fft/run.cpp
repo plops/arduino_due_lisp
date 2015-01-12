@@ -9,7 +9,11 @@
 #include "/home/martin/src/CImg/CImg.h"
 
 // http://cimg.sourceforge.net/reference/group__cimg__storage.html
-
+// matrices are seen as images, so first index is column
+// CImgList can apparently create nice mosaics
+// get_FFT(true) inverse 
+// get_FFT returns and CImgList of real and imaginary data
+// first element is number of lists: eg CImgList<float> a(2,100,100) would make 2 100x100 images
 using namespace Pylon;
 using namespace GenApi;
 using namespace std;
@@ -198,6 +202,8 @@ extern "C" int r_step(struct run_state *state)
       // i .. index for byte
       // j .. index for 12bit
       static int oma,omi;
+      CImg<float> img(ww,hh,1);
+      float* imgp = img.data();
       for(i=0,j=0;j< ww*hh;i+=3,j+=2) {
 	unsigned char
 	  ab = im[i],
@@ -205,16 +211,21 @@ extern "C" int r_step(struct run_state *state)
 	  d = (im[i+1] & 0xf0)>>4,
 	  ef = im[i+2];
 	int
-	  p=4*((j%ww)+ w * (j/ww)), 
-	  q=4*(((j+1)%ww)+ w * ((j+1)/ww));
+	  p0= ((j%ww)+ w * (j/ww)), 
+	  q0= (((j+1)%ww)+ w * ((j+1)/ww)),
+	  p=4*p0,
+	  q=4*q0;
 	int v1 = (ab<<4)+d, v2 = (ef<<4)+c;
 	mi = min(mi,min(v1,v2));
 	ma = max(ma,max(v1,v2));
 	b[p+0]=b[p+1]=b[p+2]=(unsigned char)min(255.0,max(0.0,(255.*(v1-omi)/(1.0*(oma-omi)))));
 	b[q+0]=b[q+1]=b[q+2]=(unsigned char)min(255.0,max(0.0,(255.*(v2-omi)/(1.0*(oma-omi)))));
+	imgp[((j%ww)+ ww * (j/ww))]=v1;
+	imgp[(((j+1)%ww)+ ww * ((j+1)/ww))]=v2;
       }
       oma = ma;
       omi = mi;
+      img.save("/dev/shm/o.jpg");
     }
   }
   char s[100];
