@@ -124,10 +124,10 @@ extern "C" void r_reload(struct run_state *state)
     
     if(1)
       if(state->cameras && state->cameras->GetSize()!=0){
-  	INodeMap &control = (*(state->cameras))[0].GetNodeMap();
+  	INodeMap &control = (*(state->cameras))[1].GetNodeMap();
   	d(const CIntegerPtr nod=control.GetNode("ExposureTimeRaw");
   	  int inc = nod->GetInc();
-  	  nod->SetValue(inc*(3000/inc));
+  	  nod->SetValue(inc*(4000/inc));
   	  cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " " << endl;
   	  );
       }
@@ -199,7 +199,7 @@ extern "C" int r_step(struct run_state *state)
       f(cout << "Camera " << cameraContextValue << ": " 
   	<< (*(state->cameras))[ cameraContextValue ].GetDeviceInfo().GetFullName() << endl);
       // Now, the image data can be processed.
-      if(cameraContextValue==0){
+      if(cameraContextValue==1){
 	f(cout << "GrabSucceeded: " << res->GrabSucceeded() << endl);
 	int ww = res->GetWidth(), hh = res->GetHeight();
 	f(cout << "Size: " << ww << "x" << hh << endl);
@@ -235,7 +235,7 @@ extern "C" int r_step(struct run_state *state)
 	omi = mi;
 	CImgList<float> F = img.get_FFT();
 	cimglist_apply(F,shift)(img.width()/2,img.height()/2,0,0,2);
-	const CImg<unsigned char> mag = ((F[0].get_pow(2) + F[1].get_pow(2)).sqrt() + 1).log().blur_median(3).normalize(0,255);
+	const CImg<unsigned char> mag = ((F[0].get_pow(2) + F[1].get_pow(2)).sqrt() + 1).log().blur_median(5).normalize(0,255);
 	const unsigned char*buf=mag.data();
 	for(i=0;i<ww;i++)
 	  for(j=0;j<hh;j++){

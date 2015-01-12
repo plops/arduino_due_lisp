@@ -17,7 +17,7 @@
   (talk-arduino fd str "(+ 1 2)"))
 
 (destructuring-bind (str fd) *ard*
-  (talk-arduino fd str "(dac 728 1200)"))
+  (talk-arduino fd str "(dac 600 1200)"))
 
 (close-serial (second *ard*))
 
