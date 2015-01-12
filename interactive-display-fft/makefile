@@ -6,7 +6,7 @@ CFLAGS=-ggdb -Wall -Wextra -O2 -march=native \
 -pedantic  -fPIC -D_BSD_SOURCE -std=c99
 CXXFLAGS=-ggdb -O2 -march=native -fPIC \
 -I$(GENICAM_ROOT)/library/CPP/include \
--I$(PYLON_ROOT)/include -DUSE_GIGE
+-I$(PYLON_ROOT)/include -DUSE_GIGE  -Dcimg_use_fftw3 
 
 LDLIBS_MAIN=-ldl
 LDFLAGS=-L$(PYLON_ROOT)/lib64 \
@@ -18,14 +18,17 @@ LDLIBS=-lvncserver \
 -lLog_gcc40_v2_3 -lMathParser_gcc40_v2_3 \
 -lXerces-C_gcc40_v2_7_1 -llog4cpp_gcc40_v2_3
 
-all: main librun.so
+all: main CImg.h.gch librun.so
 
 main: main.c api.h
 	$(CC) $(CFLAGS) -o $@ $< $(LDLIBS_MAIN)
 
+CImg.h.gch: CImg.h
+	$(CXX) $(CXXFLAGS) -shared  $(LDFLAGS)  $< $(LDLIBS) -lX11 -lfftw3_threads -lfftw3 -lfftw3f -lfftw3f_threads
+
 librun.so: run.cpp api.h
 	touch librun.so
-	$(CXX) $(CXXFLAGS) -shared  $(LDFLAGS) -o o.so  $< $(LDLIBS) -Dcimg_use_fftw3 -lX11 -lfftw3_threads -lfftw3 -lfftw3f -lfftw3f_threads
+	$(CXX) $(CXXFLAGS) -shared  $(LDFLAGS) -o o.so  $< $(LDLIBS) -lX11 -lfftw3_threads -lfftw3 -lfftw3f -lfftw3f_threads
 	cp o.so librun.so
 	cp o.so librun2.so
 	killall -s SIGUSR1 main
@@ -33,7 +36,7 @@ librun.so: run.cpp api.h
 
 
 clean:
-	rm main librun.so
+	rm main librun.so CImg.h.gch
 
 test : main libgame.so
 	./$<
