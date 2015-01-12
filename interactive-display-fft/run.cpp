@@ -1,13 +1,14 @@
-#include "CImg.h" // in order to use as precompiled header this
-		  // inclusion must come before the first line of c
 #include "api.h"
 #include <stdio.h>
 #include <malloc.h>
 #include <rfb/rfb.h>
-//#include <pylon/PylonIncludes.h>
+#include <pylon/PylonIncludes.h>
 #include "radon.h"
 #include <signal.h>
 #include <stdlib.h>
+
+#include "CImg.h" // in order to use as precompiled header this
+		  // inclusion must come before the first line of c
 
 
 // http://cimg.sourceforge.net/reference/group__cimg__storage.html
@@ -19,10 +20,10 @@
 // the cimg header makes compilation very small. i read this:
 // https://gcc.gnu.org/onlinedocs/gcc/Precompiled-Headers.html
 
-//using namespace Pylon;
-///using namespace GenApi;
+using namespace Pylon;
+using namespace GenApi;
 using namespace std;
-//using namespace cimg_library;
+using namespace cimg_library;
 
 const int pylon = 1;
 
@@ -33,20 +34,20 @@ const int pylon = 1;
 #define f(e) do{if(0)(e);}while(0)
 
 // this is to call pylon functions:
-#define d(cmd)  do{// try{ cmd }		\
-    // catch (GenICam::GenericException& e) {			\
-    //printf( "Exception caught in %s msg=%s\n",__func__, e.what());	\
-    //}\
-} while(0)
+#define d(cmd)  do{ try{ cmd }						\
+  catch (GenICam::GenericException& e) {				\
+    printf( "Exception caught in %s msg=%s\n",__func__, e.what());	\
+  }									\
+  } while(0)
 
 extern "C" struct run_state{
   rfbScreenInfoPtr server;
-  //  CInstantCameraArray *cameras;
+  CInstantCameraArray *cameras;
   int count;
 };
 struct run_state * global_state;
 
-const  int w=512,h=512;
+const  int w=280+280,h=512;
 
 extern "C" void r_finalize(struct run_state *state);
 extern "C" void r_reload(struct run_state *state);
@@ -90,63 +91,64 @@ extern "C" void r_reload(struct run_state *state)
 {
   state->count = 0;
 
-  // if(pylon){
-  //   /* initialize camera */
-  //   d(PylonInitialize(););
+  if(pylon){
+    /* initialize camera */
+    d(PylonInitialize(););
     
-  //   CTlFactory& tlFactory = CTlFactory::GetInstance();
+    CTlFactory& tlFactory = CTlFactory::GetInstance();
     
-  //   // Get all attached devices and exit application if no device is found.
-  //   DeviceInfoList_t devices;
-  //   d(
-  //     if ( tlFactory.EnumerateDevices(devices) == 0 ) {
-  // 	printf("no cameras: %ld\n",devices.size());
-  //     });
+    // Get all attached devices and exit application if no device is found.
+    DeviceInfoList_t devices;
+    d(
+      if ( tlFactory.EnumerateDevices(devices) == 0 ) {
+  	printf("no cameras: %ld\n",devices.size());
+      });
     
-  //   CInstantCameraArray *cameras= new CInstantCameraArray( min( devices.size(), (long unsigned int) 1));
-  //   d(
-  //     // Create and attach all Pylon Devices.
-  //     for ( size_t i = 0; i < cameras->GetSize(); ++i){
-  // 	if(0==devices[i].GetSerialNumber().compare("21433565")){
-  // 	  (*cameras)[ 0 ].Attach( tlFactory.CreateDevice( devices[ i ]));
-  // 	  // Print the model name of the camera.
-  // 	  cout  << "FullName " << (*cameras)[ i ].GetDeviceInfo().GetFullName()
-  // 		<< " Serial " << (*cameras)[ i ].GetDeviceInfo().GetSerialNumber() << endl;
-  // 	}
-  //     }
-  //     );
+    CInstantCameraArray *cameras= new CInstantCameraArray( min( devices.size(), (long unsigned int) 3));
+    d(
+      // Create and attach all Pylon Devices.
+      for ( size_t i = 0; i < cameras->GetSize(); ++i){
+  	if(0==devices[i].GetSerialNumber().compare("21433565")){
+  	  (*cameras)[ 0 ].Attach( tlFactory.CreateDevice( devices[ i ])); // transmission with polrot (top)
+	} else if(0==devices[i].GetSerialNumber().compare("21433540")){ 
+  	  (*cameras)[ 1 ].Attach( tlFactory.CreateDevice( devices[ i ])); // transmission same pol
+	} else if(0==devices[i].GetSerialNumber().compare("21433566")){
+  	  (*cameras)[ 2 ].Attach( tlFactory.CreateDevice( devices[ i ])); // reflection with polrot
+	}
+      }
+      );
     
-  //   state->cameras = cameras;
+    state->cameras = cameras;
     
-  //   cameras->Open();
+    cameras->Open();
     
-  //   if(1)
-  //     if(state->cameras && state->cameras->GetSize()!=0){
-  // 	INodeMap &control = (*(state->cameras))[0].GetNodeMap();
-  // 	d(const CIntegerPtr nod=control.GetNode("ExposureTimeRaw");
-  // 	  int inc = nod->GetInc();
-  // 	  nod->SetValue(inc*(30000/inc));
-  // 	  cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " " << endl;
-  // 	  );
-  //     }
+    if(1)
+      if(state->cameras && state->cameras->GetSize()!=0){
+  	INodeMap &control = (*(state->cameras))[0].GetNodeMap();
+  	d(const CIntegerPtr nod=control.GetNode("ExposureTimeRaw");
+  	  int inc = nod->GetInc();
+  	  nod->SetValue(inc*(3000/inc));
+  	  cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " " << endl;
+  	  );
+      }
     
     
-  //   d(cameras->StartGrabbing(););
-  // }
+    d(cameras->StartGrabbing(););
+  }
 
 }
 
 extern "C" void r_unload(struct run_state *state)
 {
-  // if(pylon){
-  //   /* close camera */
-  //   if(state->cameras){
-  //     state->cameras->StopGrabbing();
-  //     delete state->cameras;
-  //     state->cameras = 0;
-  //   }
-  //   d(PylonTerminate(););
-  // }
+  if(pylon){
+    /* close camera */
+    if(state->cameras){
+      state->cameras->StopGrabbing();
+      delete state->cameras;
+      state->cameras = 0;
+    }
+    d(PylonTerminate(););
+  }
 }
 
 extern "C" void r_finalize(struct run_state *state)
@@ -170,73 +172,79 @@ extern "C" int r_step(struct run_state *state)
   if(!rfbIsActive(state->server))
     return 0;
   int ma=0, mi=5000;
-  // if(pylon){
-  //   if(state->cameras && state->cameras->IsGrabbing()){
-  //     CGrabResultPtr res;
-  //     int ret,gi=0;
-  //     do{
-  // 	gi++;
-  // 	ret = state->cameras->RetrieveResult( 5000, res, TimeoutHandling_ThrowException);
-  // 	if(ret==0){
-  // 	  printf(".");
-  // 	  fflush(stdout);
-  // 	}
-  //     } while (ret != 0 && gi<10);
-  //     if(!res.IsValid()){
-  // 	printf("error no image grabbed\n");
-  // 	return 1;
-  //     }
+  if(pylon){
+    if(state->cameras && state->cameras->IsGrabbing()){
+      CGrabResultPtr res;
+      int ret,gi=0;
+      do{
+  	gi++;
+  	ret = state->cameras->RetrieveResult( 5000, res, TimeoutHandling_ThrowException);
+  	if(ret==0){
+  	  printf(".");
+  	  fflush(stdout);
+  	}
+      } while (ret != 0 && gi<10);
+      if(!res.IsValid()){
+  	printf("error no image grabbed\n");
+  	return 1;
+      }
       
-  //     // When the cameras in the array are created the camera context value
-  //     // is set to the index of the camera in the array.
-  //     // The camera context is a user settable value.
-  //     // This value is attached to each grab result and can be used
-  //     // to determine the camera that produced the grab result.
-  //     intptr_t cameraContextValue = res->GetCameraContext();
-  //     // Print the index and the model name of the camera.
-  //     f(cout << "Camera " << cameraContextValue << ": " 
-  // 	<< (*(state->cameras))[ cameraContextValue ].GetDeviceInfo().GetFullName() << endl);
-  //     // Now, the image data can be processed.
-  //     f(cout << "GrabSucceeded: " << res->GrabSucceeded() << endl);
-  //     int ww = res->GetWidth(), hh = res->GetHeight();
-  //     f(cout << "Size: " << ww << "x" << hh << endl);
-      
-  //     const uint8_t *im = (uint8_t *) res->GetBuffer();
-  //     int i,j;
-  //     char *b=state->server->frameBuffer;
-  //     /// convert mono12p into real part of complex double float
-  //     // i .. index for byte
-  //     // j .. index for 12bit
-  //     static int oma,omi;
-  //     CImg<float> img(ww,hh,1);
-  //     float* imgp = img.data();
-  //     for(i=0,j=0;j< ww*hh;i+=3,j+=2) {
-  // 	unsigned char
-  // 	  ab = im[i],
-  // 	  c = im[i+1] & 0x0f,
-  // 	  d = (im[i+1] & 0xf0)>>4,
-  // 	  ef = im[i+2];
-  // 	int
-  // 	  p0= ((j%ww)+ w * (j/ww)), 
-  // 	  q0= (((j+1)%ww)+ w * ((j+1)/ww)),
-  // 	  p=4*p0,
-  // 	  q=4*q0;
-  // 	int v1 = (ab<<4)+d, v2 = (ef<<4)+c;
-  // 	mi = min(mi,min(v1,v2));
-  // 	ma = max(ma,max(v1,v2));
-  // 	b[p+0]=b[p+1]=b[p+2]=(unsigned char)min(255.0,max(0.0,(255.*(v1-omi)/(1.0*(oma-omi)))));
-  // 	b[q+0]=b[q+1]=b[q+2]=(unsigned char)min(255.0,max(0.0,(255.*(v2-omi)/(1.0*(oma-omi)))));
-  // 	imgp[((j%ww)+ ww * (j/ww))]=v1;
-  // 	imgp[(((j+1)%ww)+ ww * ((j+1)/ww))]=v2;
-  //     }
-  //     oma = ma;
-  //     omi = mi;
-  //     CImgList<float> F = img.get_FFT();
-  //     cimglist_apply(F,shift)(img.width()/2,img.height()/2,0,0,2);
-  //     const CImg<unsigned char> mag = ((F[0].get_pow(2) + F[1].get_pow(2)).sqrt() + 1).log().normalize(0,255);
-  //     mag.save("/dev/shm/o.jpg");
-  //   }
-  // }
+      // When the cameras in the array are created the camera context value
+      // is set to the index of the camera in the array.
+      // The camera context is a user settable value.
+      // This value is attached to each grab result and can be used
+      // to determine the camera that produced the grab result.
+      intptr_t cameraContextValue = res->GetCameraContext();
+      // Print the index and the model name of the camera.
+      f(cout << "Camera " << cameraContextValue << ": " 
+  	<< (*(state->cameras))[ cameraContextValue ].GetDeviceInfo().GetFullName() << endl);
+      // Now, the image data can be processed.
+      if(cameraContextValue==0){
+	f(cout << "GrabSucceeded: " << res->GrabSucceeded() << endl);
+	int ww = res->GetWidth(), hh = res->GetHeight();
+	f(cout << "Size: " << ww << "x" << hh << endl);
+	
+	const uint8_t *im = (uint8_t *) res->GetBuffer();
+	int i,j;
+	char *b=state->server->frameBuffer;
+	/// convert mono12p into real part of complex double float
+	// i .. index for byte
+	// j .. index for 12bit
+	static int oma,omi;
+	CImg<float> img(ww,hh,1);
+	float* imgp = img.data();
+	for(i=0,j=0;j< ww*hh;i+=3,j+=2) {
+	  unsigned char
+	    ab = im[i],  	  c = im[i+1] & 0x0f,
+	    d = (im[i+1] & 0xf0)>>4,
+	    ef = im[i+2];
+	  int
+	    p0= ((j%ww)+ w * (j/ww)), 
+	    q0= (((j+1)%ww)+ w * ((j+1)/ww)),
+	    p=4*p0,
+	    q=4*q0;
+	  int v1 = (ab<<4)+d, v2 = (ef<<4)+c;
+	  mi = min(mi,min(v1,v2));
+	  ma = max(ma,max(v1,v2));
+	  b[p+0]=b[p+1]=b[p+2]=(unsigned char)min(255.0,max(0.0,(255.*(v1-omi)/(1.0*(oma-omi)))));
+	  b[q+0]=b[q+1]=b[q+2]=(unsigned char)min(255.0,max(0.0,(255.*(v2-omi)/(1.0*(oma-omi)))));
+	  imgp[((j%ww)+ ww * (j/ww))]=v1;
+	  imgp[(((j+1)%ww)+ ww * ((j+1)/ww))]=v2;
+	}
+	oma = ma;
+	omi = mi;
+	CImgList<float> F = img.get_FFT();
+	cimglist_apply(F,shift)(img.width()/2,img.height()/2,0,0,2);
+	const CImg<unsigned char> mag = ((F[0].get_pow(2) + F[1].get_pow(2)).sqrt() + 1).log().blur_median(3).normalize(0,255);
+	const unsigned char*buf=mag.data();
+	for(i=0;i<ww;i++)
+	  for(j=0;j<hh;j++){
+	    int p = i+280+w*j;
+	    b[4*p+0] = b[4*p+1] = b[4*p+2] = b[4*p+3] = buf[i+ww*j];
+	  }
+      }
+    }
+  }
   char s[100];
   snprintf(s,100,"count: %d max %d min %d\n",state->count++,ma,mi);
   rfbDrawString(state->server,&radonFont,20,270,s,0xffffff);

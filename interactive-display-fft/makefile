@@ -18,13 +18,13 @@ LDLIBS=-lvncserver \
 -lLog_gcc40_v2_3 -lMathParser_gcc40_v2_3 \
 -lXerces-C_gcc40_v2_7_1 -llog4cpp_gcc40_v2_3
 
-all: main CImg.h.gch librun.so
+all: main librun.so
 
 main: main.c api.h
 	$(CC) $(CFLAGS) -o $@ $< $(LDLIBS_MAIN)
 
-CImg.h.gch: CImg.h
-	$(CXX) $(CXXFLAGS) -shared  $(LDFLAGS)  $< $(LDLIBS) -lX11 -lfftw3_threads -lfftw3 -lfftw3f -lfftw3f_threads
+#CImg.h.gch: CImg.h
+#	$(CXX) $(CXXFLAGS) -shared  $(LDFLAGS)  $< $(LDLIBS) -lX11 -lfftw3_threads -lfftw3 -lfftw3f -lfftw3f_threads
 
 librun.so: run.cpp api.h
 	touch librun.so
