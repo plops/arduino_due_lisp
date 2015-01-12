@@ -1,14 +1,20 @@
+// #include "myinc.h"
 #include "api.h"
 #include <stdio.h>
 #include <malloc.h>
 #include <rfb/rfb.h>
+
 #include <pylon/PylonIncludes.h>
+
+
+
 #include "radon.h"
 #include <signal.h>
 #include <stdlib.h>
 
 #include "CImg.h" // in order to use as precompiled header this
 		  // inclusion must come before the first line of c
+
 
 
 // http://cimg.sourceforge.net/reference/group__cimg__storage.html
@@ -47,7 +53,9 @@ extern "C" struct run_state{
 };
 struct run_state * global_state;
 
-const  int w=280+280,h=512;
+const  int w=512+512,h=512;
+
+const int current_camera= 2;
 
 extern "C" void r_finalize(struct run_state *state);
 extern "C" void r_reload(struct run_state *state);
@@ -124,10 +132,28 @@ extern "C" void r_reload(struct run_state *state)
     
     if(1)
       if(state->cameras && state->cameras->GetSize()!=0){
+  	INodeMap &control = (*(state->cameras))[0].GetNodeMap();
+  	d(const CIntegerPtr nod=control.GetNode("ExposureTimeRaw");
+  	  int inc = nod->GetInc();
+  	  nod->SetValue(inc*(9000/inc));
+  	  cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " " << endl;
+  	  );
+      }
+    if(1)
+      if(state->cameras && state->cameras->GetSize()!=0){
   	INodeMap &control = (*(state->cameras))[1].GetNodeMap();
   	d(const CIntegerPtr nod=control.GetNode("ExposureTimeRaw");
   	  int inc = nod->GetInc();
-  	  nod->SetValue(inc*(4000/inc));
+  	  nod->SetValue(inc*(9000/inc));
+  	  cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " " << endl;
+  	  );
+      }
+    if(1)
+      if(state->cameras && state->cameras->GetSize()!=0){
+  	INodeMap &control = (*(state->cameras))[2].GetNodeMap();
+  	d(const CIntegerPtr nod=control.GetNode("ExposureTimeRaw");
+  	  int inc = nod->GetInc();
+  	  nod->SetValue(inc*(300000/inc));
   	  cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " " << endl;
   	  );
       }
@@ -199,7 +225,7 @@ extern "C" int r_step(struct run_state *state)
       f(cout << "Camera " << cameraContextValue << ": " 
   	<< (*(state->cameras))[ cameraContextValue ].GetDeviceInfo().GetFullName() << endl);
       // Now, the image data can be processed.
-      if(cameraContextValue==1){
+      if(cameraContextValue==current_camera){
 	f(cout << "GrabSucceeded: " << res->GrabSucceeded() << endl);
 	int ww = res->GetWidth(), hh = res->GetHeight();
 	f(cout << "Size: " << ww << "x" << hh << endl);
@@ -239,15 +265,17 @@ extern "C" int r_step(struct run_state *state)
 	const unsigned char*buf=mag.data();
 	for(i=0;i<ww;i++)
 	  for(j=0;j<hh;j++){
-	    int p = i+280+w*j;
+	    int p = i+512+w*j;
 	    b[4*p+0] = b[4*p+1] = b[4*p+2] = b[4*p+3] = buf[i+ww*j];
 	  }
+
+	char s[100];
+	snprintf(s,100,"count: %d max %d min %d\n",state->count++,ma,mi);
+	rfbDrawString(state->server,&radonFont,20,270,s,0xffffff);
+
       }
     }
   }
-  char s[100];
-  snprintf(s,100,"count: %d max %d min %d\n",state->count++,ma,mi);
-  rfbDrawString(state->server,&radonFont,20,270,s,0xffffff);
   rfbMarkRectAsModified(state->server,0,0,w,h);
   long usec = state->server->deferUpdateTime*1000;
   rfbProcessEvents(state->server,usec);
