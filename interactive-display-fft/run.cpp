@@ -225,7 +225,10 @@ extern "C" int r_step(struct run_state *state)
       }
       oma = ma;
       omi = mi;
-      img.save("/dev/shm/o.jpg");
+      CImgList<float> F = img.get_FFT();
+      cimglist_apply(F,shift)(img.width()/2,img.height()/2,0,0,2);
+      const CImg<unsigned char> mag = ((F[0].get_pow(2) + F[1].get_pow(2)).sqrt() + 1).log().normalize(0,255);
+      mag.save("/dev/shm/o.jpg");
     }
   }
   char s[100];
