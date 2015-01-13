@@ -2,9 +2,9 @@ PYLON_ROOT	?= /home/martin/pylon-4.0.0.62-x86_64/pylon4
 GENICAM_ROOT	?= $(PYLON_ROOT)/genicam
 
 
-CFLAGS=-ggdb -Wall -Wextra -O2 -march=native \
+CFLAGS=-ggdb -Wall -Wextra -O0 -march=native \
 -pedantic  -fPIC -D_BSD_SOURCE -std=c99
-CXXFLAGS=-ggdb -O2 -march=native -fPIC \
+CXXFLAGS= -O0 -march=native -fPIC \
 -I$(GENICAM_ROOT)/library/CPP/include \
 -I$(PYLON_ROOT)/include -DUSE_GIGE  -Dcimg_use_fftw3 
 
