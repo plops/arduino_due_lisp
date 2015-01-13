@@ -50,13 +50,14 @@ static void run_load_if_new_lib(struct run*run,const char*fn)
   }
   //printf("trying to reload library\n");
   if(run->handle){
-    d(printf("library was already open, closing it.\n"));
+    d(printf("library was already open, calling unload .. .\n"));
     run->api.unload(run->state);
+    d(printf("  and closing it\n"));
     if(0!=dlclose(run->handle))
       printf("error with dlclose\n");
   }
-
-  //d(printf("dlopen library\n"));
+  
+  d(printf("dlopen library\n"));
   void *handle = dlopen(fn,RTLD_NOW);
   if(!handle){
     run->handle = NULL;
@@ -66,7 +67,7 @@ static void run_load_if_new_lib(struct run*run,const char*fn)
   }
   run->handle = handle;
   run->id = attr.st_ino;
-  //printf("load the struct\n");
+  printf("load the struct\n");
   const struct run_api *api =
     dlsym(run->handle,"RUN_API");
   if(api == NULL){

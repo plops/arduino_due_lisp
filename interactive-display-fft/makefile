@@ -41,5 +41,5 @@ librun.so: api.h myinc.h.gch run.o  run_step.o
 clean:
 	rm main run.o run_step.o librun.so myinc.h.gch
 
-test : main libgame.so
+test : main librun.so
 	./$<
