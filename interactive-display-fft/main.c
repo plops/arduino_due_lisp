@@ -54,10 +54,6 @@ static void run_load_if_new_lib(struct run*run,const char*fn)
     run->api.unload(run->state);
     if(0!=dlclose(run->handle))
       printf("error with dlclose\n");
-    if(0!=dlclose(run->handle))
-      printf("error with dlclose\n");
-    if(0!=dlclose(run->handle))
-      printf("error with dlclose\n");
   }
 
   //d(printf("dlopen library\n"));
