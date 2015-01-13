@@ -1,19 +1,4 @@
-// #include "myinc.h"
-#include "api.h"
-#include <stdio.h>
-#include <malloc.h>
-#include <rfb/rfb.h>
-
-#include <pylon/PylonIncludes.h>
-
-
-
-#include "radon.h"
-#include <signal.h>
-#include <stdlib.h>
-
-#include "CImg.h" // in order to use as precompiled header this
-		  // inclusion must come before the first line of c
+#include "myinc.h"
 
 
 
@@ -55,7 +40,7 @@ struct run_state * global_state;
 
 const  int w=512+512,h=512;
 
-const int current_camera= 2;
+const int current_camera= 1;
 
 extern "C" void r_finalize(struct run_state *state);
 extern "C" void r_reload(struct run_state *state);
