@@ -1,4 +1,4 @@
-#include "CImg.h" // in order to use as precompiled header this
+#include "/home/martin/src/CImg/CImg.h" // in order to use as precompiled header this
 		  // inclusion must come before the first line of c
 #undef None
 #undef Status
