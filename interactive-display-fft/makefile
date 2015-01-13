@@ -26,9 +26,12 @@ main: main.c api.h
 %.h.gch: %.h
 	$(CXX) $(CXXFLAGS) -shared  $(LDFLAGS)  $< $(LDLIBS) -lX11 -lfftw3_threads -lfftw3 -lfftw3f -lfftw3f_threads
 
-librun.so: run.cpp api.h myinc.h.gch
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -shared -o $@ $<
+
+librun.so: api.h myinc.h.gch run.o  run_step.o
 	touch librun.so
-	$(CXX) $(CXXFLAGS) -shared  $(LDFLAGS) -o o.so  $< $(LDLIBS) -lX11 -lfftw3_threads -lfftw3 -lfftw3f -lfftw3f_threads
+	$(CXX) $(CXXFLAGS) -shared  $(LDFLAGS) -o o.so run.o run_step.o $(LDLIBS) -lX11 -lfftw3_threads -lfftw3 -lfftw3f -lfftw3f_threads
 	cp o.so librun.so
 	cp o.so librun2.so
 	killall -s SIGUSR1 main
@@ -36,7 +39,7 @@ librun.so: run.cpp api.h myinc.h.gch
 
 
 clean:
-	rm main librun.so myinc.h.gch
+	rm main run.o run_step.o librun.so myinc.h.gch
 
 test : main libgame.so
 	./$<
