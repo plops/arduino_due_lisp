@@ -37,6 +37,7 @@ librun.so: api.h myinc.h.gch run.o run_step.o
 	mv o.so librun.so; \
 	killall -s SIGUSR1 main; \
 	else \
+	touch librun.so; \
 	rm librun.so; \
 	mv o.so librun2.so; \
 	killall -s SIGUSR2 main; \

@@ -15,9 +15,9 @@
 struct run_state * global_state;
 
 const int pylon = 1,
-//  w=512+512,h=512,
-  w=280+280,h=280,
-  current_camera= 0;
+  w=512+512,h=512,
+//  w=280+280,h=280,
+  current_camera= 2;
 
 extern "C" void signalHandler(int a)
 {
@@ -57,7 +57,7 @@ void set_exposure_time(struct run_state *state,unsigned int cam,unsigned int exp
     INodeMap &control = (*(state->cameras))[cam].GetNodeMap();
     d(const CIntegerPtr nod=control.GetNode("ExposureTimeRaw");
       int inc = nod->GetInc();
-      nod->SetValue(inc*(105/inc));
+      nod->SetValue(inc*(exptime/inc));
       cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " " << endl;
       );
   }
@@ -83,7 +83,7 @@ extern "C" void r_reload(struct run_state *state)
   	printf("no cameras: %ld..\n",devices.size());
       });
     
-    CInstantCameraArray *cameras= new CInstantCameraArray( min( devices.size(), (long unsigned int) 1));
+    CInstantCameraArray *cameras= new CInstantCameraArray( min( devices.size(), (long unsigned int) 3));
     d(
       // Create and attach all Pylon Devices.
       for ( size_t i = 0; i < cameras->GetSize(); ++i){
@@ -98,17 +98,16 @@ extern "C" void r_reload(struct run_state *state)
       );
 
     for(size_t i=0;i<cameras->GetSize() ; i++)
-      cout << (*cameras)[i].GetDeviceInfo().GetFullName() << endl;
+      cout << (*cameras)[i].GetDeviceInfo().GetSerialNumber() << endl;
     
     state->cameras = cameras;
     
-    d(
-      cameras->Open(););
+    d(cameras->Open(););
     
-    if(0){
+    if(1){
       set_exposure_time(state,0,105);
       set_exposure_time(state,1,105);
-      set_exposure_time(state,2,6400);
+      set_exposure_time(state,2,10401);
     }
     cout << "StartGrabbing" << endl; 
     d(cameras->StartGrabbing(GrabStrategy_OneByOne););

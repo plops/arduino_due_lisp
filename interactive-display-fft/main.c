@@ -35,7 +35,7 @@ static void run_unload(struct run*run)
 static void run_load_if_new_lib(struct run*run,const char*fn)
 {
   struct stat attr;
-  //d(printf("trying to load library\n"));
+  d(printf("trying to load library %s.\n", fn));
 
   if(stat(fn,&attr)!=0){
     d(printf("RUN_LIBRARY doesn't exist.\n"));
