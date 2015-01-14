@@ -27,7 +27,7 @@ main: main.c api.h
 	$(CXX) $(CXXFLAGS) -shared  $(LDFLAGS)  $< $(LDLIBS) -lX11 -lfftw3_threads -lfftw3 -lfftw3f -lfftw3f_threads
 
 %.o: %.cpp
-	$(CXX) $(CXXFLAGS) -shared -o $@ $<
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 librun.so: api.h myinc.h.gch run.o run_step.o
 	touch librun.so

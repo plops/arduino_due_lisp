@@ -15,9 +15,9 @@
 struct run_state * global_state;
 
 const int pylon = 1,
-  w=512+512,h=512,
-//  w=280+280,h=280,
-  current_camera= 2;
+//  w=512+512,h=512,
+  w=280+280,h=280,
+  current_camera= 0;
 
 extern "C" void signalHandler(int a)
 {
@@ -102,7 +102,8 @@ extern "C" void r_reload(struct run_state *state)
     
     state->cameras = cameras;
     
-    cameras->Open();
+    d(
+      cameras->Open(););
     
     if(0){
       set_exposure_time(state,0,105);
