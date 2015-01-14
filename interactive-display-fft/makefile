@@ -4,7 +4,7 @@ GENICAM_ROOT	?= $(PYLON_ROOT)/genicam
 
 CFLAGS=-ggdb -Wall -Wextra -O0 -march=native \
 -pedantic  -fPIC -D_BSD_SOURCE -std=c99
-CXXFLAGS= -ggdb -fuse-cxa-atexit -O0 -march=native -fPIC \
+CXXFLAGS= -ggdb -fuse-cxa-atexit -O2 -march=native -fPIC \
 -I$(GENICAM_ROOT)/library/CPP/include \
 -I$(PYLON_ROOT)/include -DUSE_GIGE  -Dcimg_use_fftw3 
 
@@ -29,9 +29,9 @@ main: main.c api.h
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -shared -o $@ $<
 
-librun.so: api.h myinc.h.gch run.o  run_step.o
+librun.so: api.h myinc.h.gch run.cpp  run_step.o
 	touch librun.so
-	$(CXX) $(CXXFLAGS) -shared  $(LDFLAGS) -o o.so run.o run_step.o $(LDLIBS) -lX11 -lfftw3_threads -lfftw3 -lfftw3f -lfftw3f_threads
+	$(CXX) $(CXXFLAGS) -shared  $(LDFLAGS) -o o.so run.cpp $(LDLIBS) -lX11 -lfftw3_threads -lfftw3 -lfftw3f -lfftw3f_threads
 	cp o.so librun.so
 	cp o.so librun2.so
 	killall -s SIGUSR1 main
