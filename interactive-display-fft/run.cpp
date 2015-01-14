@@ -17,7 +17,7 @@ struct run_state * global_state;
 const int pylon = 1,
   w=512+512,h=512,
 //  w=280+280,h=280,
-  current_camera= 2;
+  current_camera= 1;
 
 extern "C" void signalHandler(int a)
 {
@@ -105,8 +105,8 @@ extern "C" void r_reload(struct run_state *state)
     d(cameras->Open(););
     
     if(1){
-      set_exposure_time(state,0,105);
-      set_exposure_time(state,1,105);
+      set_exposure_time(state,0,151);
+      set_exposure_time(state,1,151);
       set_exposure_time(state,2,10401);
     }
     cout << "StartGrabbing" << endl; 
