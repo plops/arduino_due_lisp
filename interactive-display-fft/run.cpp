@@ -122,7 +122,7 @@ extern "C" void r_reload(struct run_state *state)
     }
     
     //cout << "StartGrabbing" << endl; 
-    d(cameras->StartGrabbing(););
+    d(cameras->StartGrabbing(GrabStrategy_OneByOne););
   }
 
 }
@@ -133,11 +133,14 @@ extern "C" void r_unload(struct run_state *state)
     /* close camera */
     // cout << "close camera .." << endl;
     if(state->cameras){
-      //cout << "  stop grabbing" << endl;
-      state->cameras->StopGrabbing();
+      
+      if(state->cameras->IsGrabbing()){
+	cout << "  stop grabbing" << endl;
+	state->cameras->StopGrabbing();
+      }
       //cout << "  deleting cameras" << endl;
       delete state->cameras;
-      state->cameras = 0;
+      state->cameras = NULL;
     }
     //cout << "  pylon terminate" << endl;  
     d(PylonTerminate(););

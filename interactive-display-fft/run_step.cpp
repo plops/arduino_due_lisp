@@ -11,11 +11,11 @@ extern "C" int r_step(struct run_state *state)
       int ret,gi=0;
       do{
   	gi++;
-  	ret = state->cameras->RetrieveResult( 5000, res, TimeoutHandling_ThrowException);
+  	d(ret = state->cameras->RetrieveResult( 90, res, TimeoutHandling_ThrowException);
   	if(ret==0){
   	  printf(".");
   	  fflush(stdout);
-  	}
+  	});
       } while (ret != 0 && gi<10);
       if(!res.IsValid()){
   	printf("error no image grabbed\n");
