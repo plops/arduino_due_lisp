@@ -18,7 +18,7 @@ LDLIBS=-lvncserver \
 -lLog_gcc40_v2_3 -lMathParser_gcc40_v2_3 \
 -lXerces-C_gcc40_v2_7_1 -llog4cpp_gcc40_v2_3
 
-all: main librun.so
+all: main librun-help.so
 
 main: main.c api.h
 	$(CC) $(CFLAGS) -o $@ $< $(LDLIBS_MAIN)
@@ -30,18 +30,19 @@ main: main.c api.h
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 
-librun.so: api.h myinc.h.gch run.o run_step.o
+librun-help.so: api.h myinc.h.gch run.o run_step.o
 	$(CXX) $(CXXFLAGS) -shared  $(LDFLAGS) -o o.so run.o run_step.o $(LDLIBS) -lX11 -lfftw3_threads -lfftw3 -lfftw3f -lfftw3f_threads
 	if [ -a librun2.so ]; then \
 	rm librun2.so; \
-	mv o.so librun.so; \
+	mv o.so librun1.so; \
 	killall -s SIGUSR1 main; \
 	else \
-	touch librun.so; \
-	rm librun.so; \
+	touch librun1.so; \
+	rm librun1.so; \
 	mv o.so librun2.so; \
 	killall -s SIGUSR2 main; \
 	fi;
+	touch librun-help.so
 
 
 
@@ -52,7 +53,7 @@ librun.so: api.h myinc.h.gch run.o run_step.o
 
 
 clean:
-	rm main run.o run_step.o librun.so myinc.h.gch
+	rm main run.o run_step.o librun1.so myinc.h.gch librun2.so librun-help.so
 
 test : main librun.so
 	./$<

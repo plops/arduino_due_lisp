@@ -9,7 +9,8 @@
 #include <signal.h>
 #include "api.h"
 
-const char *RUN_LIBRARY1 = "./librun.so";
+const char *RUN_LIBRARY0 = "./librun.so";
+const char *RUN_LIBRARY1 = "./librun1.so";
 const char *RUN_LIBRARY2 = "./librun2.so";
 
 #define d(e) do{if(1)(e);}while(0)
@@ -128,7 +129,7 @@ int main(void)
   
   signal(SIGUSR1,signalHandler);
   signal(SIGUSR2,signalHandler2);
-  run_load_if_new_lib(&run,RUN_LIBRARY1);
+  run_load_if_new_lib(&run,RUN_LIBRARY0);
   for(;;){
     //run_load_if_new_lib(&run);
 
