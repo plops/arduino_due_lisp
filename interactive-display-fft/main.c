@@ -110,7 +110,7 @@ void signalHandler(int a)
 {
   (void)a;
   // in case i send sigusr1 to the process, reload library
-  whattodo = LOAD1;
+  whattodo = LOAD1; // this will result in the following code being executed in the loop in main():
   //run_load_if_new_lib(&run,RUN_LIBRARY1);
 }
 void signalHandler2(int a)
