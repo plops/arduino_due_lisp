@@ -29,13 +29,13 @@ extern "C" int r_step(struct run_state *state)
       // to determine the camera that produced the grab result.
       intptr_t cameraContextValue = res->GetCameraContext();
       // Print the index and the model name of the camera.
-      f(cout << "Camera " << cameraContextValue << ": " 
-  	<< (*(state->cameras))[ cameraContextValue ].GetDeviceInfo().GetFullName() << endl);
+      //f(cout << "Camera " << cameraContextValue << ": " 
+      //<< (*(state->cameras))[ cameraContextValue ].GetDeviceInfo().GetFullName() << endl);
       // Now, the image data can be processed.
       if(cameraContextValue==current_camera){
-	f(cout << "GrabSucceeded: " << res->GrabSucceeded() << endl);
+	//f(cout << "GrabSucceeded: " << res->GrabSucceeded() << endl);
 	int ww = res->GetWidth(), hh = res->GetHeight();
-	f(cout << "Size: " << ww << "x" << hh << endl);
+	//f(cout << "Size: " << ww << "x" << hh << endl);
 	
 	const uint8_t *im = (uint8_t *) res->GetBuffer();
 	int i,j;

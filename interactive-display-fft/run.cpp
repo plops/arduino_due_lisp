@@ -47,8 +47,6 @@ extern "C" struct run_state * r_init()
   global_state = state;
   signal(SIGTERM, signalHandler);
 
-  //cout << "pylon initialize" << endl; d(PylonInitialize(););
-
   return state;
 }
 
@@ -59,11 +57,12 @@ extern "C" void r_reload(struct run_state *state)
   if(pylon){
     /* initialize camera */
 
-    cout << "pylon initialize" << endl; d(PylonInitialize(););
+    // cout << "pylon initialize" << endl;
+    d(PylonInitialize(););
     
     CTlFactory& tlFactory = CTlFactory::GetInstance();
     
-    cout << "pylon enumerate devices" << endl;
+    //cout << "pylon enumerate devices" << endl;
     // Get all attached devices and exit application if no device is found.
     DeviceInfoList_t devices;
     d(
@@ -85,8 +84,8 @@ extern "C" void r_reload(struct run_state *state)
       }
       );
 
-    for(size_t i=0;i<cameras->GetSize() ; i++)
-      cout << (*cameras)[i].GetDeviceInfo().GetFullName() << endl;
+    //for(size_t i=0;i<cameras->GetSize() ; i++)
+    //  cout << (*cameras)[i].GetDeviceInfo().GetFullName() << endl;
     
     state->cameras = cameras;
     
@@ -98,7 +97,7 @@ extern "C" void r_reload(struct run_state *state)
     	d(const CIntegerPtr nod=control.GetNode("ExposureTimeRaw");
     	  int inc = nod->GetInc();
     	  nod->SetValue(inc*(105/inc));
-    	  cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " " << endl;
+    	  //cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " " << endl;
     	  );
       }
     
@@ -107,7 +106,7 @@ extern "C" void r_reload(struct run_state *state)
     	d(const CIntegerPtr nod=control.GetNode("ExposureTimeRaw");
     	  int inc = nod->GetInc();
     	  nod->SetValue(inc*(105/inc));
-    	  cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " " << endl;
+    	  //cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " " << endl;
     	  );
       }
     
@@ -117,12 +116,13 @@ extern "C" void r_reload(struct run_state *state)
     	  int inc = nod->GetInc();
     	  //nod->SetValue(inc*(300000/inc));
     	  nod->SetValue(inc*(6400/inc));
-    	  cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " " << endl;
+    	  //cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " " << endl;
     	  );
       }
     }
     
-    cout << "StartGrabbing" << endl; d(cameras->StartGrabbing(););
+    //cout << "StartGrabbing" << endl; 
+    d(cameras->StartGrabbing(););
   }
 
 }
@@ -131,15 +131,16 @@ extern "C" void r_unload(struct run_state *state)
 {
   if(pylon){
     /* close camera */
-    cout << "close camera .." << endl;
+    // cout << "close camera .." << endl;
     if(state->cameras){
-      cout << "  stop grabbing" << endl;
+      //cout << "  stop grabbing" << endl;
       state->cameras->StopGrabbing();
-      cout << "  deleting cameras" << endl;
+      //cout << "  deleting cameras" << endl;
       delete state->cameras;
       state->cameras = 0;
     }
-    cout << "  pylon terminate" << endl;    d(PylonTerminate(););
+    //cout << "  pylon terminate" << endl;  
+    d(PylonTerminate(););
   }
 }
 
