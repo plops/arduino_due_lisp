@@ -1,7 +1,7 @@
-//#include "/home/martin/src/CImg/CImg.h" // in order to use as precompiled header this
+#include "/home/martin/src/CImg/CImg.h" // in order to use as precompiled header this
 		  // inclusion must come before the first line of c
-//#undef None
-//#undef Status
+#undef None
+#undef Status
 #include <pylon/PylonIncludes.h>
 
 #include "api.h"
@@ -17,7 +17,7 @@
 using namespace Pylon;
 using namespace GenApi;
 using namespace std;
-//using namespace cimg_library;
+using namespace cimg_library;
 
 
 // this is for setenv, only works in c99
