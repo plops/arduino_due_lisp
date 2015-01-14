@@ -20,17 +20,17 @@ using namespace std;
 //using namespace cimg_library;
 
 
-// this is for setenv
-#define e(q) do{if(0!=(q)) printf("error in %s",__func__);}while(0)
+// this is for setenv, only works in c99
+#define e(q) do{if(0!=(q)) printf("error in %s:%d",__func__,__LINE__);}while(0)
 
 // this is to optionally comment out code
 #define f(e) do{if(0)(e);}while(0)
 
-// this is to call pylon functions:
+// this is to call pylon functions: (works only in g++)
 #define d(cmd)  do{ try{ cmd }						\
-  catch (GenICam::GenericException& e) {				\
-    printf( "Exception caught in %s msg=%s\n",__func__, e.what());	\
-  }									\
+    catch (GenICam::GenericException& e) {				\
+      printf( "Exception caught in %s:%d msg=%s\n",__PRETTY_FUNCTION__,__LINE__, e.what()); \
+    }									\
   } while(0)
 
 extern "C" struct run_state{

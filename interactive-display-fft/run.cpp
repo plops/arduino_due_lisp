@@ -21,7 +21,7 @@ const int pylon = 1,
 
 extern "C" void signalHandler(int a)
 {
-  // clean up in case i press Ctrl+c
+  // clean up in case i press Ctrl+c 
   r_finalize(global_state);
 }
 
@@ -58,7 +58,7 @@ void set_exposure_time(struct run_state *state,unsigned int cam,unsigned int exp
     d(const CIntegerPtr nod=control.GetNode("ExposureTimeRaw");
       int inc = nod->GetInc();
       nod->SetValue(inc*(105/inc));
-      //cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " " << endl;
+      cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " " << endl;
       );
   }
 }
@@ -70,17 +70,17 @@ extern "C" void r_reload(struct run_state *state)
   if(pylon){
     /* initialize camera */
 
-    // cout << "pylon initialize" << endl;
+    cout << "pylon initialize" << endl;
     d(PylonInitialize(););
     
     CTlFactory& tlFactory = CTlFactory::GetInstance();
     
-    //cout << "pylon enumerate devices" << endl;
+    cout << "pylon enumerate devices" << endl;
     // Get all attached devices and exit application if no device is found.
     DeviceInfoList_t devices;
     d(
       if ( tlFactory.EnumerateDevices(devices) == 0 ) {
-  	printf("no cameras: %ld\n",devices.size());
+  	printf("no cameras: %ld..\n",devices.size());
       });
     
     CInstantCameraArray *cameras= new CInstantCameraArray( min( devices.size(), (long unsigned int) 1));
@@ -97,8 +97,8 @@ extern "C" void r_reload(struct run_state *state)
       }
       );
 
-    //for(size_t i=0;i<cameras->GetSize() ; i++)
-    //  cout << (*cameras)[i].GetDeviceInfo().GetFullName() << endl;
+    for(size_t i=0;i<cameras->GetSize() ; i++)
+      cout << (*cameras)[i].GetDeviceInfo().GetFullName() << endl;
     
     state->cameras = cameras;
     
@@ -110,7 +110,7 @@ extern "C" void r_reload(struct run_state *state)
       set_exposure_time(state,1,105);
       set_exposure_time(state,2,6400);
     }
-    //cout << "StartGrabbing" << endl; 
+    cout << "StartGrabbing" << endl; 
     d(cameras->StartGrabbing(GrabStrategy_OneByOne););
   }
 }
@@ -119,17 +119,17 @@ extern "C" void r_unload(struct run_state *state)
 {
   if(pylon){
     /* close camera */
-    // cout << "close camera .." << endl;
+    cout << "close camera .." << endl;
     if(state->cameras){
       if(state->cameras->IsGrabbing()){
-	//cout << "  stop grabbing" << endl;
+	cout << "  stop grabbing" << endl;
 	state->cameras->StopGrabbing();
       }
-      //cout << "  deleting cameras" << endl;
+      cout << "  deleting cameras" << endl;
       delete state->cameras;
       state->cameras = NULL;
     }
-    //cout << "  pylon terminate" << endl;  
+    cout << "  pylon terminate" << endl;  
     d(PylonTerminate(););
   }
 }

@@ -29,13 +29,25 @@ main: main.c api.h
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
+
 librun.so: api.h myinc.h.gch run.o run_step.o
-	touch librun.so
 	$(CXX) $(CXXFLAGS) -shared  $(LDFLAGS) -o o.so run.o run_step.o $(LDLIBS) -lX11 -lfftw3_threads -lfftw3 -lfftw3f -lfftw3f_threads
-	cp o.so librun.so
-	cp o.so librun2.so
-	killall -s SIGUSR1 main
-	killall -s SIGUSR2 main
+	if [ -a librun2.so ]; then \
+	rm librun2.so; \
+	mv o.so librun.so; \
+	killall -s SIGUSR1 main; \
+	else \
+	rm librun.so; \
+	mv o.so librun2.so; \
+	killall -s SIGUSR2 main; \
+	fi;
+
+
+
+#	cp o.so librun.so
+#	cp o.so librun2.so
+#	killall -s SIGUSR1 main
+#	killall -s SIGUSR2 main
 
 
 clean:
