@@ -9,6 +9,8 @@
 // the cimg header makes compilation very small. i read this:
 // https://gcc.gnu.org/onlinedocs/gcc/Precompiled-Headers.html
 
+// apparently stl usage could be the reason why my program now crashes with the call to dlclose
+// http://stackoverflow.com/questions/6450828/segmentation-fault-when-using-dlclose-on-android-platform
 
 struct run_state * global_state;
 
@@ -45,7 +47,7 @@ extern "C" struct run_state * r_init()
   global_state = state;
   signal(SIGTERM, signalHandler);
 
-  cout << "pylon initialize" << endl; d(PylonInitialize(););
+  //cout << "pylon initialize" << endl; d(PylonInitialize(););
 
   return state;
 }
@@ -57,7 +59,7 @@ extern "C" void r_reload(struct run_state *state)
   if(pylon){
     /* initialize camera */
 
-    // cout << "pylon initialize" << endl; d(PylonInitialize(););
+    cout << "pylon initialize" << endl; d(PylonInitialize(););
     
     CTlFactory& tlFactory = CTlFactory::GetInstance();
     
@@ -69,7 +71,7 @@ extern "C" void r_reload(struct run_state *state)
   	printf("no cameras: %ld\n",devices.size());
       });
     
-    CInstantCameraArray *cameras= new CInstantCameraArray( min( devices.size(), (long unsigned int) 3));
+    CInstantCameraArray *cameras= new CInstantCameraArray( min( devices.size(), (long unsigned int) 1));
     d(
       // Create and attach all Pylon Devices.
       for ( size_t i = 0; i < cameras->GetSize(); ++i){
@@ -90,8 +92,8 @@ extern "C" void r_reload(struct run_state *state)
     
     cameras->Open();
     
-    if(1)
-      if(state->cameras && state->cameras->GetSize()!=0){
+    if(0){
+      if(state->cameras && state->cameras->GetSize()>0){
     	INodeMap &control = (*(state->cameras))[0].GetNodeMap();
     	d(const CIntegerPtr nod=control.GetNode("ExposureTimeRaw");
     	  int inc = nod->GetInc();
@@ -99,8 +101,8 @@ extern "C" void r_reload(struct run_state *state)
     	  cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " " << endl;
     	  );
       }
-    if(1)
-      if(state->cameras && state->cameras->GetSize()!=0){
+    
+      if(state->cameras && state->cameras->GetSize()>1){
     	INodeMap &control = (*(state->cameras))[1].GetNodeMap();
     	d(const CIntegerPtr nod=control.GetNode("ExposureTimeRaw");
     	  int inc = nod->GetInc();
@@ -108,8 +110,8 @@ extern "C" void r_reload(struct run_state *state)
     	  cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " " << endl;
     	  );
       }
-    if(1)
-      if(state->cameras && state->cameras->GetSize()!=0){
+    
+      if(state->cameras && state->cameras->GetSize()>2){
     	INodeMap &control = (*(state->cameras))[2].GetNodeMap();
     	d(const CIntegerPtr nod=control.GetNode("ExposureTimeRaw");
     	  int inc = nod->GetInc();
@@ -118,9 +120,9 @@ extern "C" void r_reload(struct run_state *state)
     	  cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " " << endl;
     	  );
       }
+    }
     
-    
-    d(cameras->StartGrabbing(););
+    cout << "StartGrabbing" << endl; d(cameras->StartGrabbing(););
   }
 
 }
@@ -137,7 +139,7 @@ extern "C" void r_unload(struct run_state *state)
       delete state->cameras;
       state->cameras = 0;
     }
-    //cout << "  pylon terminate" << endl;    d(PylonTerminate(););
+    cout << "  pylon terminate" << endl;    d(PylonTerminate(););
   }
 }
 
@@ -150,7 +152,7 @@ extern "C" void r_finalize(struct run_state *state)
   rfbScreenCleanup(state->server);
 
   r_unload(state);
-  cout << "  pylon terminate" << endl;    d(PylonTerminate(););
+  //cout << "  pylon terminate" << endl;    d(PylonTerminate(););
 
   
   free(state);
