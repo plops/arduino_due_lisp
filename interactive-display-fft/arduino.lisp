@@ -13,7 +13,7 @@
 (defparameter *ard* 
   (multiple-value-list
    (arduino-serial-sbcl:open-serial 
-    (first (directory "/dev/ttyACM0")))))
+    (first (directory "/dev/ttyACM1")))))
 
 #+nil
 (arduino-serial-sbcl:close-serial (second *ard*))
@@ -21,14 +21,15 @@
 (defvar *trigger-outputs-initialized* nil)
 
 (defun initialize-trigger-outputs ()
-  (arduino-serial-sbcl:talk-arduino
-   (second *ard*) 
-   (first *ard*)
-   "(progn
+  (list (arduino-serial-sbcl:talk-arduino
+    (second *ard*) 
+    (first *ard*) 
+    "(progn
+ (pin-mode 6 1)
  (pin-mode 10 1)
  (pin-mode 11 1)
  (pin-mode 12 1))")
-  (setf *trigger-outputs-initialized* t))
+	(setf *trigger-outputs-initialized* t)))
 
 #+nil
 (initialize-trigger-outputs)
@@ -38,6 +39,18 @@
    ( second *ard*) 
    (first *ard*)
    "(progn (+ 1 2))")
+
+
+
+#+nil
+(arduino-serial-sbcl:talk-arduino
+   ( second *ard*) 
+   (first *ard*)
+   "(progn
+     (digital-write 6 1)
+     (delay 1)
+     (digital-write 6 0)
+)")
 #+nil
 (arduino-serial-sbcl:talk-arduino
    ( second *ard*) 

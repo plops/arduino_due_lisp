@@ -74,7 +74,7 @@ extern "C" int r_step(struct run_state *state)
         //cimglist_apply(F,shift)(img.width()/2,img.height()/2,0,0,2);
 	// //	cout << "min " << ((F[0].get_pow(2) + F[1].get_pow(2)).sqrt() + 1).log().min()
 	// //     << " max "  << (((F[0].get_pow(2) + F[1].get_pow(2)).sqrt() + 1).log()*-1).min()*-1 << endl;
-	CImg<float> fmag = ((F[0].get_pow(2) + F[1].get_pow(2)).sqrt() + 1).blur_median(3).log().normalize(0,255);
+	CImg<float> fmag = ((F[0].get_pow(2) + F[1].get_pow(2)).sqrt() + 0.01).pow(0.0001).normalize(0,255);
 
 	//cimg_rof(fmag,p,float) {
 	//  const float m=8.3f, M=14.0f;

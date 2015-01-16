@@ -108,8 +108,8 @@ extern "C" void r_reload(struct run_state *state)
     
     if(1){
       set_exposure_time(state,0,281);
-      set_exposure_time(state,1,153);
-      set_exposure_time(state,2,10401);
+      set_exposure_time(state,1,70);
+      set_exposure_time(state,2,801);
     }
     cout << "StartGrabbing" << endl; 
     d(cameras->StartGrabbing(GrabStrategy_OneByOne););
