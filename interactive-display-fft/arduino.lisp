@@ -13,7 +13,7 @@
 (defparameter *ard* 
   (multiple-value-list
    (arduino-serial-sbcl:open-serial 
-    (first (directory "/dev/ttyACM1")))))
+    (first (directory "/dev/ttyACM0")))))
 
 #+nil
 (arduino-serial-sbcl:close-serial (second *ard*))
