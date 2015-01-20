@@ -47,6 +47,7 @@
    (second *ard*) 
    (first *ard*)
    "(progn
+ (pin-mode 6 1)
  (pin-mode 10 1)
  (pin-mode 11 1)
  (pin-mode 12 1))")
