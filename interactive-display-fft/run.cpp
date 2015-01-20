@@ -44,6 +44,7 @@ extern "C" struct run_state * r_init()
     return 0;
   state->server->frameBuffer=(char*)malloc(w*h*4);
   state->server->alwaysShared=(1==1);
+  state->server->port = 5911;
   rfbInitServer(state->server);
   
   
