@@ -1,4 +1,5 @@
-#.(require :cl-ppcre)
+#+nil
+(ql:quickload :cl-ppcre)
 
 
 (defun comma-list (list)
@@ -95,7 +96,6 @@
 			   ',arglist ,fun))
 	:stack (emit-case ,lisp-name ,name ,enum-name ',arglist)))))
 
-#+nil
 (defparameter *dac*
   (gen-c-chunks "dac" ("unsigned short b" "unsigned short a")
 	       :header "#include <SPI/SPI.h>"
@@ -104,7 +104,7 @@
   SPI.begin();
   SPI.setBitOrder(MSBFIRST);
   SPI.setDataMode(SPI_MODE2);
-  pinMode(chipSelectPin, OUTPUT);
+  pinMode(dac_chip_select_pin, OUTPUT);
 "
 	       :to-setup "
   dac_init();
@@ -123,7 +123,7 @@
   digitalWrite(dac_chip_select_pin, HIGH);
   return T;"))
 
-#+nil
+
 (defparameter *base*
   (reduce #'combine
 	  (list (gen-c-chunks ("pin-mode" "pinMode") ("uint8_t pin" "uint8_t mode")
@@ -273,7 +273,9 @@ return number(ret);"))))
 			  ("\\+INIT\\+" init)
 			  ("\\+FUN\\+" fun)
 			  ("\\+STACK\\+" stack)) do
-       (let ((defs *base* #+nil   (combine *base* *arducam*)))
+       (let ((defs #+nil *base*
+	       (combine *base* *dac*) 
+	       #+nil   (combine *base* *arducam*)))
 	(setf *template-file*
 	      (cl-ppcre:regex-replace e *template-file*
 				      (slot-value defs slot)))))

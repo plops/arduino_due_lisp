@@ -27,8 +27,10 @@ use this to check assembly code:
 
 #include "Arduino.h"
 #include <setjmp.h>
+#include <SPI/SPI.h>
 
 
+const int dac_chip_select_pin = 16;
 
 
 #define VERBOSEGC 0
@@ -127,7 +129,7 @@ enum {
     // functions
     F_EQ, F_ATOM, F_CONS, F_CAR, F_CDR, F_READ, F_EVAL, F_PRINT, F_SET, F_NOT,
     F_LOAD, F_SYMBOLP, F_NUMBERP, F_ADD, F_SUB, F_MUL, F_DIV, F_LT, F_PROG1,
-    F_APPLY, F_RPLACA, F_RPLACD, F_BOUNDP, F_PINMODE,F_DIGITALWRITE,F_ANALOGWRITE,F_ANALOGREAD,F_DELAYMICROSECONDS,F_DELAY,F_MICROS,F_ROOM , N_BUILTINS
+    F_APPLY, F_RPLACA, F_RPLACD, F_BOUNDP, F_PINMODE,F_DIGITALWRITE,F_ANALOGWRITE,F_ANALOGREAD,F_DELAYMICROSECONDS,F_DELAY,F_MICROS,F_ROOM,F_DAC , N_BUILTINS
 };
 #define isspecial(v) (intval(v) <= (int)F_PROGN)
 
@@ -135,7 +137,7 @@ static char *builtin_names[] =
     { "quote", "cond", "if", "and", "or", "while", "lambda", "macro", "label",
       "progn", "eq", "atom", "cons", "car", "cdr", "read", "eval", "print",
       "set", "not", "load", "symbolp", "numberp", "+", "-", "*", "/", "<",
-      "prog1", "apply", "rplaca", "rplacd", "boundp", "pin-mode","digital-write","analog-write","adc","delay-microseconds","delay","micros","room" };
+      "prog1", "apply", "rplaca", "rplacd", "boundp", "pin-mode","digital-write","analog-write","adc","delay-microseconds","delay","micros","room","dac" };
 
 static char *stack_bottom;
 #define PROCESS_STACK_SIZE (1024)
@@ -267,6 +269,14 @@ void lisp_init(void)
     setc(symbol("princ"), builtin(F_PRINT));
 }
 
+value_t dac_init () 
+{
+  SPI.begin();
+  SPI.setBitOrder(MSBFIRST);
+  SPI.setDataMode(SPI_MODE2);
+  pinMode(dac_chip_select_pin, OUTPUT);
+
+}
 
 
 value_t pinMode_fun (uint8_t pin,uint8_t mode) 
@@ -311,6 +321,19 @@ value_t room_fun ()
  	    Serial.println(s);
  	  }
  	  return number((curheap-fromspace)/8);
+}
+value_t dac_fun (unsigned short b,unsigned short a) 
+{
+  digitalWrite(dac_chip_select_pin, LOW);
+  byte x,y,z;
+  x = (0xff0 & a) >> 4;
+  y = ((0xf & a) << 4) + ((0xf00 & b) >> 8);
+  z = 0xff & b;
+  SPI.transfer(x); 
+  SPI.transfer(y); 
+  SPI.transfer(z); 
+  digitalWrite(dac_chip_select_pin, HIGH);
+  return T;
 }
 
 
@@ -1005,6 +1028,10 @@ case F_ROOM: {
   argcount("room",nargs,0); 
   v= room_fun();
 }  break;
+case F_DAC: {
+  argcount("dac",nargs,2); 
+  v= dac_fun(tonumber(Stack[SP-2],"dac"),tonumber(Stack[SP-1],"dac"));
+}  break;
 
         case F_APPLY:
             argcount("apply", nargs, 2);
@@ -1156,6 +1183,11 @@ void setup() {
   pinMode_fun(8,1);
   digitalWrite_fun(8,1);
 analogReadResolution(12);
+
+
+  dac_init();
+  dac_fun(2048,2048);
+  analogReadResolution(12);
 
 
   
