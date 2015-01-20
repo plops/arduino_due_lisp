@@ -19,7 +19,7 @@ struct run_state * global_state;
 const int pylon = 1,
   w=512+512,h=512,
 //  w=280+280,h=280,
-  current_camera= 1;
+  current_camera= 0;
 
 extern "C" void signalHandler(int a)
 {
@@ -65,7 +65,7 @@ void set_exposure_time(struct run_state *state,unsigned int cam,unsigned int exp
       int val = inc*(exptime/inc);
       cout << "set exposure to: " <<   val << "..";
       nod->SetValue(val);
-      cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " " << endl;
+      cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " ";
       );
   }
 }
@@ -90,7 +90,7 @@ extern "C" void r_reload(struct run_state *state)
   	printf("no cameras: %ld..\n",devices.size());
       });
     
-    CInstantCameraArray *cameras= new CInstantCameraArray( min( devices.size(), (long unsigned int) 3));
+    CInstantCameraArray *cameras= new CInstantCameraArray( min( devices.size(), (long unsigned int) 1));
     d(
       // Create and attach all Pylon Devices.
       for ( size_t i = 0; i < cameras->GetSize(); ++i){

@@ -11,7 +11,10 @@ extern "C" int r_step(struct run_state *state)
   if(pylon){
     if(state->cameras && state->cameras->IsGrabbing()){
       cout << state->count++ <<  " " ;
-      set_exposure_time(state,current_camera,(state->count%2)?35*2:35);
+      switch(state->count%4){
+      case 0: case 1: set_exposure_time(state,current_camera,35); break;
+      case 2: case 3: set_exposure_time(state,current_camera,70); break;
+      }
       CGrabResultPtr res;
       int ret,gi=0;
       do{
@@ -74,6 +77,7 @@ extern "C" int r_step(struct run_state *state)
 	}
 	oma = ma;
 	omi = mi;
+	cout << "mami " << ma << " " << mi << endl;
 
 	//	CImgList<float> F = img.get_FFT();
         //cimglist_apply(F,shift)(img.width()/2,img.height()/2,0,0,2);
