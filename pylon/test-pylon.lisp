@@ -392,7 +392,7 @@
 
 (defparameter *cam-parameters*
   `((21433565    1    1  280   280 nil  777  337 230  82  90  0   70 "transmission with polrot (top)")
-    (21433566    1    1  512   512 nil  789  112 482 429  90  0  875 "backreflection with polrot")  
+    (21433566    1    1  512   512 nil  789  112 482 429  90  0 4200 "backreflection with polrot")  
     (21433540    1    1  280   280 t    985  427 206 213  90  0   70 "transmission same pol"))
   "    id      binx  biny  w    h  rev   x    y  kx  ky   d   g   e   name")
 ;; i reverseX the 40 to compensate for the pbs
@@ -651,7 +651,7 @@ rectangular, for alpha=1 Hann window."
   (fftw::%fftwf_import_wisdom_from_filename "fiberholo.fftwf.wisdom")
   (time
    (progn 
-     (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 1024 :h 1024 :flag fftw::+patient+) nil)
+     (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 280 :h 280 :flag fftw::+patient+) nil)
      (progn (fftw::rftf *buf-s* :out-arg *out-cs* :w 512 :h 512 :flag fftw::+patient+) nil)))
   
   (dotimes (i 3)
@@ -807,7 +807,7 @@ rectangular, for alpha=1 Hann window."
   (defparameter *diff* nil)
   (dotimes (i 3)
     (pylon:set-value-e *cams* i "TriggerMode" 1))
-  (let* ((step 20)
+  (let* ((step 30)
 	 (starti 450)
 	 (maxi 2800)
 	 (stepi step)
@@ -852,8 +852,11 @@ rectangular, for alpha=1 Hann window."
       (tilt-mirror 0 0))
     (mapcar #'close fda)))
 
+#+nil
+(run-several-s-without-ft)
 
-(let* ((step 20)
+
+(let* ((step 30)
        (starti 450)
        (maxi 2800)
        (stepi step)
@@ -868,7 +871,9 @@ rectangular, for alpha=1 Hann window."
 		       (loop for yj from startj below maxj by stepj do
 			    (incf count)) 
 		       count)))
-  (* count-first count-second))
+
+  (list count-first count-second (* count-first count-second)))
+
 
 (/ (* 3 10974 1920 1080 12 (/ 8)) (* 1024 1024d0 1024))
 ;; 95Gb
@@ -949,7 +954,6 @@ rectangular, for alpha=1 Hann window."
        x y (+ 1 (floor 580 2)) 580 w h)
       (write-pgm8 (format nil "/dev/shm/eo-~3,'0d-~3,'0d-~1,'0d.pgm" j i cam) (.uint8 (.log (.abs a #+nil (aref *result* j i cam)))))
       (list x y))))
-
 
 #+nil
 (get-cam-parameters 1)
@@ -1100,8 +1104,11 @@ rectangular, for alpha=1 Hann window."
 
 #+nil
 (progn
- (capture-dark-images 300)
+  (defparameter *dark* (multiple-value-list (capture-dark-images 2000)))
  nil)
+
+#+nil
+(create-windows (first *dark*))
 
 #+nil
 (sb-sprof:with-profiling (:max-samples 1000
