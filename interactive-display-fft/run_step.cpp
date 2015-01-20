@@ -11,9 +11,9 @@ extern "C" int r_step(struct run_state *state)
   if(pylon){
     if(state->cameras && state->cameras->IsGrabbing()){
       cout << state->count++ <<  " " ;
-      switch(state->count%4){
-      case 0: case 1: set_exposure_time(state,current_camera,35); break;
-      case 2: case 3: set_exposure_time(state,current_camera,70); break;
+      switch(state->count%2){
+      case 0: set_exposure_time(state,current_camera,35); break;
+      case 1: set_exposure_time(state,current_camera,70); break;
       }
       CGrabResultPtr res;
       int ret,gi=0;
