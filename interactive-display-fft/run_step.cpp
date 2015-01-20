@@ -57,7 +57,8 @@ extern "C" int r_step(struct run_state *state)
 	float* imgp = img.data();
 	for(i=0,j=0;j< ww*hh;i+=3,j+=2) {
 	  unsigned char
-	    ab = im[i],  	  c = im[i+1] & 0x0f,
+	    ab = im[i],
+	    c = im[i+1] & 0x0f,
 	    d = (im[i+1] & 0xf0)>>4,
 	    ef = im[i+2];
 	  int
@@ -79,7 +80,7 @@ extern "C" int r_step(struct run_state *state)
 	omi = mi;
 	cout << "mami " << ma << " " << mi << endl;
 
-	//	CImgList<float> F = img.get_FFT();
+	//	CImgLisgrt<float> F = img.get_FFT();
         //cimglist_apply(F,shift)(img.width()/2,img.height()/2,0,0,2);
 	// //	cout << "min " << ((F[0].get_pow(2) + F[1].get_pow(2)).sqrt() + 1).log().min()
 	// //     << " max "  << (((F[0].get_pow(2) + F[1].get_pow(2)).sqrt() + 1).log()*-1).min()*-1 << endl;
@@ -101,7 +102,7 @@ extern "C" int r_step(struct run_state *state)
 	//     b[4*p+0] = b[4*p+1] = b[4*p+2] = b[4*p+3] = (unsigned char)buf[i+ww*j];
 	//   }
 
-	char s[100];
+	// char s[100];
 	//snprintf(s,100,"count: %d max %d min %d\n",state->count++,ma,mi);
 	//rfbDrawString(state->server,&radonFont,20,270,s,0xffffff);
 	

@@ -169,7 +169,7 @@ int main(void)
 	/* } */
       }
     }
-    usleep(32000);
+    // usleep(32000);
     {
       switch(whattodo){
       case NOTHING: break;
