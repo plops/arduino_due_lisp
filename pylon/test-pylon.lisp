@@ -391,9 +391,9 @@
       (list 66 (+ 45 184) (+ 45 126)))
 
 (defparameter *cam-parameters*
-  `((21433565    1    1  280   280 nil  777  337 346 818  90   0   70 "transmission with polrot (top)")
-    (21433566    1    1  512   512 nil  789  112 229 171  90   0  875 "backreflection with polrot")  
-    (21433540    1    1  280   280 t    985  427 175 167  90   0   70 "transmission same pol"))
+  `((21433565    1    1  280   280 nil  777  337 230  82  90  0   70 "transmission with polrot (top)")
+    (21433566    1    1  512   512 nil  789  112 482 429  90  0  875 "backreflection with polrot")  
+    (21433540    1    1  280   280 t    985  427 206 213  90  0   70 "transmission same pol"))
   "    id      binx  biny  w    h  rev   x    y  kx  ky   d   g   e   name")
 ;; i reverseX the 40 to compensate for the pbs
 ;; 33040
