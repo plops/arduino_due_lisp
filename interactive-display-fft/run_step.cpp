@@ -71,11 +71,13 @@ extern "C" int r_step(struct run_state *state)
 	omi = mi;
 
 	CImgList<float> F = img.get_FFT();
-        //cimglist_apply(F,shift)(img.width()/2,img.height()/2,0,0,2);
+        cimglist_apply(F,shift)(img.width()/2,img.height()/2,0,0,2);
 	// //	cout << "min " << ((F[0].get_pow(2) + F[1].get_pow(2)).sqrt() + 1).log().min()
 	// //     << " max "  << (((F[0].get_pow(2) + F[1].get_pow(2)).sqrt() + 1).log()*-1).min()*-1 << endl;
 	CImg<float> fmag = ((F[0].get_pow(2) + F[1].get_pow(2)).sqrt() + 0.01).pow(0.0001).normalize(0,255);
-
+	CImgDisplay disp;
+	fmag.select(disp);
+	
 	//cimg_rof(fmag,p,float) {
 	//  const float m=8.3f, M=14.0f;
 	//  float v = (float) 255.0f*(*p-m)/(M-m);

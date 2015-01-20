@@ -19,7 +19,7 @@ struct run_state * global_state;
 const int pylon = 1,
   w=512+512,h=512,
 //  w=280+280,h=280,
-  current_camera= 2;
+  current_camera= 1;
 
 extern "C" void signalHandler(int a)
 {
