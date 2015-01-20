@@ -1,12 +1,17 @@
 #include "myinc.h"
+
+void set_exposure_time(struct run_state *state,unsigned int cam,unsigned int exptime);
+
 extern "C" int r_step(struct run_state *state)
 {
   //  printf("step\n");
-  if(!rfbIsActive(state->server))
-    return 0;
+  //if(!rfbIsActive(state->server))
+  //  return 0;
   int ma=0, mi=5000;
   if(pylon){
     if(state->cameras && state->cameras->IsGrabbing()){
+      cout << state->count++ <<  " " ;
+      set_exposure_time(state,current_camera,(state->count%2)?35*2:35);
       CGrabResultPtr res;
       int ret,gi=0;
       do{
@@ -62,21 +67,21 @@ extern "C" int r_step(struct run_state *state)
 	  ma = max(ma,max(v1,v2));
 	  //omi = 8;
 	  //oma = 4095;
-	  b[p+0]=b[p+1]=b[p+2]=(unsigned char)min(255.0,max(0.0,(255.*(v1-omi)/(1.0*(oma-omi)))));
-	  b[q+0]=b[q+1]=b[q+2]=(unsigned char)min(255.0,max(0.0,(255.*(v2-omi)/(1.0*(oma-omi)))));
-	  imgp[((j%ww)+ ww * (j/ww))]=v1;
-	  imgp[(((j+1)%ww)+ ww * ((j+1)/ww))]=v2;
+	  //b[p+0]=b[p+1]=b[p+2]=(unsigned char)min(255.0,max(0.0,(255.*(v1-omi)/(1.0*(oma-omi)))));
+	  //b[q+0]=b[q+1]=b[q+2]=(unsigned char)min(255.0,max(0.0,(255.*(v2-omi)/(1.0*(oma-omi)))));
+	  //imgp[((j%ww)+ ww * (j/ww))]=v1;
+	  //imgp[(((j+1)%ww)+ ww * ((j+1)/ww))]=v2;
 	}
 	oma = ma;
 	omi = mi;
 
-	CImgList<float> F = img.get_FFT();
-        cimglist_apply(F,shift)(img.width()/2,img.height()/2,0,0,2);
+	//	CImgList<float> F = img.get_FFT();
+        //cimglist_apply(F,shift)(img.width()/2,img.height()/2,0,0,2);
 	// //	cout << "min " << ((F[0].get_pow(2) + F[1].get_pow(2)).sqrt() + 1).log().min()
 	// //     << " max "  << (((F[0].get_pow(2) + F[1].get_pow(2)).sqrt() + 1).log()*-1).min()*-1 << endl;
-	CImg<float> fmag = ((F[0].get_pow(2) + F[1].get_pow(2)).sqrt() + 0.01).pow(0.0001).normalize(0,255);
-	CImgDisplay disp;
-	fmag.select(disp);
+	//CImg<float> fmag = ((F[0].get_pow(2) + F[1].get_pow(2)).sqrt() + 0.01).pow(0.0001).normalize(0,255);
+	//CImgDisplay disp;
+	//fmag.select(disp);
 	
 	//cimg_rof(fmag,p,float) {
 	//  const float m=8.3f, M=14.0f;
@@ -84,24 +89,24 @@ extern "C" int r_step(struct run_state *state)
 	//  *p = (v<0.0f)?0.0f:(v>255.0)?255.0:v;
 	//};
 
-	const float*buf=fmag.data();
+	//const float*buf=fmag.data();
 	
-	for(i=0;i<ww;i++)
-	  for(j=0;j<hh;j++){
-	    int p = i+ww+w*j;
-	    b[4*p+0] = b[4*p+1] = b[4*p+2] = b[4*p+3] = (unsigned char)buf[i+ww*j];
-	  }
+	// for(i=0;i<ww;i++)
+	//   for(j=0;j<hh;j++){
+	//     int p = i+ww+w*j;
+	//     b[4*p+0] = b[4*p+1] = b[4*p+2] = b[4*p+3] = (unsigned char)buf[i+ww*j];
+	//   }
 
 	char s[100];
-	snprintf(s,100,"count: %d max %d min %d\n",state->count++,ma,mi);
-	rfbDrawString(state->server,&radonFont,20,270,s,0xffffff);
-
+	//snprintf(s,100,"count: %d max %d min %d\n",state->count++,ma,mi);
+	//rfbDrawString(state->server,&radonFont,20,270,s,0xffffff);
+	
       }
     }
   }
-  rfbMarkRectAsModified(state->server,0,0,w,h);
-  long usec = state->server->deferUpdateTime*1000;
-  rfbProcessEvents(state->server,usec);
+  //rfbMarkRectAsModified(state->server,0,0,w,h);
+  //long usec = state->server->deferUpdateTime*1000;
+  //rfbProcessEvents(state->server,usec);
   
   return 1; 
 }

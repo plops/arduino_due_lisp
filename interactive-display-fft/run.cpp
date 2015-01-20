@@ -38,14 +38,14 @@ extern "C" struct run_state * r_init()
 
   /* initialize VNC server */
   struct run_state *state = (run_state*)malloc(sizeof(*state));
-  printf("init\n");
-  state->server=rfbGetScreen(0,NULL,w,h,8,3,4);
-  if(!state->server)
-    return 0;
-  state->server->frameBuffer=(char*)malloc(w*h*4);
-  state->server->alwaysShared=(1==1);
-  state->server->port = 5911;
-  rfbInitServer(state->server);
+  // printf("init\n");
+  // state->server=rfbGetScreen(0,NULL,w,h,8,3,4);
+  // if(!state->server)
+  //   return 0;
+  // state->server->frameBuffer=(char*)malloc(w*h*4);
+  // state->server->alwaysShared=(1==1);
+  // state->server->port = 5911;
+  // rfbInitServer(state->server);
   
   
   global_state = state;
@@ -58,9 +58,13 @@ void set_exposure_time(struct run_state *state,unsigned int cam,unsigned int exp
 {
   if(state->cameras && state->cameras->GetSize()>cam){
     INodeMap &control = (*(state->cameras))[cam].GetNodeMap();
+
+    
     d(const CIntegerPtr nod=control.GetNode("ExposureTimeRaw");
       int inc = nod->GetInc();
-      nod->SetValue(inc*(exptime/inc));
+      int val = inc*(exptime/inc);
+      cout << "set exposure to: " <<   val << "..";
+      nod->SetValue(val);
       cout << "ExposureTimeRaw: " <<  nod->GetValue(1,1) << " " << endl;
       );
   }
@@ -140,9 +144,10 @@ extern "C" void r_finalize(struct run_state *state)
 {
   printf("finalize\n");
   /* close VNC server */
-  rfbShutdownServer(state->server,TRUE);
-  free(state->server->frameBuffer);
-  rfbScreenCleanup(state->server);
+  // rfbShutdownServer(state->server,TRUE);
+  // free(state->server->frameBuffer);
+  // rfbScreenCleanup(state->server);
+
 
   r_unload(state);
   //cout << "  pylon terminate" << endl;    d(PylonTerminate(););
