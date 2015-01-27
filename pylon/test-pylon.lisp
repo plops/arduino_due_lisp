@@ -11,6 +11,8 @@
 
 ;(ql:quickload "cffi")
 ;(ql:quickload "trivial-garbage")
+#+nil
+(ql:quickload "mgl-pax")
 
 (eval-when (:execute :load-toplevel :compile-toplevel)
   (setf asdf:*central-registry*
@@ -19,18 +21,29 @@
 	  #p"/home/martin/stage/cl-cffi-fftw3/"
 	  #p"/home/martin/stage/cl-ics/"
 	  #p"/home/martin/arduino_due_lisp/pylon/"
-	  #p"/home/martin/arduino_due_lisp/image-processing/"))
+	  #p"/home/martin/arduino_due_lisp/image-processing/"
+	  #p"/home/martin/stage/cl-pure-x11/"))
   (asdf:load-system "fftw")
   (asdf:load-system "pylon")
   (asdf:load-system "ics")
   (asdf:load-system "arduino-serial-sbcl")
-  (asdf:load-system "image-processing"))
+  (asdf:load-system "image-processing")
+  (asdf:load-system "pure-x11")
+  )
 
 
 (defpackage :pylon-test
-  (:use :cl :cffi :image-processing))
+  (:use :cl :cffi :image-processing :pure-x11))
 
 (in-package :pylon-test)
+
+#+nil
+(with-open-file (s "/dev/shm/README.html"
+		   :direction :output
+		   :if-exists :supersede
+		   :if-does-not-exist :create)
+  (mgl-pax:document pylon::@pylon-manual :stream s :format :html))
+
 
 (defparameter *ard* 
   (multiple-value-list
@@ -55,6 +68,12 @@
 
 #+nil
 (initialize-trigger-outputs)
+
+#+nil
+(progn
+  (connect)
+  (make-window)
+  (draw-window 0 0 100 100))
 
 #+nil
 (arduino-serial-sbcl:talk-arduino
@@ -477,8 +496,8 @@
 (defparameter *buf-s* (make-array (list 1 1) :element-type 'single-float))
  
 
-(let ((w 1920)
-      (h 1080))
+(let ((w 512)
+      (h 512))
   (defparameter *buf-c1* (make-array (* w h) :element-type '(complex double-float)))
   (defparameter *out-cs1* (make-array (* w h) :element-type '(complex single-float)))
   (defparameter *out-c1* (make-array (* w h) :element-type '(complex double-float)))

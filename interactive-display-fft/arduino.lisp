@@ -55,4 +55,4 @@
 (arduino-serial-sbcl:talk-arduino
    ( second *ard*) 
    (first *ard*)
-   "(dac 1940 1900)")
+   "(dac 1240 2200)")
