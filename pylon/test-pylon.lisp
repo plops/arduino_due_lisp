@@ -38,11 +38,11 @@
 (in-package :pylon-test)
 
 #+nil
-(with-open-file (s "/dev/shm/README.html"
+(with-open-file (s "/home/martin/arduino_due_lisp/pylon/README.md"
 		   :direction :output
 		   :if-exists :supersede
 		   :if-does-not-exist :create)
-  (mgl-pax:document pylon::@pylon-manual :stream s :format :html))
+  (mgl-pax:document pylon::@pylon-manual :stream s :format :markdown))
 
 
 (defparameter *ard* 

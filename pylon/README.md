@@ -1,9 +1,17 @@
-# pylon Common Lisp binding
+<a name='x-28PYLON-3A-40PYLON-MANUAL-20MGL-PAX-3ASECTION-29'></a>
 
-## introduction
+# Pylon Basler Gig-E Camera library manual
 
-I ran into problems when I tried to read out the three Gig-E cameras
-simultaneously using the free software aravis. 
+## Table of Contents
+
+- [1 Return values and errors][6a88]
+- [2 Example usage][f0b3]
+
+###### \[in package PYLON\]
+This package provides a `CFFI` interface to the Basler Pylon library for communicating with their Gig-E vision cameras.
+
+I ran into problems when I tried to read out three Gig-E cameras
+simultaneously using the free software aravis.
 
 The cameras (Basler) come with a proprietary development kit Pylon
 that contains a rather primitive Viewer application. This application
@@ -12,208 +20,268 @@ the images.
 
 I decided to call the Pylon SDK from Common Lisp. Unfortunately, Pylon
 only comes with a C++ interface and I had to create a few C wrapper
-functions first. I ran into trouble with Lisp again because I forgot
-to open the cameras with cameras->Open(). This call seems to be
-unnecessary in C but is crucial when calling from Lisp. The
-documentation is not as detailed as I would have hoped.
+functions first. 
 
 Before finding this solution I have already started to call the C++
 library directly from cling (a LLVM based C++ REPL). Using this
 command line interface it is quite easy to test the
 library. Unfortunately, Cling is not very well integrated with emacs
 and I didn't learn enough about it to understand how to do
-introspection. Therefore, I still prefer Common Lisp.
+introspection. Therefore, I still prefer developing in Common Lisp.
 
-## usage:
+<a name='x-28PYLON-3AINITIALIZE-20FUNCTION-29'></a>
 
-``` initialize ```
+- [function] **INITIALIZE** 
 
-Initializes the pylon runtime system. Call this before any other pylon
-function. Don't forget to call `terminate` before you close the lisp
-session. Otherwise cameras may need to be power cycled.
+    Initializes the pylon runtime system. Call this before any other
+    pylon function. Don't forget to call [`terminate`][9d0b] before you close the
+    lisp session. Otherwise cameras may need to be power cycled.
 
-``` factory => factory ```
+<a name='x-28PYLON-3ATERMINATE-20FUNCTION-29'></a>
 
-Return a transport level factory. Its return value is treated as an
-opaque pointer and only necessary as the first argument of `create`.
+- [function] **TERMINATE** *CAMS*
 
+    Deletes the opaque pointer to the CInstantCameraArray. Also
+    terminates the Pylon runtime and should close the cameras properly, so
+    that they can be opened by another Gig-e client program.
 
-``` create factory n => handle ```
+<a name='x-28PYLON-3ACREATE-20FUNCTION-29'></a>
 
-Given a transport level factory open `n` cameras. Error messages and
-the full names of the cameras are printed on stdout.  Returns an
-opaque pointer to a CInstantCameraArray which needs to be given as a
-handle to all other functions that access the cameras in some way.
+- [function] **CREATE** *FACTORY MAX-CAMERAS*
 
-``` terminate handle ```
+    Given a transport level factory open `n` cameras. Error messages
+    and the full names of the cameras are printed on stdout.  Returns an
+    opaque pointer to a CInstantCameraArray which needs to be given as a
+    handle to all other functions that access the cameras in some way.
 
-Deletes the opaque pointer to the CInstantCameraArray. Also terminates
-the Pylon runtime and should close the cameras properly, so that they
-can be opened by another Gig-e client program.
+<a name='x-28PYLON-3AFACTORY-20FUNCTION-29'></a>
 
+- [function] **FACTORY** 
 
-```
-cams-open  handle 
-cams-close handle
-```
+    Return a transport level factory. Its return value is treated as an
+    opaque pointer and only necessary as the first argument of [`create`][98d0].
 
-Issue the Open or Close command on all the cameras in the
-CInstantCameraArray `handle`.
+<a name='x-28PYLON-3ASTART-GRABBING-20FUNCTION-29'></a>
 
+- [function] **START-GRABBING** *CAMS*
 
-```
-cam-open  handle cam 
-cam-close handle cam
-```
+    Start acquisition on all cameras of the handle.
+    
+    Example:
+    `common-lisp
+    (progn
+      (defparameter *cams* (pylon:create (pylon::factory) 3) "Handle to multiple Pylon cameras.")
+      (unwind-protect 
+          (progn
+    	(pylon:start-grabbing *cams*)
+    	(let ((th (sb-thread:make-thread 
+    		   #'(lambda ()
+    		       (loop for i below 100 do
+    			     (multiple-value-bind (cam success-p w h framenr timestamp) 
+    				 (pylon::grab-store *cams* fds))))
+    		   :name "camera-acquisition")))
+    	  (sleep .001)
+    	  (sb-thread:join-thread th)))
+        (pylon:stop-grabbing *cams*)))
+    `
 
-Issue the Open or Close command only for the camera with index `cam`
-in the CInstantCameraArray `handle`. If `cam` is bigger than the
-number of available cameras, nothing is done.
+<a name='x-28PYLON-3AGRAB-20FUNCTION-29'></a>
 
+- [function] **GRAB** *CAMS BUF*
 
-```
-cam-get-full-name     handle cam => string
-```
+    => (values cam success-p w h frame-nr)
+    
+    OBSOLETE: This wrapper doesn't do the conversion from MONO12P. Use
+    [`GRAB-CDF`][4caf] or `GRAB-SF` instead.
+    
+    Copies one acquired image into an array `buf` of (unsigned-byte
+    8). The length of the array `BUF` must be at least `w*h`.  The image data
+    originates from one of the cameras in the handle `CAMS` as indicated by
+    the camera index `CAM` of the return values. The returned values `w` and
+    `h` indicate the dimensions of the returned image data in `buf`.
+    
+    In case of an error, all four return values are -1.
 
-Returns the full name of the camera as a string, e.g. "Basler
-acA1920-25gm#00305315DFDE#192.168.5.102:3956"
+<a name='x-28PYLON-3AGRAB-CDF-20FUNCTION-29'></a>
 
+- [function] **GRAB-CDF** *CAMS BUF*
 
-```
-cam-get-serial-number handle cam => string
-```
+    =>  (values cam success-p w h frame-nr) 
+    
+    Like `GRAB-SF` but converts the acquired into (complex
+    double-float).
 
-Returns the uniq serial number of a camera as a string,
-e.g. "21433566".
+<a name='x-28PYLON-3AGET-MAX-I-20FUNCTION-29'></a>
 
+- [function] **GET-MAX-I** *CAMS CAM NODE*
 
-``` 
-get-max-i   handle cam node => int
-get-min-i   handle cam node => int
-get-inc-i   handle cam node => int
-get-value-i handle cam node &optional verify ignore-cache  => int
-```
+    => int
+    
+    Return the maximum value of a Genicam integer node. The parameter
+    `node` is a string as defined by the Genicam standard. The return
+    value is an integer.
+    
+    example: 
+    `common-lisp
+    (pylon:get-max-i *cams* 0 "Width")
+    `
 
-Return the maximum, minimum, increment or current value of a Genicam
-integer node. The parameter `node` is a string as defined by the
-Genicam standard. The return value is an integer.
+<a name='x-28PYLON-3AGET-MIN-I-20FUNCTION-29'></a>
 
-example: 
-```common-lisp
-(pylon:get-max-i *cams* 0 "Width")
-(loop for e in '("Width" "Height" "OffsetX" "OffsetY") collect
-  (pylon:get-value-i *cams* 2 e t nil))
-```
+- [function] **GET-MIN-I** *CAMS CAM NODE*
 
-```
-get-symbolics-e handle cam node
-```
+    => int
+    
+    Return the minimum value of a Genicam integer node. The parameter
+    `node` is a string as defined by the Genicam standard. 
+    
+    example: 
+    `common-lisp
+    (pylon:get-min-i *cams* 0 "Width")
+    `
 
-Prints all the possible strings of a Genicam Enumeration node to
-stdout.  The parameter `node` is a string (e.g. "TriggerMode",
-"PixelFormat").
+<a name='x-28PYLON-3AGET-INC-I-20FUNCTION-29'></a>
 
-```
-get-value-e     handle cam node  => int
-set-value-e     handle cam node value
-```
+- [function] **GET-INC-I** *CAMS CAM NODE*
 
-Get or set an Genicam Enumeration node by using an integer identifier.
+    => int
+    
+    Return the increment value of a Genicam integer node. The parameter
+    `node` is a string as defined by the Genicam standard. 
+    
+    example: 
+    `common-lisp
+    (pylon:get-inc-i *cams* 0 "Width")
+    `
 
+<a name='x-28PYLON-3AGET-VALUE-F-20FUNCTION-29'></a>
 
-```
-to-string-e     handle cam node => int
-from-string-e   handle cam node value
-```
+- [function] **GET-VALUE-F** *CAMS CAM NODE &OPTIONAL (VERIFY NIL) (IGNORE-CACHE NIL)*
 
-`to-string-e` reads the current value of a Genicam Enumeration node
-and prints the string representation to stdout. It returns the
-corresponding integer identifier.
+    => single-float
+    
+    Return the current value of a Genicam float node. The parameter
+    `node` is a string as defined by the Genicam standard. 
+    
+    example: 
+    `common-lisp
+    (pylon:get-value-f *cams* 0 "ResultingFrameRateAbs")
+    `
 
-`from-string-e` sets the Genicam Enumeration node to the string
-`value`, e.g. the node "PixelFormat" to value "Mono8".
+<a name='x-28PYLON-3AGET-VALUE-B-20FUNCTION-29'></a>
 
-```
-command-execute handle cam node => int
-command-isdone  handle cam node => int
-```
+- [function] **GET-VALUE-B** *CAMS CAM NODE &OPTIONAL (VERIFY NIL) (IGNORE-CACHE NIL)*
 
-Execute a command on the device. E.g.:
-```(pylon::command-execute *cams* 1 "ClearLastError")```
-```
-start-grabbing handle
-stop-grabbing  handle
-```
+    => int
+    
+    Return the current value of a Genicam boolean node. The parameter
+    `node` is a string as defined by the Genicam standard. 
+    
+    example: 
+    `common-lisp
+    (pylon:get-value-b *cams* 0 "AcquisitionFrameRateEnable")
+    `
 
-Start acquisition on all cameras of the handle.
+<a name='x-28PYLON-3AGET-VALUE-I-20FUNCTION-29'></a>
 
+- [function] **GET-VALUE-I** *CAMS CAM NODE &OPTIONAL (VERIFY NIL) (IGNORE-CACHE NIL)*
 
-```
-grab     cams w h buf => (values cam success-p w h frame-nr)
-grab-cdf cams w h buf => (values cam success-p w h frame-nr)
-```
+    => int
+    
+    Return the current value of a Genicam integer node. The parameter
+    `node` is a string as defined by the Genicam standard. The return
+    value is an integer.
+    
+    example: 
+    `common-lisp
+    (pylon:get-inc-i *cams* 0 "Width")
+    `
 
-`grab` copies one acquired image into an array `buf` of (unsigned-byte
-8). The length of the array buf must be at least `w*h`. The image data
-originates from one of the cameras in the handle `cams` as indicated
-by the camera index `cam` of the return values. The returned values
-`w` and `h` indicate the dimensions of the returned image data in
-`buf`.
+<a name='x-28PYLON-3ASET-VALUE-I-20FUNCTION-29'></a>
 
-In case of an error, all four return values are -1.
+- [function] **SET-VALUE-I** *CAMS CAM NODE VALUE*
 
-`grab-cdf` converts the data into (complex double-float) to simplify
-further processing with fftw.
+    Set the value of a Genicam integer node.
 
+<a name='x-28PYLON-3AGET-SYMBOLICS-E-20FUNCTION-29'></a>
 
-```
-grab-store cams fds => (values cam success-p w h frame-nr)
-```
+- [function] **GET-SYMBOLICS-E** *CAMS CAM NODE*
 
-Acquire one image and store in one of the filedescriptors in the list
-`fds`. 
+    Prints all the possible strings of a Genicam Enumeration node to
+    stdout.  The parameter `node` is a string (e.g. "TriggerMode",
+    "PixelFormat").
 
-example use with external trigger:
+<a name='x-28PYLON-3ASET-VALUE-E-20FUNCTION-29'></a>
 
-```common-lisp
-(defparameter *cams* (pylon:create *fact* 3)) ;; open 3 cameras
+- [function] **SET-VALUE-E** *CAMS CAM NODE VALUE*
 
-(pylon:cams-open *cams*)
+    Set a Genicam Enumeration node by using an integer identifier.
 
-(let ((fds nil))
-  (unwind-protect 
-       (progn 
-	 (setf fds
-	       (loop for i below 3 collect
-		    (sb-unix::unix-open (format nil "/dev/shm/raw~a.raw" i) 
-					(logior sb-unix:o_creat sb-unix:o_trunc sb-unix:o_wronly) 
-					#o666)))
-	 (pylon:start-grabbing *cams*)
-	 (dotimes (j 100)
-	   ;; start a thread that waits for the 3 images 
-	   (let ((th (sb-thread:make-thread 
-		      #'(lambda ()
-			  (loop for i below 3 do
-			       (destructuring-bind (cam success-p w h framenr) 
-				   (multiple-value-list (pylon::grab-store *cams* fds))
-				 (unless (= 1 success-p)
-				   (format t "acquisition error. ~a~%" success-p)))))
-		      :name "camera-acquisition")))
-	     (sleep .01)
-	     ;; send trigger signal to the cameras
-	     (trigger-all-cameras)
-             (sleep .01)
-	     ;; wait for the data to arrive
-	     (sb-thread:join-thread th))))
-    (progn (pylon:stop-grabbing *cams*)
-	   (loop for e in fds do
-		(sb-unix::unix-close e)))))
-```
+<a name='x-28PYLON-3AGET-VALUE-E-20FUNCTION-29'></a>
 
+- [function] **GET-VALUE-E** *CAMS CAM NODE*
 
+    => int
+    
+    Get a Genicam Enumeration node by using an integer identifier.
 
+<a name='x-28PYLON-3ATO-STRING-E-20FUNCTION-29'></a>
 
-##  return values and errors:
+- [function] **TO-STRING-E** *CAMS CAM NODE*
+
+<a name='x-28PYLON-3AFROM-STRING-E-20FUNCTION-29'></a>
+
+- [function] **FROM-STRING-E** *CAMS CAM NODE VALUE*
+
+<a name='x-28PYLON-3ASTOP-GRABBING-20FUNCTION-29'></a>
+
+- [function] **STOP-GRABBING** *CAMS*
+
+<a name='x-28PYLON-3ACAMS-OPEN-20FUNCTION-29'></a>
+
+- [function] **CAMS-OPEN** *CAMS*
+
+    Issue Open command on all the cameras in the CInstantCameraArray hande.
+
+<a name='x-28PYLON-3ACAMS-CLOSE-20FUNCTION-29'></a>
+
+- [function] **CAMS-CLOSE** *CAMS*
+
+    Issue Close command on all the cameras in the CInstantCameraArray hande.
+
+<a name='x-28PYLON-3ACAM-OPEN-20FUNCTION-29'></a>
+
+- [function] **CAM-OPEN** *CAMS CAM*
+
+    Issue the Open command only for the camera with index `cam` in the
+    CInstantCameraArray `handle`. If `cam` is bigger than the number of
+    available cameras, nothing is done.
+
+<a name='x-28PYLON-3ACAM-CLOSE-20FUNCTION-29'></a>
+
+- [function] **CAM-CLOSE** *CAMS CAM*
+
+    Issue the Close command only for the camera with index `cam` in the
+    CInstantCameraArray `handle`. If `cam` is bigger than the number of
+    available cameras, nothing is done.
+
+<a name='x-28PYLON-3ACAM-GET-SERIAL-NUMBER-20FUNCTION-29'></a>
+
+- [function] **CAM-GET-SERIAL-NUMBER** *CAMS CAM*
+
+    Returns the uniq serial number of a camera as a string,
+    e.g. `21433566`.
+
+<a name='x-28PYLON-3ACAM-GET-FULL-NAME-20FUNCTION-29'></a>
+
+- [function] **CAM-GET-FULL-NAME** *CAMS CAM*
+
+    Returns the full name of the camera as a string, e.g. `Basler
+    acA1920-25gm#00305315DFDE#192.168.5.102:3956`
+
+<a name='x-28PYLON-3A-40PYLON-RETURN-20MGL-PAX-3ASECTION-29'></a>
+
+## 1 Return values and errors
 
 Pylon uses C++ exceptions to notify the user of its error
 conditions. Each C wrapper function catches the exceptions and prints
@@ -270,3 +338,59 @@ max(Width)=1468
 
 -=--:**--F1  *inferior-lisp*   All L42    (Comint:run) ----------------------------
 ```
+
+
+<a name='x-28PYLON-3A-40PYLON-EXAMPLE-20MGL-PAX-3ASECTION-29'></a>
+
+## 2 Example usage
+
+The following code will open three cameras, reset their frame
+  timers, set them to external trigger and acquire 100 images (overall
+  300 calls to grab-sf). The triggers are generated by the function
+  TRIGGER-ALL-CAMERAS and isn't documented here. In my code I instruct
+  the femtolisp running on an Arduino Due to create the trigger
+  pulses with the correct timing.
+
+```common-lisp
+(defparameter *fact* (pylon::factory) "Handle to Factory, which is needed for call to PYLON:CREATE.")
+(defparameter *cams* (pylon:create *fact* 3) "Handle to multiple Pylon cameras.")
+(dotimes (i 3)
+  (pylon:set-value-e *cams* i "TriggerMode" 1))
+(let* ((old 0)
+       (buf-s (make-array (list 1024 1024) :element-type 'single-float)))
+  (unwind-protect 
+      (progn
+	(dotimes (i 3) ;; reset frame timers on the cameras
+	  (pylon::command-execute *cams* i "GevTimestampControlReset"))
+	(pylon:start-grabbing *cams*)
+	(let ((th (sb-thread:make-thread 
+		   #'(lambda ()
+		       (loop for i below 100 do
+			    (dotimes (some-cam 3)
+			     (multiple-value-bind (cam success-p w h framenr timestamp) 
+				 (pylon::grab-sf *cams* buf-s)
+			       (declare (ignorable framenr)
+					(type (unsigned-byte 32) w h))
+			       (if success-p
+				   (progn
+				     ;; acquired data is in buf-s
+				     ;; do something with it
+				     ) 
+				   (format t "acquisition error.~%"))))))
+		   :name "camera-acquisition")))
+	  (sleep .001)
+	  (dotimes (i 100)
+	   (trigger-all-cameras))
+	  (sb-thread:join-thread th)))
+    (progn
+      (pylon:stop-grabbing *cams*)
+      (dotimes (i 3)
+	(pylon:set-value-e *cams* i "TriggerMode" 0)))))
+```
+
+
+  [4caf]: #x-28PYLON-3AGRAB-CDF-20FUNCTION-29 "(PYLON:GRAB-CDF FUNCTION)"
+  [6a88]: #x-28PYLON-3A-40PYLON-RETURN-20MGL-PAX-3ASECTION-29 "(PYLON:@PYLON-RETURN MGL-PAX:SECTION)"
+  [98d0]: #x-28PYLON-3ACREATE-20FUNCTION-29 "(PYLON:CREATE FUNCTION)"
+  [9d0b]: #x-28PYLON-3ATERMINATE-20FUNCTION-29 "(PYLON:TERMINATE FUNCTION)"
+  [f0b3]: #x-28PYLON-3A-40PYLON-EXAMPLE-20MGL-PAX-3ASECTION-29 "(PYLON:@PYLON-EXAMPLE MGL-PAX:SECTION)"
