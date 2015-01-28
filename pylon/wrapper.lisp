@@ -46,7 +46,8 @@ Example:
 	  (sleep .001)
 	  (sb-thread:join-thread th)))
     (pylon:stop-grabbing *cams*)))
-```"
+```
+"
   (cams :pointer))
 
 (cffi:defcfun ("pylon_wrapper_grab" %grab) :void
@@ -277,7 +278,8 @@ value is an integer.
 example: 
 ```common-lisp
 (pylon:get-max-i *cams* 0 \"Width\")
-```"
+```
+"
   (cams :pointer)
   (cam :int)
   (node :string))
@@ -340,7 +342,8 @@ Return the current value of a Genicam float node. The parameter
 example: 
 ```common-lisp
 (pylon:get-value-f *cams* 0 \"ResultingFrameRateAbs\")
-```"
+```
+"
   (%get-value-f cams cam node (if verify 1 0) (if ignore-cache 1 0)))
 (defun get-value-b (cams cam node &optional (verify nil) (ignore-cache nil))
   "=> int
@@ -351,7 +354,8 @@ Return the current value of a Genicam boolean node. The parameter
 example: 
 ```common-lisp
 (pylon:get-value-b *cams* 0 \"AcquisitionFrameRateEnable\")
-```"
+```
+"
   (%get-value-b cams cam node (if verify 1 0) (if ignore-cache 1 0)))
 (defun get-value-i (cams cam node &optional (verify nil) (ignore-cache nil))
   "=> int
@@ -363,7 +367,8 @@ value is an integer.
 example: 
 ```common-lisp
 (pylon:get-inc-i *cams* 0 \"Width\")
-```"
+```
+"
   (%get-value-i cams cam node (if verify 1 0) (if ignore-cache 1 0)))
 
 (cffi:defcfun ("pylon_wrapper_set_value_i" set-value-i) :void
@@ -403,7 +408,8 @@ Example:
 ```common-lisp
 (pylon::command-execute *cams* 1 \"ClearLastError\")
 (pylon::command-isdone *cams* 1 \"ClearLastError\")
-```"
+```
+"
   (cams :pointer)
   (cam :int)
   (node :string))
@@ -413,7 +419,9 @@ Example:
 
 Example:
 ```common-lisp
-(pylon::command-execute *cams* 1 \"ClearLastError\")```"
+(pylon::command-execute *cams* 1 \"ClearLastError\")
+```
+"
   (cams :pointer)
   (cam :int)
   (node :string))

@@ -193,5 +193,6 @@ max(Width)=1468
     (progn
       (pylon:stop-grabbing *cams*)
       (dotimes (i 3)
-	(pylon:set-value-e *cams* i \"TriggerMode\" 0)))))```")
+	(pylon:set-value-e *cams* i \"TriggerMode\" 0)))))
+```")
 
