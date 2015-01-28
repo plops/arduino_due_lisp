@@ -28,10 +28,25 @@ handle to all other functions that access the cameras in some way."
   (%create factory max-cameras))
 
 (cffi:defcfun ("pylon_wrapper_start_grabbing" start-grabbing) :void
-  "Given a transport level factory open `n` cameras. Error messages
-and the full names of the cameras are printed on stdout.  Returns an
-opaque pointer to a CInstantCameraArray which needs to be given as a
-handle to all other functions that access the cameras in some way."
+  "Start acquisition on all cameras of the handle.
+
+Example:
+```common-lisp
+(progn
+  (defparameter *cams* (pylon:create (pylon::factory) 3) \"Handle to multiple Pylon cameras.\")
+  (unwind-protect 
+      (progn
+	(pylon:start-grabbing *cams*)
+	(let ((th (sb-thread:make-thread 
+		   #'(lambda ()
+		       (loop for i below 100 do
+			     (multiple-value-bind (cam success-p w h framenr timestamp) 
+				 (pylon::grab-store *cams* fds))))
+		   :name \"camera-acquisition\")))
+	  (sleep .001)
+	  (sb-thread:join-thread th)))
+    (pylon:stop-grabbing *cams*)))
+```"
   (cams :pointer))
 
 (cffi:defcfun ("pylon_wrapper_grab" %grab) :void
@@ -230,6 +245,8 @@ Example usage:
 		   :name \"camera-acquisition\")))
 	  (sleep .001)
 	  (sb-thread:join-thread th)))
+    (pylon:stop-grabbing *cams*))
+  (mapcar #'close fda))
 ```
 "
   (let* ((n (length fds))
@@ -260,8 +277,7 @@ value is an integer.
 example: 
 ```common-lisp
 (pylon:get-max-i *cams* 0 \"Width\")
-```
-"
+```"
   (cams :pointer)
   (cam :int)
   (node :string))
