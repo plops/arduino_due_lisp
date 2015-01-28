@@ -161,7 +161,9 @@ largest image is sufficient in this case.
 
 The IMAGENR and TIMESTAMP indicate acquisition time of the image.
 This code allows to reset the counter on the camera:
+```common-lisp
 (pylon::command-execute CAMS 0 \"GevTimestampControlReset\")
+```
 
 The data can be fouriertransformed using FFTW:RFTF.
 
@@ -204,7 +206,32 @@ In case of an error, all four return values are -1."
   (frame-nr (:pointer :int)))
 
 (defun grab-store (cams fds)
-  "grab one image and write it into one of the file descriptors"
+  "Grab one image and write it into one of the file descriptors. 
+
+Example usage:
+
+```common-lisp
+(let* ((fda (loop for i below 3 collect (open (format nil \"/media/sdd3/b/cam~d\" i)
+					      :direction :output
+					      :if-exists :supersede)))
+       (fds (mapcar #'sb-sys:fd-stream-fd fda)))
+  (defparameter *fact* (pylon::factory) \"Handle to Factory, which is needed for call to PYLON:CREATE.\")
+  (defparameter *cams* (pylon:create *fact* 3) \"Handle to multiple Pylon cameras.\")
+  (unwind-protect 
+      (progn
+	(dotimes (i 3) ;; reset timers on the cameras
+	  (pylon::command-execute *cams* i \"GevTimestampControlReset\"))
+	(pylon:start-grabbing *cams*)
+	(let ((th (sb-thread:make-thread 
+		   #'(lambda ()
+		       (loop for i below 100 do
+			     (multiple-value-bind (cam success-p w h framenr timestamp) 
+				 (pylon::grab-store *cams* fds))))
+		   :name \"camera-acquisition\")))
+	  (sleep .001)
+	  (sb-thread:join-thread th)))
+```
+"
   (let* ((n (length fds))
 	 (fda (make-array n :element-type '(signed-byte 32)
 			  :initial-contents fds)))
@@ -224,17 +251,48 @@ In case of an error, all four return values are -1."
 
 
 (cffi:defcfun ("pylon_wrapper_get_max_i" get-max-i) :int
+  "=> int
+
+Return the maximum value of a Genicam integer node. The parameter
+`node` is a string as defined by the Genicam standard. The return
+value is an integer.
+
+example: 
+```common-lisp
+(pylon:get-max-i *cams* 0 \"Width\")
+```
+"
   (cams :pointer)
   (cam :int)
   (node :string))
 
 (cffi:defcfun ("pylon_wrapper_get_min_i" get-min-i) :int
+  "=> int
+
+Return the minimum value of a Genicam integer node. The parameter
+`node` is a string as defined by the Genicam standard. 
+
+example: 
+```common-lisp
+(pylon:get-min-i *cams* 0 \"Width\")
+```
+"
   (cams :pointer)
   (cam :int)
   (node :string))
 
 (cffi:defcfun ("pylon_wrapper_get_inc_i" get-inc-i) :int
-  (cams :pointer)
+  "=> int
+
+Return the increment value of a Genicam integer node. The parameter
+`node` is a string as defined by the Genicam standard. 
+
+example: 
+```common-lisp
+(pylon:get-inc-i *cams* 0 \"Width\")
+```
+"
+(cams :pointer)
   (cam :int)
   (node :string))
 
@@ -251,47 +309,95 @@ In case of an error, all four return values are -1."
   (verify :int)
   (ignore-cache :int))
 (cffi:defcfun ("pylon_wrapper_get_value_i" %get-value-i) :int
-  (cams :pointer)
+   (cams :pointer)
   (cam :int)
   (node :string)
   (verify :int)
   (ignore-cache :int))
 
 (defun get-value-f (cams cam node &optional (verify nil) (ignore-cache nil))
+  "=> single-float
+
+Return the current value of a Genicam float node. The parameter
+`node` is a string as defined by the Genicam standard. 
+
+example: 
+```common-lisp
+(pylon:get-value-f *cams* 0 \"ResultingFrameRateAbs\")
+```"
   (%get-value-f cams cam node (if verify 1 0) (if ignore-cache 1 0)))
 (defun get-value-b (cams cam node &optional (verify nil) (ignore-cache nil))
+  "=> int
+
+Return the current value of a Genicam boolean node. The parameter
+`node` is a string as defined by the Genicam standard. 
+
+example: 
+```common-lisp
+(pylon:get-value-b *cams* 0 \"AcquisitionFrameRateEnable\")
+```"
   (%get-value-b cams cam node (if verify 1 0) (if ignore-cache 1 0)))
 (defun get-value-i (cams cam node &optional (verify nil) (ignore-cache nil))
+  "=> int
+
+Return the current value of a Genicam integer node. The parameter
+`node` is a string as defined by the Genicam standard. The return
+value is an integer.
+
+example: 
+```common-lisp
+(pylon:get-inc-i *cams* 0 \"Width\")
+```"
   (%get-value-i cams cam node (if verify 1 0) (if ignore-cache 1 0)))
 
 (cffi:defcfun ("pylon_wrapper_set_value_i" set-value-i) :void
+  "Set the value of a Genicam integer node."
   (cams :pointer)
   (cam :int)
   (node :string)
   (value :int))
 
 (cffi:defcfun ("pylon_wrapper_get_symbolics_e" get-symbolics-e) :int
+  "Prints all the possible strings of a Genicam Enumeration node to
+stdout.  The parameter `node` is a string (e.g. \"TriggerMode\",
+\"PixelFormat\")."
   (cams :pointer)
   (cam :int)
   (node :string))
 
 (cffi:defcfun ("pylon_wrapper_set_value_e" set-value-e) :void
+  "Set a Genicam Enumeration node by using an integer identifier."
   (cams :pointer)
   (cam :int)
   (node :string)
   (value :int))
 
 (cffi:defcfun ("pylon_wrapper_get_value_e" get-value-e) :int
+  "=> int
+
+Get a Genicam Enumeration node by using an integer identifier."
   (cams :pointer)
   (cam :int)
   (node :string))
 
 (cffi:defcfun ("pylon_wrapper_command_isdone" command-isdone) :int
+  "Check if a command that has been issued for execution has finished.
+
+Example:
+```common-lisp
+(pylon::command-execute *cams* 1 \"ClearLastError\")
+(pylon::command-isdone *cams* 1 \"ClearLastError\")
+```"
   (cams :pointer)
   (cam :int)
   (node :string))
 
 (cffi:defcfun ("pylon_wrapper_command_execute" command-execute) :int
+  "Execute a command on the device. If it is finished can be checked with COMMAND-ISDONE
+
+Example:
+```common-lisp
+(pylon::command-execute *cams* 1 \"ClearLastError\")```"
   (cams :pointer)
   (cam :int)
   (node :string))
@@ -311,23 +417,35 @@ In case of an error, all four return values are -1."
   (cams :pointer))
 
 (cffi:defcfun ("pylon_wrapper_cams_open" cams-open) :void
+  "Issue Open command on all the cameras in the CInstantCameraArray hande."
   (cams :pointer))
 
 (cffi:defcfun ("pylon_wrapper_cams_close" cams-close) :void
+  "Issue Close command on all the cameras in the CInstantCameraArray hande."
   (cams :pointer))
 
 (cffi:defcfun ("pylon_wrapper_cam_open" cam-open) :void
+  "Issue the Open command only for the camera with index `cam` in the
+CInstantCameraArray `handle`. If `cam` is bigger than the number of
+available cameras, nothing is done."
   (cams :pointer)
   (cam :int))
 
 (cffi:defcfun ("pylon_wrapper_cam_close" cam-close) :void
+  "Issue the Close command only for the camera with index `cam` in the
+CInstantCameraArray `handle`. If `cam` is bigger than the number of
+available cameras, nothing is done."
   (cams :pointer)
   (cam :int))
 
 (cffi:defcfun ("pylon_wrapper_cam_get_serial_number" cam-get-serial-number) :string
+  "Returns the uniq serial number of a camera as a string,
+e.g. `21433566`."
   (cams :pointer)
   (cam :int))
 (cffi:defcfun ("pylon_wrapper_cam_get_full_name" cam-get-full-name) :string
+  "Returns the full name of the camera as a string, e.g. `Basler
+acA1920-25gm#00305315DFDE#192.168.5.102:3956`"
   (cams :pointer)
   (cam :int))
 
