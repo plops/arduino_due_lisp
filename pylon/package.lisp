@@ -1,5 +1,4 @@
-#+generate-pylon-doc
-(mgl-pax:define-package #:pylon
+#+generate-pylon-doc(mgl-pax:define-package #:pylon
   (:documentation "CFFI binding to the Pylon library for Basler Gig-E
   cameras (it uses a C wrapper to this C++ library). See
   PYLON:@PYLON-MANUAL.")
@@ -42,11 +41,25 @@
 (defsection @pylon-manual (:title "Pylon Basler Gig-E Camera library manual")
   "This package provides a CFFI interface to the Basler Pylon library for communicating with their Gig-E vision cameras.
 
-  Connect will send a request to open a connection to the X-Server and
-  parses its response to obtain the constants *RESOURCE-ID-BASE*,
-  *RESOURCE-ID-MASK* and *ROOT*. These are stored in dynamic variables
-  and are later used by other functions, e.g. by MAKE-WINDOW to create
-  a new window."
+I ran into problems when I tried to read out three Gig-E cameras
+simultaneously using the free software aravis.
+
+The cameras (Basler) come with a proprietary development kit Pylon
+that contains a rather primitive Viewer application. This application
+seems to work well with all three cameras but doesn't allow to store
+the images.
+
+I decided to call the Pylon SDK from Common Lisp. Unfortunately, Pylon
+only comes with a C++ interface and I had to create a few C wrapper
+functions first. 
+
+Before finding this solution I have already started to call the C++
+library directly from cling (a LLVM based C++ REPL). Using this
+command line interface it is quite easy to test the
+library. Unfortunately, Cling is not very well integrated with emacs
+and I didn't learn enough about it to understand how to do
+introspection. Therefore, I still prefer developing in Common Lisp.
+"
   (initialize function)
   (terminate function)
   (create function)
