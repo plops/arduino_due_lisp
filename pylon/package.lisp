@@ -216,5 +216,65 @@ max(Width)=1468
 Note that repeated reruns of CREATE (after TERMINATE) will
 not necessarily sort the cameras in the same order. 
 
+An appropriate order can be established by asking each camera for
+its serial number: `(parse-integer (pylon:cam-get-serial-number *cams* 2))`.
+
+Other camera specific parameters are also accessible. For my application the
+following code returns the parameters I have to set to appropriate values. The
+region of interest is defined as `Width x Height + OffsetX + OffsetY`. I use
+`ReverseX` to compensate for a reflection on a beam splitter.
+
+The cameras maintain these parameters even when being powercycled. That is why I usually set
+them in the graphics PylonViewer application, that comes with pylon.  Then I use the following
+code to obtain the settings as an s-expression.
+
+```common-lisp
+(loop for j below 3 collect
+      (append 
+       (loop for e in '(\"BinningHorizontal\" \"BinningVertical\" 
+			\"Width\" \"Height\"
+			\"OffsetX\" \"OffsetY\" 
+			\"ExposureTimeRaw\" \"GainRaw\" 
+			\"GevTimestampTickFrequency\" \"GevSCPSPacketSize\") collect
+			(pylon:get-value-i *cams* j e t nil)
+			)
+       (list :trigger-mode (pylon:get-value-e *cams* j \"TriggerMode\")
+	     :last-error (pylon:get-value-e *cams* j \"LastError\")
+	     :rate-p (pylon:get-value-b *cams* j \"AcquisitionFrameRateEnable\")
+	     :reverse-x (pylon:get-value-b *cams* j \"ReverseX\")
+	     :rate (pylon:get-value-f *cams* j \"ResultingFrameRateAbs\")
+	     :temp (pylon:get-value-f *cams* j \"TemperatureAbs\"))))
+```
+
+I then store the camera specific parameters in a hash table that is indexed by the cameras
+serial number.
+
+
+```common-lisp
+(defparameter *cam-parameters*
+  `((21433565    1    1  280   280 nil        777  337 230  82  90  0   70 \"transmission with polrot (top)\")
+    (21433566    1    1  512   512 nil        789  112 482 429  90  0 4200 \"backreflection with polrot\")  
+    (21433540    1    1  280   280 t          985  427 206 213  90  0   70 \"transmission same pol\"))
+  \"    id      binx  biny  w    h  reverse-x   x    y  kx  ky   d   g   e   name\")
+
+(let ((a nil))
+  (defun init-cam-parameter-hash ()
+    (setf a (make-hash-table))
+    (loop for (id      binx  biny  w   h rev    x    y kx  ky   d  g   e   name)
+	  in *cam-parameters* do
+	  (setf (gethash id a) (list id      binx  biny  w   h rev    x    y kx  ky   d  g   e   name))))
+  (defun get-cam-parameters (cam)
+    (gethash (parse-integer (pylon:cam-get-serial-number *cams* cam)) a)))
+
+(init-cam-parameter-hash)
+
+(loop for i below 3 collect
+      (destructuring-bind (id      binx  biny  w   h rev    x    y  kx  ky   d   g   e   name)
+	  (get-cam-parameters i)
+	(let ((inc (pylon:get-inc-i *cams* i \"ExposureTimeRaw\")))
+	  (pylon:set-value-i *cams* i \"ExposureTimeRaw\" (* inc (floor e inc))))
+       (list e (pylon:get-value-i *cams* i \"ExposureTimeRaw\"))))
+```
+
 ")
 

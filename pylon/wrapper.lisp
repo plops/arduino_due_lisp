@@ -31,6 +31,7 @@ handle to all other functions that access the cameras in some way."
   "Start acquisition on all cameras of the handle.
 
 Example:
+
 ```common-lisp
 (progn
   (defparameter *cams* (pylon:create (pylon::factory) 3) \"Handle to multiple Pylon cameras.\")
@@ -177,6 +178,7 @@ largest image is sufficient in this case.
 
 The IMAGENR and TIMESTAMP indicate acquisition time of the image.
 This code allows to reset the counter on the camera:
+
 ```common-lisp
 (pylon::command-execute CAMS 0 \"GevTimestampControlReset\")
 ```
@@ -275,7 +277,8 @@ Return the maximum value of a Genicam integer node. The parameter
 `node` is a string as defined by the Genicam standard. The return
 value is an integer.
 
-example: 
+Example:
+ 
 ```common-lisp
 (pylon:get-max-i *cams* 0 \"Width\")
 ```
@@ -290,7 +293,8 @@ example:
 Return the minimum value of a Genicam integer node. The parameter
 `node` is a string as defined by the Genicam standard. 
 
-example: 
+Example:
+ 
 ```common-lisp
 (pylon:get-min-i *cams* 0 \"Width\")
 ```
@@ -305,7 +309,8 @@ example:
 Return the increment value of a Genicam integer node. The parameter
 `node` is a string as defined by the Genicam standard. 
 
-example: 
+Example:
+ 
 ```common-lisp
 (pylon:get-inc-i *cams* 0 \"Width\")
 ```
@@ -339,7 +344,8 @@ example:
 Return the current value of a Genicam float node. The parameter
 `node` is a string as defined by the Genicam standard. 
 
-example: 
+Example:
+ 
 ```common-lisp
 (pylon:get-value-f *cams* 0 \"ResultingFrameRateAbs\")
 ```
@@ -351,7 +357,8 @@ example:
 Return the current value of a Genicam boolean node. The parameter
 `node` is a string as defined by the Genicam standard. 
 
-example: 
+Example:
+ 
 ```common-lisp
 (pylon:get-value-b *cams* 0 \"AcquisitionFrameRateEnable\")
 ```
@@ -364,7 +371,8 @@ Return the current value of a Genicam integer node. The parameter
 `node` is a string as defined by the Genicam standard. The return
 value is an integer.
 
-example: 
+Example: 
+
 ```common-lisp
 (pylon:get-inc-i *cams* 0 \"Width\")
 ```
@@ -405,6 +413,7 @@ Get a Genicam Enumeration node by using an integer identifier."
   "Check if a command that has been issued for execution has finished.
 
 Example:
+
 ```common-lisp
 (pylon::command-execute *cams* 1 \"ClearLastError\")
 (pylon::command-isdone *cams* 1 \"ClearLastError\")
@@ -418,6 +427,7 @@ Example:
   "Execute a command on the device. If it is finished can be checked with COMMAND-ISDONE
 
 Example:
+
 ```common-lisp
 (pylon::command-execute *cams* 1 \"ClearLastError\")
 ```

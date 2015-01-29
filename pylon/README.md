@@ -68,7 +68,8 @@ introspection. Therefore, I still prefer developing in Common Lisp.
     Start acquisition on all cameras of the handle.
     
     Example:
-    `common-lisp
+    
+    ```common-lisp
     (progn
       (defparameter *cams* (pylon:create (pylon::factory) 3) "Handle to multiple Pylon cameras.")
       (unwind-protect 
@@ -83,7 +84,8 @@ introspection. Therefore, I still prefer developing in Common Lisp.
     	  (sleep .001)
     	  (sb-thread:join-thread th)))
         (pylon:stop-grabbing *cams*)))
-    `
+    ```
+
 
 <a name='x-28PYLON-3AGRAB-SF-20FUNCTION-29'></a>
 
@@ -107,9 +109,10 @@ introspection. Therefore, I still prefer developing in Common Lisp.
     
     The `IMAGENR` and `TIMESTAMP` indicate acquisition time of the image.
     This code allows to reset the counter on the camera:
-    `common-lisp
+    
+    ```common-lisp
     (pylon::command-execute CAMS 0 "GevTimestampControlReset")
-    `
+    ```
     
     The data can be fouriertransformed using FFTW:RFTF.
     
@@ -151,10 +154,12 @@ introspection. Therefore, I still prefer developing in Common Lisp.
     `node` is a string as defined by the Genicam standard. The return
     value is an integer.
     
-    example: 
-    `common-lisp
+    Example:
+    
+    ```common-lisp
     (pylon:get-max-i *cams* 0 "Width")
-    `
+    ```
+
 
 <a name='x-28PYLON-3AGET-MIN-I-20FUNCTION-29'></a>
 
@@ -165,10 +170,12 @@ introspection. Therefore, I still prefer developing in Common Lisp.
     Return the minimum value of a Genicam integer node. The parameter
     `node` is a string as defined by the Genicam standard. 
     
-    example: 
-    `common-lisp
+    Example:
+    
+    ```common-lisp
     (pylon:get-min-i *cams* 0 "Width")
-    `
+    ```
+
 
 <a name='x-28PYLON-3AGET-INC-I-20FUNCTION-29'></a>
 
@@ -179,10 +186,12 @@ introspection. Therefore, I still prefer developing in Common Lisp.
     Return the increment value of a Genicam integer node. The parameter
     `node` is a string as defined by the Genicam standard. 
     
-    example: 
-    `common-lisp
+    Example:
+    
+    ```common-lisp
     (pylon:get-inc-i *cams* 0 "Width")
-    `
+    ```
+
 
 <a name='x-28PYLON-3AGET-VALUE-F-20FUNCTION-29'></a>
 
@@ -193,10 +202,12 @@ introspection. Therefore, I still prefer developing in Common Lisp.
     Return the current value of a Genicam float node. The parameter
     `node` is a string as defined by the Genicam standard. 
     
-    example: 
-    `common-lisp
+    Example:
+    
+    ```common-lisp
     (pylon:get-value-f *cams* 0 "ResultingFrameRateAbs")
-    `
+    ```
+
 
 <a name='x-28PYLON-3AGET-VALUE-B-20FUNCTION-29'></a>
 
@@ -207,10 +218,12 @@ introspection. Therefore, I still prefer developing in Common Lisp.
     Return the current value of a Genicam boolean node. The parameter
     `node` is a string as defined by the Genicam standard. 
     
-    example: 
-    `common-lisp
+    Example:
+    
+    ```common-lisp
     (pylon:get-value-b *cams* 0 "AcquisitionFrameRateEnable")
-    `
+    ```
+
 
 <a name='x-28PYLON-3AGET-VALUE-I-20FUNCTION-29'></a>
 
@@ -222,10 +235,12 @@ introspection. Therefore, I still prefer developing in Common Lisp.
     `node` is a string as defined by the Genicam standard. The return
     value is an integer.
     
-    example: 
-    `common-lisp
+    Example: 
+    
+    ```common-lisp
     (pylon:get-inc-i *cams* 0 "Width")
-    `
+    ```
+
 
 <a name='x-28PYLON-3ASET-VALUE-I-20FUNCTION-29'></a>
 
@@ -434,7 +449,67 @@ The ([`FACTORY`][74c0] `FUNCTION`) returns the instance of the transport level
 ```
 
 Note that repeated reruns of [`CREATE`][98d0] (after [`TERMINATE`][9d0b]) will
-not necessarily sort the cameras in the same order.
+not necessarily sort the cameras in the same order. 
+
+An appropriate order can be established by asking each camera for
+its serial number: `(parse-integer (pylon:cam-get-serial-number *cams* 2))`.
+
+Other camera specific parameters are also accessible. For my application the
+following code returns the parameters I have to set to appropriate values. The
+region of interest is defined as `Width x Height + OffsetX + OffsetY`. I use
+`ReverseX` to compensate for a reflection on a beam splitter.
+
+The cameras maintain these parameters even when being powercycled. That is why I usually set
+them in the graphics PylonViewer application, that comes with pylon.  Then I use the following
+code to obtain the settings as an s-expression.
+
+```common-lisp
+(loop for j below 3 collect
+      (append 
+       (loop for e in '("BinningHorizontal" "BinningVertical" 
+			"Width" "Height"
+			"OffsetX" "OffsetY" 
+			"ExposureTimeRaw" "GainRaw" 
+			"GevTimestampTickFrequency" "GevSCPSPacketSize") collect
+			(pylon:get-value-i *cams* j e t nil)
+			)
+       (list :trigger-mode (pylon:get-value-e *cams* j "TriggerMode")
+	     :last-error (pylon:get-value-e *cams* j "LastError")
+	     :rate-p (pylon:get-value-b *cams* j "AcquisitionFrameRateEnable")
+	     :reverse-x (pylon:get-value-b *cams* j "ReverseX")
+	     :rate (pylon:get-value-f *cams* j "ResultingFrameRateAbs")
+	     :temp (pylon:get-value-f *cams* j "TemperatureAbs"))))
+```
+
+I then store the camera specific parameters in a hash table that is indexed by the cameras
+serial number.
+
+```common-lisp
+(defparameter *cam-parameters*
+  `((21433565    1    1  280   280 nil        777  337 230  82  90  0   70 "transmission with polrot (top)")
+    (21433566    1    1  512   512 nil        789  112 482 429  90  0 4200 "backreflection with polrot")  
+    (21433540    1    1  280   280 t          985  427 206 213  90  0   70 "transmission same pol"))
+  "    id      binx  biny  w    h  reverse-x   x    y  kx  ky   d   g   e   name")
+
+(let ((a nil))
+  (defun init-cam-parameter-hash ()
+    (setf a (make-hash-table))
+    (loop for (id      binx  biny  w   h rev    x    y kx  ky   d  g   e   name)
+	  in *cam-parameters* do
+	  (setf (gethash id a) (list id      binx  biny  w   h rev    x    y kx  ky   d  g   e   name))))
+  (defun get-cam-parameters (cam)
+    (gethash (parse-integer (pylon:cam-get-serial-number *cams* cam)) a)))
+
+(init-cam-parameter-hash)
+
+(loop for i below 3 collect
+      (destructuring-bind (id      binx  biny  w   h rev    x    y  kx  ky   d   g   e   name)
+	  (get-cam-parameters i)
+	(let ((inc (pylon:get-inc-i *cams* i "ExposureTimeRaw")))
+	  (pylon:set-value-i *cams* i "ExposureTimeRaw" (* inc (floor e inc))))
+       (list e (pylon:get-value-i *cams* i "ExposureTimeRaw"))))
+```
+
 
   [09b8]: #x-28PYLON-3ACAM-OPEN-20FUNCTION-29 "(PYLON:CAM-OPEN FUNCTION)"
   [1ba2]: #x-28PYLON-3ASTART-GRABBING-20FUNCTION-29 "(PYLON:START-GRABBING FUNCTION)"
