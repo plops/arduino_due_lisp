@@ -396,10 +396,10 @@ The following code will open three cameras, reset their frame
   the femtolisp running on an Arduino Due to create the trigger
   pulses with the correct timing.
 
-The ([`FACTORY`][74c0] `FUNCTION`) returns the instance of the transport level
-  factory. It is quite an internal construct to the Pylon C++ library
-  and not useful in this Common Lisp wrapper except that it is
-  necessary for the call to [`CREATE`][98d0].
+[`FACTORY`][74c0] returns the instance of the transport level factory. It is
+  quite an internal construct to the Pylon C++ library and not useful
+  in this Common Lisp wrapper except that it is necessary for the call
+  to [`CREATE`][98d0].
 
 ([`CREATE`][98d0] `FUNCTION`) tries to open at most `MAX-CAMERAS` and returns an
   opaque pointer handle to an array of these cameras. Some other

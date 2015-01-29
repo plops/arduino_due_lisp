@@ -160,10 +160,10 @@ max(Width)=1468
   the femtolisp running on an Arduino Due to create the trigger
   pulses with the correct timing.
 
-  The (FACTORY FUNCTION) returns the instance of the transport level
-  factory. It is quite an internal construct to the Pylon C++ library
-  and not useful in this Common Lisp wrapper except that it is
-  necessary for the call to CREATE.
+  FACTORY returns the instance of the transport level factory. It is
+  quite an internal construct to the Pylon C++ library and not useful
+  in this Common Lisp wrapper except that it is necessary for the call
+  to CREATE.
 
   (CREATE FUNCTION) tries to open at most MAX-CAMERAS and returns an
   opaque pointer handle to an array of these cameras. Some other
