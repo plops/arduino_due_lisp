@@ -185,32 +185,32 @@ max(Width)=1468
        (buf-s (make-array (list 1024 1024) :element-type 'single-float)))
   (unwind-protect 
        (progn
-	 (dotimes (i 3) ;; reset frame timers on the cameras ;
-	   (pylon::command-execute *cams* i \"GevTimestampControlReset\"))
-	 (pylon:start-grabbing *cams*)
-	 (let ((th (sb-thread:make-thread 
-		    #'(lambda ()
-			(loop for i below 100 do
-			     (dotimes (some-cam 3)
-			       (multiple-value-bind (cam success-p w h framenr timestamp) 
-				   (pylon::grab-sf *cams* buf-s)
-				 (declare (ignorable framenr)
-					  (type (unsigned-byte 32) w h))
-				 (if success-p
-				     (progn
-				     ;; acquired data is in buf-s ;
-				     ;; do something with it ;
-				       ) 
-				     (format t \"acquisition error.~%\"))))))
-		    :name \"camera-acquisition\")))
-	   (sleep .001)
-	   (dotimes (i 100)
-	     (trigger-all-cameras))
-	   (sb-thread:join-thread th)))
+         (dotimes (i 3) ;; reset frame timers on the cameras ;
+           (pylon::command-execute *cams* i \"GevTimestampControlReset\"))
+         (pylon:start-grabbing *cams*)
+         (let ((th (sb-thread:make-thread 
+                    #'(lambda ()
+                        (loop for i below 100 do
+                             (dotimes (some-cam 3)
+                               (multiple-value-bind (cam success-p w h framenr timestamp) 
+                                   (pylon::grab-sf *cams* buf-s)
+                                 (declare (ignorable framenr)
+                                          (type (unsigned-byte 32) w h))
+                                 (if success-p
+                                     (progn
+                                     ;; acquired data is in buf-s ;
+                                     ;; do something with it ;
+                                       ) 
+                                     (format t \"acquisition error.~%\"))))))
+                    :name \"camera-acquisition\")))
+           (sleep .001)
+           (dotimes (i 100)
+             (trigger-all-cameras))
+           (sb-thread:join-thread th)))
     (progn
       (pylon:stop-grabbing *cams*)
       (dotimes (i 3)
-	(pylon:set-value-e *cams* i \"TriggerMode\" 0)))))
+        (pylon:set-value-e *cams* i \"TriggerMode\" 0)))))
 ```
 
 Note that repeated reruns of CREATE (after TERMINATE) will
