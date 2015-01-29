@@ -85,20 +85,33 @@ introspection. Therefore, I still prefer developing in Common Lisp.
         (pylon:stop-grabbing *cams*)))
     `
 
-<a name='x-28PYLON-3AGRAB-20FUNCTION-29'></a>
+<a name='x-28PYLON-3AGRAB-SF-20FUNCTION-29'></a>
 
-- [function] **GRAB** *CAMS BUF*
+- [function] **GRAB-SF** *CAMS BUF*
 
-    => (values cam success-p w h frame-nr)
+    => (values cam success-p w h imagenr timestamp)
     
-    OBSOLETE: This wrapper doesn't do the conversion from MONO12P. Use
-    [`GRAB-CDF`][4caf] or `GRAB-SF` instead.
+    Copies one acquired image into an array `buf` which should be a 2D
+    array of single-float. With dimensions being at least corresponding to
+    the width and height of the currently used region of interst. My
+    wrapper code converts the 12-bit packed mono format to single-float. 
     
-    Copies one acquired image into an array `buf` of (unsigned-byte
-    8). The length of the array `BUF` must be at least `w*h`.  The image data
-    originates from one of the cameras in the handle `CAMS` as indicated by
-    the camera index `CAM` of the return values. The returned values `w` and
-    `h` indicate the dimensions of the returned image data in `buf`.
+    When using multiple cameras the image data originates from one of
+    these and the return value `CAM` indicates which one.
+    
+    [`GRAB-SF`][8481] also returns the width and height of the acquired image data,
+    allowing to use this function with a larger than necessary array
+    `BUF`. This comes handy when several cameras with different regions of
+    interest are to be read out. A single array with size to store the
+    largest image is sufficient in this case.
+    
+    The `IMAGENR` and `TIMESTAMP` indicate acquisition time of the image.
+    This code allows to reset the counter on the camera:
+    `common-lisp
+    (pylon::command-execute CAMS 0 "GevTimestampControlReset")
+    `
+    
+    The data can be fouriertransformed using FFTW:RFTF.
     
     In case of an error, all four return values are -1.
 
@@ -108,8 +121,25 @@ introspection. Therefore, I still prefer developing in Common Lisp.
 
     =>  (values cam success-p w h frame-nr) 
     
-    Like `GRAB-SF` but converts the acquired into (complex
+    Like [`GRAB-SF`][8481] but converts the acquired into (complex
     double-float).
+
+<a name='x-28PYLON-3AGRAB-20FUNCTION-29'></a>
+
+- [function] **GRAB** *CAMS BUF*
+
+    => (values cam success-p w h frame-nr)
+    
+    OBSOLETE: This wrapper doesn't do the conversion from MONO12P. Use
+    [`GRAB-CDF`][4caf] or [`GRAB-SF`][8481] instead.
+    
+    Copies one acquired image into an array `buf` of (unsigned-byte
+    8). The length of the array `BUF` must be at least `w*h`.  The image data
+    originates from one of the cameras in the handle `CAMS` as indicated by
+    the camera index `CAM` of the return values. The returned values `w` and
+    `h` indicate the dimensions of the returned image data in `buf`.
+    
+    In case of an error, all four return values are -1.
 
 <a name='x-28PYLON-3AGET-MAX-I-20FUNCTION-29'></a>
 
@@ -351,6 +381,21 @@ The following code will open three cameras, reset their frame
   the femtolisp running on an Arduino Due to create the trigger
   pulses with the correct timing.
 
+The ([`FACTORY`][74c0] `FUNCTION`) returns the instance of the transport level
+  factory. It is quite an internal construct to the Pylon C++ library
+  and not useful in this Common Lisp wrapper except that it is
+  necessary for the call to [`CREATE`][98d0].
+
+([`CREATE`][98d0] `FUNCTION`) tries to open at most `MAX-CAMERAS` and returns an
+  opaque pointer handle to an array of these cameras. Some other
+  functions of this wrapper can be given this
+  handle (e.g. `COMMAND-EXECUTE`, [`CAM-OPEN`][09b8], [`CAM-CLOSE`][d446], [`START-GRABBING`][1ba2],
+  [`TERMINATE`][9d0b], [`GRAB-SF`][8481], [`GET-VALUE-I`][d41b], [`CAM-GET-SERIAL-NUMBER`][db43],
+  [`CAM-GET-FULL-NAME`][b63e]) in this case the function parameter is called
+  `CAMS`. Most of these functions also have a following integer
+  parameter `CAM` which indicates which camera of the array is to be
+  accessed.
+
 ```common-lisp
 (defparameter *fact* (pylon::factory) "Handle to Factory, which is needed for call to PYLON:CREATE.")
 (defparameter *cams* (pylon:create *fact* 3) "Handle to multiple Pylon cameras.")
@@ -359,38 +404,48 @@ The following code will open three cameras, reset their frame
 (let* ((old 0)
        (buf-s (make-array (list 1024 1024) :element-type 'single-float)))
   (unwind-protect 
-      (progn
-	(dotimes (i 3) ;; reset frame timers on the cameras
-	  (pylon::command-execute *cams* i "GevTimestampControlReset"))
-	(pylon:start-grabbing *cams*)
-	(let ((th (sb-thread:make-thread 
-		   #'(lambda ()
-		       (loop for i below 100 do
-			    (dotimes (some-cam 3)
-			     (multiple-value-bind (cam success-p w h framenr timestamp) 
-				 (pylon::grab-sf *cams* buf-s)
-			       (declare (ignorable framenr)
-					(type (unsigned-byte 32) w h))
-			       (if success-p
-				   (progn
-				     ;; acquired data is in buf-s
-				     ;; do something with it
-				     ) 
-				   (format t "acquisition error.~%"))))))
-		   :name "camera-acquisition")))
-	  (sleep .001)
-	  (dotimes (i 100)
-	   (trigger-all-cameras))
-	  (sb-thread:join-thread th)))
+       (progn
+	 (dotimes (i 3) ;; reset frame timers on the cameras ;
+	   (pylon::command-execute *cams* i "GevTimestampControlReset"))
+	 (pylon:start-grabbing *cams*)
+	 (let ((th (sb-thread:make-thread 
+		    #'(lambda ()
+			(loop for i below 100 do
+			     (dotimes (some-cam 3)
+			       (multiple-value-bind (cam success-p w h framenr timestamp) 
+				   (pylon::grab-sf *cams* buf-s)
+				 (declare (ignorable framenr)
+					  (type (unsigned-byte 32) w h))
+				 (if success-p
+				     (progn
+				     ;; acquired data is in buf-s ;
+				     ;; do something with it ;
+				       ) 
+				     (format t "acquisition error.~%"))))))
+		    :name "camera-acquisition")))
+	   (sleep .001)
+	   (dotimes (i 100)
+	     (trigger-all-cameras))
+	   (sb-thread:join-thread th)))
     (progn
       (pylon:stop-grabbing *cams*)
       (dotimes (i 3)
 	(pylon:set-value-e *cams* i "TriggerMode" 0)))))
 ```
 
+Note that repeated reruns of [`CREATE`][98d0] (after [`TERMINATE`][9d0b]) will
+not necessarily sort the cameras in the same order.
 
+  [09b8]: #x-28PYLON-3ACAM-OPEN-20FUNCTION-29 "(PYLON:CAM-OPEN FUNCTION)"
+  [1ba2]: #x-28PYLON-3ASTART-GRABBING-20FUNCTION-29 "(PYLON:START-GRABBING FUNCTION)"
   [4caf]: #x-28PYLON-3AGRAB-CDF-20FUNCTION-29 "(PYLON:GRAB-CDF FUNCTION)"
   [6a88]: #x-28PYLON-3A-40PYLON-RETURN-20MGL-PAX-3ASECTION-29 "(PYLON:@PYLON-RETURN MGL-PAX:SECTION)"
+  [74c0]: #x-28PYLON-3AFACTORY-20FUNCTION-29 "(PYLON:FACTORY FUNCTION)"
+  [8481]: #x-28PYLON-3AGRAB-SF-20FUNCTION-29 "(PYLON:GRAB-SF FUNCTION)"
   [98d0]: #x-28PYLON-3ACREATE-20FUNCTION-29 "(PYLON:CREATE FUNCTION)"
   [9d0b]: #x-28PYLON-3ATERMINATE-20FUNCTION-29 "(PYLON:TERMINATE FUNCTION)"
+  [b63e]: #x-28PYLON-3ACAM-GET-FULL-NAME-20FUNCTION-29 "(PYLON:CAM-GET-FULL-NAME FUNCTION)"
+  [d41b]: #x-28PYLON-3AGET-VALUE-I-20FUNCTION-29 "(PYLON:GET-VALUE-I FUNCTION)"
+  [d446]: #x-28PYLON-3ACAM-CLOSE-20FUNCTION-29 "(PYLON:CAM-CLOSE FUNCTION)"
+  [db43]: #x-28PYLON-3ACAM-GET-SERIAL-NUMBER-20FUNCTION-29 "(PYLON:CAM-GET-SERIAL-NUMBER FUNCTION)"
   [f0b3]: #x-28PYLON-3A-40PYLON-EXAMPLE-20MGL-PAX-3ASECTION-29 "(PYLON:@PYLON-EXAMPLE MGL-PAX:SECTION)"

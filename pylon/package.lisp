@@ -65,9 +65,10 @@ introspection. Therefore, I still prefer developing in Common Lisp.
   (create function)
   (factory function)
   (start-grabbing function)
-  (grab function)
+  (grab-sf function)
   (grab-cdf function)
-
+  (grab function)
+  
   (get-max-i function)
   (get-min-i function)
   (get-inc-i function)
@@ -159,6 +160,22 @@ max(Width)=1468
   the femtolisp running on an Arduino Due to create the trigger
   pulses with the correct timing.
 
+  The (FACTORY FUNCTION) returns the instance of the transport level
+  factory. It is quite an internal construct to the Pylon C++ library
+  and not useful in this Common Lisp wrapper except that it is
+  necessary for the call to CREATE.
+
+  (CREATE FUNCTION) tries to open at most MAX-CAMERAS and returns an
+  opaque pointer handle to an array of these cameras. Some other
+  functions of this wrapper can be given this
+  handle (e.g. COMMAND-EXECUTE, CAM-OPEN, CAM-CLOSE, START-GRABBING,
+  TERMINATE, GRAB-SF, GET-VALUE-I, CAM-GET-SERIAL-NUMBER,
+  CAM-GET-FULL-NAME) in this case the function parameter is called
+  CAMS. Most of these functions also have a following integer
+  parameter CAM which indicates which camera of the array is to be
+  accessed.
+
+
 ```common-lisp
 (defparameter *fact* (pylon::factory) \"Handle to Factory, which is needed for call to PYLON:CREATE.\")
 (defparameter *cams* (pylon:create *fact* 3) \"Handle to multiple Pylon cameras.\")
@@ -167,32 +184,37 @@ max(Width)=1468
 (let* ((old 0)
        (buf-s (make-array (list 1024 1024) :element-type 'single-float)))
   (unwind-protect 
-      (progn
-	(dotimes (i 3) ;; reset frame timers on the cameras
-	  (pylon::command-execute *cams* i \"GevTimestampControlReset\"))
-	(pylon:start-grabbing *cams*)
-	(let ((th (sb-thread:make-thread 
-		   #'(lambda ()
-		       (loop for i below 100 do
-			    (dotimes (some-cam 3)
-			     (multiple-value-bind (cam success-p w h framenr timestamp) 
-				 (pylon::grab-sf *cams* buf-s)
-			       (declare (ignorable framenr)
-					(type (unsigned-byte 32) w h))
-			       (if success-p
-				   (progn
-				     ;; acquired data is in buf-s
-				     ;; do something with it
-				     ) 
-				   (format t \"acquisition error.~%\"))))))
-		   :name \"camera-acquisition\")))
-	  (sleep .001)
-	  (dotimes (i 100)
-	   (trigger-all-cameras))
-	  (sb-thread:join-thread th)))
+       (progn
+	 (dotimes (i 3) ;; reset frame timers on the cameras ;
+	   (pylon::command-execute *cams* i \"GevTimestampControlReset\"))
+	 (pylon:start-grabbing *cams*)
+	 (let ((th (sb-thread:make-thread 
+		    #'(lambda ()
+			(loop for i below 100 do
+			     (dotimes (some-cam 3)
+			       (multiple-value-bind (cam success-p w h framenr timestamp) 
+				   (pylon::grab-sf *cams* buf-s)
+				 (declare (ignorable framenr)
+					  (type (unsigned-byte 32) w h))
+				 (if success-p
+				     (progn
+				     ;; acquired data is in buf-s ;
+				     ;; do something with it ;
+				       ) 
+				     (format t \"acquisition error.~%\"))))))
+		    :name \"camera-acquisition\")))
+	   (sleep .001)
+	   (dotimes (i 100)
+	     (trigger-all-cameras))
+	   (sb-thread:join-thread th)))
     (progn
       (pylon:stop-grabbing *cams*)
       (dotimes (i 3)
 	(pylon:set-value-e *cams* i \"TriggerMode\" 0)))))
-```")
+```
+
+Note that repeated reruns of CREATE (after TERMINATE) will
+not necessarily sort the cameras in the same order. 
+
+")
 
