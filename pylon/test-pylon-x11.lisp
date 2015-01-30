@@ -68,17 +68,25 @@
   (put-image-big-req a))
 
 (defun put-sf-image (a w h &key (dst-x 0) (dst-y 0))
-  (declare (type (simple-array single-float 2) a))
+  (declare (type (simple-array single-float 2) a)
+	   (type (unsigned-byte 16) w h dst-x dst-y)
+	   (optimize (speed 3)))
   (let* ((a1 (sb-ext:array-storage-vector a))
 	 (c 4)
 	 (b (make-array (list h w c)
 			:element-type '(unsigned-byte 8)
 			:initial-element 255))
-	 (b1 (sb-ext:array-storage-vector b)))
-    (dotimes (i (* w h))
-      (setf (aref b1 (+ 0 (* 4 i))) (floor (* 255s0 (aref a1 i)) 4095)
-	    (aref b1 (+ 1 (* 4 i))) (floor (* 255s0 (aref a1 i)) 4095)
-	    (aref b1 (+ 2 (* 4 i))) (floor (* 255s0 (aref a1 i)) 4095)))
+	 (b1 (sb-ext:array-storage-vector b))
+	 (n (* w h))
+	 (scale (/ 255s0 4095)))
+    (declare (type (simple-array single-float 1) a1)
+	     (type (simple-array (unsigned-byte 8) 1) b1))
+    (dotimes (i n)
+      (let ((v (floor (* scale (aref a1 i)))))
+	(declare (type (unsigned-byte 8) v))
+       (setf (aref b1 (+ 0 (* 4 i))) v
+	     (aref b1 (+ 1 (* 4 i))) v
+	     (aref b1 (+ 2 (* 4 i))) v)))
     (put-image-big-req b :dst-x dst-x :dst-y dst-y) ))
 
 (defparameter *buf-s* (make-array (list 512 512) :element-type 'single-float))
@@ -120,7 +128,7 @@
 			    (multiple-value-bind (cam success-p w h framenr timestamp) 
 				(pylon::grab-sf *cams* *buf-s*)
 			      (push (list  (- (get-us-time) start) cam success-p w h framenr timestamp) *log*)
-			      #+nil (put-sf-image *buf-s* w h :dst-x (ecase cam
+			      (put-sf-image *buf-s* w h :dst-x (ecase cam
 								 (0 0)
 								 (1 280)
 								 (2 (+ 512 280)))))))
