@@ -83,7 +83,7 @@
 
 (defparameter *buf-s* (make-array (list 512 512) :element-type 'single-float))
 
-(defparameter *log* nil)
+
 
 (defun get-us-time ()
  (multiple-value-bind (s us) (sb-unix::get-time-of-day)
@@ -106,8 +106,8 @@
 #+nil
 (unwind-protect 
      (let ((start (get-us-time)))
-      (progn
-	
+       (progn
+	 (defparameter *log* nil)
 	(dotimes (i 3) ;; reset frame timers on the cameras ;
 	  (pylon::command-execute *cams* i "GevTimestampControlReset"))
 	(pylon:start-grabbing *cams*)
@@ -117,7 +117,7 @@
 			    (multiple-value-bind (cam success-p w h framenr timestamp) 
 				(pylon::grab-sf *cams* *buf-s*)
 			      (push (list  (- (get-us-time) start) cam success-p w h framenr timestamp) *log*)
-			      (put-sf-image *buf-s* w h :dst-x (ecase cam
+			      #+nil (put-sf-image *buf-s* w h :dst-x (ecase cam
 								 (0 0)
 								 (1 280)
 								 (2 (+ 512 280)))))))
