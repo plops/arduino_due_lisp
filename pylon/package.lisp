@@ -177,6 +177,7 @@ max(Width)=1468
 
 
 ```common-lisp
+(pylon:initialize)
 (defparameter *fact* (pylon::factory) \"Handle to Factory, which is needed for call to PYLON:CREATE.\")
 (defparameter *cams* (pylon:create *fact* 3) \"Handle to multiple Pylon cameras.\")
 (dotimes (i 3)
