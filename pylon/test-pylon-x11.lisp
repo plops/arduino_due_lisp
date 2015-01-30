@@ -52,21 +52,6 @@
   (make-window :width (+ 512 280 280) :height 512)
   (draw-window 0 0 100 100))
 
-
-#+nil
-(let*((w 512)
-      (h 512)
-      (c 4)
-      (a (make-array (list h w c)
-             :element-type '(unsigned-byte 8))))
-  (dotimes (j h)
-    (dotimes (i w)
-      (setf (aref a j i 0) (mod i 255)  ;; b
-        (aref a j i 1) (mod j 255)  ;; g
-        (aref a j i 2) 255          ;; r
-        (aref a j i 3) 255)))       ;; a
-  (put-image-big-req a))
-
 (defun put-sf-image (a w h &key (dst-x 0) (dst-y 0))
   (declare (type (simple-array single-float 2) a)
 	   (type (unsigned-byte 16) w h dst-x dst-y)
@@ -116,7 +101,8 @@
 
 #+nil
 (unwind-protect 
-     (let ((start (get-us-time)))
+     (let* ((start (get-us-time))
+	    (last-presentation-time start))
        (progn
 	 (defparameter *log* nil)
 	(dotimes (i 3) ;; reset frame timers on the cameras ;
@@ -124,14 +110,21 @@
 	(pylon:start-grabbing *cams*)
 	(let ((th (sb-thread:make-thread 
 		   #'(lambda ()
-		       (loop for i below 2000 do
-			    (multiple-value-bind (cam success-p w h framenr timestamp) 
-				(pylon::grab-sf *cams* *buf-s*)
-			      (push (list  (- (get-us-time) start) cam success-p w h framenr timestamp) *log*)
-			      (put-sf-image *buf-s* w h :dst-x (ecase cam
-								 (0 0)
-								 (1 280)
-								 (2 (+ 512 280)))))))
+		       (dotimes (i 2000)
+			 (let* ((current (get-us-time))
+				(us-between-x11-updates 200000)
+				(do-update-p (< (- current last-presentation-time) us-between-x11-updates)))
+			   (dotimes (j 3)
+			     (multiple-value-bind (cam success-p w h framenr timestamp) 
+				 (pylon::grab-sf *cams* *buf-s*)
+			       (push (list  (- (get-us-time) start) cam success-p w h framenr timestamp) *log*)
+			       (when do-update-p
+				 (put-sf-image *buf-s* w h :dst-x (ecase cam
+								    (0 0)
+								    (1 280)
+								    (2 (+ 512 280)))))))
+			   (when do-update-p
+			     (setf last-presentation-time current)))))
 		   :name "camera-acquisition")))
 	  (sleep .001)
 	  (sb-thread:join-thread th))))
