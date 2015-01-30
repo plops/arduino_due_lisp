@@ -70,7 +70,7 @@
 (defun put-sf-image (a w h &key (dst-x 0) (dst-y 0))
   (declare (type (simple-array single-float 2) a)
 	   (type (unsigned-byte 16) w h dst-x dst-y)
-	   (optimize (speed 3)))
+	   (optimize (speed 3) (safety 0) (debug 0)))
   (let* ((a1 (sb-ext:array-storage-vector a))
 	 (c 4)
 	 (b (make-array (list h w c)
@@ -82,7 +82,7 @@
     (declare (type (simple-array single-float 1) a1)
 	     (type (simple-array (unsigned-byte 8) 1) b1))
     (dotimes (i n)
-      (let ((v (floor (* scale (aref a1 i)))))
+      (let ((v (round (* scale (aref a1 i)))))
 	(declare (type (unsigned-byte 8) v))
        (setf (aref b1 (+ 0 (* 4 i))) v
 	     (aref b1 (+ 1 (* 4 i))) v
