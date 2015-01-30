@@ -83,15 +83,22 @@
 
 (defparameter *buf-s* (make-array (list 512 512) :element-type 'single-float))
 
+(defparameter *log* nil)
+
+(defun get-us-time ()
+ (multiple-value-bind (s us) (sb-unix::get-time-of-day)
+   (+ (* 1000000 s) us)))
+
 #+nil
 (unwind-protect 
      (progn
        (pylon:start-grabbing *cams*)
        (let ((th (sb-thread:make-thread 
 		  #'(lambda ()
-		      (loop for i below 200 do
+		      (loop for i below 2000 do
 			   (multiple-value-bind (cam success-p w h framenr timestamp) 
 			       (pylon::grab-sf *cams* *buf-s*)
+			     (push (list  (get-us-time) cam success-p w h framenr timestamp) *log*)
 			     (put-sf-image *buf-s* w h :dst-x (ecase cam
 								(0 0)
 								(1 280)
