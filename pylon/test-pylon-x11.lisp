@@ -49,7 +49,7 @@
 #+nil
 (progn ;; open a window and draw a line
   (connect)
-  (make-window :width (+ 512 280 280) :height 512)
+  (make-window :width (+ 512 280 280) :height (+ 512 512))
   (draw-window 0 0 100 100))
 
 (defun put-sf-image (a w h &key (dst-x 0) (dst-y 0))
@@ -99,33 +99,43 @@
 		  old-stamp timestamp
 		  old-frame frame)))))
 
+(defun reset-camera-timers (cams n)
+  (dotimes (i n) ;; reset frame timers on the cameras ;
+    (pylon::command-execute cams i "GevTimestampControlReset")))
+
+(let ((last-presentation-time 0)
+      (start 0))
+  (defun start-acquisition-thread ()
+    (setf last-presentation-time (get-us-time)
+	  start last-presentation-time)
+    (sb-thread:make-thread 
+     #'(lambda ()
+	 (dotimes (i 200)
+	   (let* ((current (get-us-time))
+		  (us-between-x11-updates 200000)
+		  (do-update-p (< (- current last-presentation-time) us-between-x11-updates)))
+	     (dotimes (j 3)
+	       (multiple-value-bind (cam success-p w h framenr timestamp) 
+		   (pylon::grab-sf *cams* *buf-s*)
+		 (push (list  (- (get-us-time) start) cam success-p w h framenr timestamp) *log*)
+		 (when do-update-p
+		   (put-sf-image *buf-s* w h :dst-x (ecase cam
+						      (0 0)
+						      (1 280)
+						      (2 (+ 512 280)))))))
+	     (when do-update-p
+	       (setf last-presentation-time current)))))
+     :name "camera-acquisition")))
+
+
+
 #+nil
 (unwind-protect 
-     (let* ((start (get-us-time))
-	    (last-presentation-time start))
-       (progn
-	 (defparameter *log* nil)
-	(dotimes (i 3) ;; reset frame timers on the cameras ;
-	  (pylon::command-execute *cams* i "GevTimestampControlReset"))
-	(pylon:start-grabbing *cams*)
-	(let ((th (sb-thread:make-thread 
-		   #'(lambda ()
-		       (dotimes (i 2000)
-			 (let* ((current (get-us-time))
-				(us-between-x11-updates 200000)
-				(do-update-p (< (- current last-presentation-time) us-between-x11-updates)))
-			   (dotimes (j 3)
-			     (multiple-value-bind (cam success-p w h framenr timestamp) 
-				 (pylon::grab-sf *cams* *buf-s*)
-			       (push (list  (- (get-us-time) start) cam success-p w h framenr timestamp) *log*)
-			       (when do-update-p
-				 (put-sf-image *buf-s* w h :dst-x (ecase cam
-								    (0 0)
-								    (1 280)
-								    (2 (+ 512 280)))))))
-			   (when do-update-p
-			     (setf last-presentation-time current)))))
-		   :name "camera-acquisition")))
-	  (sleep .001)
-	  (sb-thread:join-thread th))))
+     (progn
+       (defparameter *log* nil)
+       (reset-camera-timers *cams* 3)
+       (pylon:start-grabbing *cams*)
+       (let ((th (start-acquisition-thread )))
+	 (sleep .001)
+	 (sb-thread:join-thread th)))
   (pylon:stop-grabbing *cams*))
