@@ -691,7 +691,7 @@ rectangular, for alpha=1 Hann window."
 			      (incf count)) 
 			 count)))
     (let* ((old 0)
-	  (buf-s (make-array (list 1024 1024) :element-type 'single-float))
+	   (buf-s (make-array (list 1024 1024) :element-type 'single-float))
 		    (buf-cs (make-array (list 1024 (+ 1 (floor 1024 2))) :element-type '(complex single-float)))
 		    (accum-buf-s (loop for i below 3 collect
 				      (destructuring-bind (id binx biny ww hh rev ox oy x y d g e name) 
