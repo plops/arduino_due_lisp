@@ -91,17 +91,20 @@
 
 #+nil
 (let ((old-time 0)
-      (old-stamp 0))
+      (old-stamp 0)
+      (old-frame 0))
   (with-open-file (s "times.dat" :direction :output :if-exists :supersede :if-does-not-exist :create)
     (loop for (time cam success w h frame timestamp) in (reverse *log*) and i from 0
        do (when (< cam 1) 
 	    (unless (= i 0)
-	      (format s "~a ~a ~a~%"
+	      (format s "~a  ~a ~a ~a~%"
 		      time
+		      frame
 		      (- time old-time)
 		      (- timestamp old-stamp)))
 	    (setf old-time time
-		  old-stamp timestamp)))))
+		  old-stamp timestamp
+		  old-frame frame)))))
 
 #+nil
 (unwind-protect 
