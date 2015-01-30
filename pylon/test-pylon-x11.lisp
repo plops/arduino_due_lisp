@@ -49,7 +49,7 @@
 #+nil
 (progn ;; open a window and draw a line
   (connect)
-  (make-window)
+  (make-window :width (+ 512 280 280) :height 512)
   (draw-window 0 0 100 100))
 
 
@@ -67,7 +67,7 @@
         (aref a j i 3) 255)))       ;; a
   (put-image-big-req a))
 
-(defun put-sf-image (a w h)
+(defun put-sf-image (a w h &key (dst-x 0) (dst-y 0))
   (declare (type (simple-array single-float 2) a))
   (let* ((a1 (sb-ext:array-storage-vector a))
 	 (c 4)
@@ -79,7 +79,7 @@
       (setf (aref b1 (+ 0 (* 4 i))) (floor (* 255s0 (aref a1 i)) 4095)
 	    (aref b1 (+ 1 (* 4 i))) (floor (* 255s0 (aref a1 i)) 4095)
 	    (aref b1 (+ 2 (* 4 i))) (floor (* 255s0 (aref a1 i)) 4095)))
-    (put-image-big-req b)))
+    (put-image-big-req b :dst-x dst-x :dst-y dst-y) ))
 
 (defparameter *buf-s* (make-array (list 512 512) :element-type 'single-float))
 
@@ -92,8 +92,10 @@
 		      (loop for i below 200 do
 			   (multiple-value-bind (cam success-p w h framenr timestamp) 
 			       (pylon::grab-sf *cams* *buf-s*)
-			     (put-sf-image *buf-s* w h)
-			     )))
+			     (put-sf-image *buf-s* w h :dst-x (ecase cam
+								(0 0)
+								(1 280)
+								(2 (+ 512 280)))))))
 		  :name "camera-acquisition")))
 	 (sleep .001)
 	 (sb-thread:join-thread th)))
