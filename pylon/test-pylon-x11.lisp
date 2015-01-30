@@ -90,20 +90,38 @@
    (+ (* 1000000 s) us)))
 
 #+nil
+(let ((old-time 0)
+      (old-stamp 0))
+  (with-open-file (s "times.dat" :direction :output :if-exists :supersede :if-does-not-exist :create)
+    (loop for (time cam success w h frame timestamp) in (reverse *log*) and i from 0
+       do (when (< cam 1) 
+	    (unless (= i 0)
+	      (format s "~a ~a ~a~%"
+		      time
+		      (- time old-time)
+		      (- timestamp old-stamp)))
+	    (setf old-time time
+		  old-stamp timestamp)))))
+
+#+nil
 (unwind-protect 
-     (progn
-       (pylon:start-grabbing *cams*)
-       (let ((th (sb-thread:make-thread 
-		  #'(lambda ()
-		      (loop for i below 2000 do
-			   (multiple-value-bind (cam success-p w h framenr timestamp) 
-			       (pylon::grab-sf *cams* *buf-s*)
-			     (push (list  (get-us-time) cam success-p w h framenr timestamp) *log*)
-			     (put-sf-image *buf-s* w h :dst-x (ecase cam
-								(0 0)
-								(1 280)
-								(2 (+ 512 280)))))))
-		  :name "camera-acquisition")))
-	 (sleep .001)
-	 (sb-thread:join-thread th)))
+     (let ((start (get-us-time)))
+      (progn
+	
+	(dotimes (i 3) ;; reset frame timers on the cameras ;
+	  (pylon::command-execute *cams* i "GevTimestampControlReset"))
+	(pylon:start-grabbing *cams*)
+	(let ((th (sb-thread:make-thread 
+		   #'(lambda ()
+		       (loop for i below 2000 do
+			    (multiple-value-bind (cam success-p w h framenr timestamp) 
+				(pylon::grab-sf *cams* *buf-s*)
+			      (push (list  (- (get-us-time) start) cam success-p w h framenr timestamp) *log*)
+			      (put-sf-image *buf-s* w h :dst-x (ecase cam
+								 (0 0)
+								 (1 280)
+								 (2 (+ 512 280)))))))
+		   :name "camera-acquisition")))
+	  (sleep .001)
+	  (sb-thread:join-thread th))))
   (pylon:stop-grabbing *cams*))
