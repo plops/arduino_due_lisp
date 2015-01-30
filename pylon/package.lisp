@@ -233,19 +233,25 @@ code to obtain the settings as an s-expression.
 ```common-lisp
 (loop for j below 3 collect
       (append 
+       (list (parse-integer (pylon:cam-get-serial-number *cams* j)))
        (loop for e in '(\"BinningHorizontal\" \"BinningVertical\" 
-			\"Width\" \"Height\"
-			\"OffsetX\" \"OffsetY\" 
-			\"ExposureTimeRaw\" \"GainRaw\" 
-			\"GevTimestampTickFrequency\" \"GevSCPSPacketSize\") collect
-			(pylon:get-value-i *cams* j e t nil)
-			)
+            \"Width\" \"Height\"
+            \"OffsetX\" \"OffsetY\" 
+            \"ExposureTimeRaw\" \"GainRaw\" 
+            \"GevTimestampTickFrequency\" \"GevSCPSPacketSize\") collect
+            (pylon:get-value-i *cams* j e t nil)
+            )
        (list :trigger-mode (pylon:get-value-e *cams* j \"TriggerMode\")
-	     :last-error (pylon:get-value-e *cams* j \"LastError\")
-	     :rate-p (pylon:get-value-b *cams* j \"AcquisitionFrameRateEnable\")
-	     :reverse-x (pylon:get-value-b *cams* j \"ReverseX\")
-	     :rate (pylon:get-value-f *cams* j \"ResultingFrameRateAbs\")
-	     :temp (pylon:get-value-f *cams* j \"TemperatureAbs\"))))
+         :last-error (pylon:get-value-e *cams* j \"LastError\")
+         :rate-p (pylon:get-value-b *cams* j \"AcquisitionFrameRateEnable\")
+         :reverse-x (pylon:get-value-b *cams* j \"ReverseX\")
+         :rate (pylon:get-value-f *cams* j \"ResultingFrameRateAbs\")
+         ;; :temp (pylon:get-value-f *cams* j \"TemperatureAbs\")
+	 )))
+
+;; => ((21433565 1 1 280 280 777 337   70 0 125000000 1500 :TRIGGER-MODE 0 :LAST-ERROR 0 :RATE-P 0 :REVERSE-X 0 :RATE 97.18173)
+;;     (21433566 1 1 512 512 789 112 2975 0 125000000 1500 :TRIGGER-MODE 0 :LAST-ERROR 0 :RATE-P 0 :REVERSE-X 0 :RATE 54.318306)
+;;     (21433540 1 1 280 280 985 427   35 0 125000000 1500 :TRIGGER-MODE 0 :LAST-ERROR 0 :RATE-P 0 :REVERSE-X 1 :RATE 97.18173))
 ```
 
 I then store the camera specific parameters in a hash table that is indexed by the cameras
