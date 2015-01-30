@@ -4,16 +4,21 @@
 	  #p"/home/martin/arduino_due_lisp/arduino-serial-sbcl/"
 	  #p"/home/martin/arduino_due_lisp/pylon/"
 	  #p"/home/martin/arduino_due_lisp/image-processing/"
-	  #p"/home/martin/stage/cl-pure-x11/"))
+	  #p"/home/martin/stage/cl-pure-x11/"
+	  #p"/home/martin/stage/cl-cffi-fftw3/"))
   (asdf:load-system "pylon")
   (asdf:load-system "arduino-serial-sbcl")
-  (asdf:load-system "pure-x11"))
+  (asdf:load-system "pure-x11")
+  (asdf:load-system "fftw"))
 
 
 (defpackage :pylon-test-x11
   (:use :cl :cffi :pure-x11))
 
 (in-package :pylon-test-x11)
+(fftw:prepare-threads)
+
+(fftw::%fftwf_plan_with_nthreads 6)
 
 #+nil
 (pylon:initialize)
@@ -74,8 +79,37 @@
 	     (aref b1 (+ 2 (* 4 i))) v)))
     (put-image-big-req b :dst-x dst-x :dst-y dst-y) ))
 
-(defparameter *buf-s* (make-array (list 512 512) :element-type 'single-float))
+(defun put-csf-image (a w h &key (dst-x 0) (dst-y 0))
+  (declare (type (simple-array (complex single-float) 2) a)
+	   (type (unsigned-byte 16) w h dst-x dst-y)
+	   (optimize (speed 3) (safety 0) (debug 0)))
+  (let* ((a1 (sb-ext:array-storage-vector a))
+	 (c 4)
+	 (b (make-array (list h w c)
+			:element-type '(unsigned-byte 8)
+			:initial-element 255))
+	 (b1 (sb-ext:array-storage-vector b))
+	 (n (* w h))
+	 (scale (/ 20s0 4095)))
+    (declare (type (simple-array (complex single-float) 1) a1)
+	     (type (simple-array (unsigned-byte 8) 1) b1))
+    (dotimes (i n)
+      (let ((v (min 255 (max 0 (round (* scale (abs (aref a1 i))))))))
+	(declare (type (unsigned-byte 8) v))
+       (setf (aref b1 (+ 0 (* 4 i))) v
+	     (aref b1 (+ 1 (* 4 i))) v
+	     (aref b1 (+ 2 (* 4 i))) v)))
+    (put-image-big-req b :dst-x dst-x :dst-y dst-y) ))
 
+(defparameter *buf-s* (make-array (list 512 512) :element-type 'single-float))
+(defparameter *buf-cs* (make-array (list 512 512) :element-type '(complex single-float)))
+
+(fftw::%fftwf_import_wisdom_from_filename "fiberholo.fftwf.wisdom")
+(time
+ (progn 
+   (progn (fftw::rftf *buf-s* :out-arg *buf-cs* :w 280 :h 280 :flag fftw::+patient+) nil)
+   (progn (fftw::rftf *buf-s* :out-arg *buf-cs* :w 512 :h 512 :flag fftw::+patient+) nil)))
+(fftw::%fftwf_export_wisdom_to_filename "fiberholo.fftwf.wisdom")
 
 
 (defun get-us-time ()
@@ -103,26 +137,39 @@
   (dotimes (i n) ;; reset frame timers on the cameras ;
     (pylon::command-execute cams i "GevTimestampControlReset")))
 
+
+(defparameter *plan280* (fftw::rplanf *buf-s* :out *buf-cs* :w 280 :h 280 :flag fftw::+measure+))
+(defparameter *plan512* (fftw::rplanf *buf-s* :out *buf-cs* :w 512 :h 512 :flag fftw::+measure+))
+
+(defun draw-frame (buf w h cam)
+  (put-sf-image buf w h :dst-x (ecase cam
+				 (0 0)
+				 (1 280)
+				 (2 (+ 512 280))))
+  (cond ((or (= 0 cam) (= 2 cam)) (fftw::%fftwf_execute *plan280*))
+	((= 1 cam) (fftw::%fftwf_execute *plan512*)))
+  (put-csf-image *buf-cs* (1+ (floor w 2)) h :dst-x (ecase cam
+						   (0 0)
+						   (1 280)
+						   (2 (+ 512 280)))
+		 :dst-y 512))
+
 (let ((last-presentation-time 0)
       (start 0))
-  (defun start-acquisition-thread ()
+  (defun start-acquisition-thread (&key (n 2000) (us-between-x11-updates 200000))
     (setf last-presentation-time (get-us-time)
 	  start last-presentation-time)
     (sb-thread:make-thread 
      #'(lambda ()
-	 (dotimes (i 200)
+	 (dotimes (i n)
 	   (let* ((current (get-us-time))
-		  (us-between-x11-updates 200000)
 		  (do-update-p (< (- current last-presentation-time) us-between-x11-updates)))
 	     (dotimes (j 3)
 	       (multiple-value-bind (cam success-p w h framenr timestamp) 
 		   (pylon::grab-sf *cams* *buf-s*)
 		 (push (list  (- (get-us-time) start) cam success-p w h framenr timestamp) *log*)
 		 (when do-update-p
-		   (put-sf-image *buf-s* w h :dst-x (ecase cam
-						      (0 0)
-						      (1 280)
-						      (2 (+ 512 280)))))))
+		   (draw-frame *buf-s* w h cam))))
 	     (when do-update-p
 	       (setf last-presentation-time current)))))
      :name "camera-acquisition")))
@@ -135,7 +182,7 @@
        (defparameter *log* nil)
        (reset-camera-timers *cams* 3)
        (pylon:start-grabbing *cams*)
-       (let ((th (start-acquisition-thread )))
+       (let ((th (start-acquisition-thread :n 2000)))
 	 (sleep .001)
 	 (sb-thread:join-thread th)))
   (pylon:stop-grabbing *cams*))
