@@ -34,7 +34,9 @@ Example:
 
 ```common-lisp
 (progn
+  (pylon:initialize)
   (defparameter *cams* (pylon:create (pylon::factory) 3) \"Handle to multiple Pylon cameras.\")
+  (pylon:cams-open *cams*)
   (unwind-protect 
       (progn
 	(pylon:start-grabbing *cams*)

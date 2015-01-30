@@ -20,6 +20,8 @@
 
 #+nil
 (defparameter *cams* (pylon:create (pylon::factory) 3) "Handle to multiple Pylon cameras.")
+#+nil
+(pylon:cams-open *cams*)
 
 #+nil
 (loop for j below 3 collect

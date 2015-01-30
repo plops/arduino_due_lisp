@@ -180,6 +180,7 @@ max(Width)=1468
 (pylon:initialize)
 (defparameter *fact* (pylon::factory) \"Handle to Factory, which is needed for call to PYLON:CREATE.\")
 (defparameter *cams* (pylon:create *fact* 3) \"Handle to multiple Pylon cameras.\")
+(pylon:cams-open *cams*)
 (dotimes (i 3)
   (pylon:set-value-e *cams* i \"TriggerMode\" 1))
 (let* ((old 0)
