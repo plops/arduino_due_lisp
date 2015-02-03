@@ -79,9 +79,10 @@
 	     (aref b1 (+ 2 (* 4 i))) v)))
     (put-image-big-req b :dst-x dst-x :dst-y dst-y) ))
 
-(defun put-csf-image (a w h &key (dst-x 0) (dst-y 0))
+(defun put-csf-image (a w h x0 y0 x1 y1 &key (dst-x 0) (dst-y 0))
   (declare (type (simple-array (complex single-float) 2) a)
 	   (type (unsigned-byte 16) w h dst-x dst-y)
+	   (type fixnum x1 y1 x0 y0)
 	   (optimize (speed 3) (safety 0) (debug 0)))
   (let* ((a1 (sb-ext:array-storage-vector a))
 	 (c 4)
@@ -97,9 +98,21 @@
     (dotimes (i n)
       (let ((v (min 255 (max 0 (round (* scale (- (abs (aref a1 i)) 12000)))))))
 	(declare (type (unsigned-byte 8) v))
-       (setf (aref b1 (+ 0 (* 4 i))) v
+	(setf (aref b1 (+ 0 (* 4 i))) v
 	     (aref b1 (+ 1 (* 4 i))) v
 	     (aref b1 (+ 2 (* 4 i))) v)))
+    (let ((v 255)
+	  (xx0 (max 0 (min w (min x0 x1))))
+	  (xx1 (max 0 (min w (max x0 x1))))
+	  (yy0 (max 0 (min h (min y0 y1))))
+	  (yy1 (max 0 (min h (max y0 y1)))))
+      (dotimes (c 3)
+	(loop for i from xx0 upto xx1 do
+	     (setf (aref b yy0 i c) v
+		   (aref b yy1 i c) v))
+	(loop for j from yy0 upto yy1 do
+	     (setf (aref b j xx0 c) v
+		   (aref b j xx1 c) v))))
     (put-image-big-req b :dst-x dst-x :dst-y dst-y) ))
 
 (defparameter *buf-s* (make-array (list 512 512) :element-type 'single-float))
@@ -149,11 +162,11 @@
     (2 (+ 512 280))))
 
 
-(defun draw-frame (buf w h cam)
+(defun draw-frame (buf w h cam x1 y1 x2 y2)
   (put-sf-image buf w h :dst-x (cam-dst-x cam) )
   (cond ((or (= 0 cam) (= 2 cam)) (fftw::%fftwf_execute *plan280*))
 	((= 1 cam) (fftw::%fftwf_execute *plan512*)))
-  (put-csf-image *buf-cs* (1+ (floor w 2)) h :dst-x (cam-dst-x cam) :dst-y 512))
+  (put-csf-image *buf-cs* (1+ (floor w 2)) h x1 y1 x2 y2  :dst-x (cam-dst-x cam) :dst-y 512))
 
 (defun draw-rect (x1 y1 x2 y2)
   (draw-window x1 y1 x2 y1)
@@ -181,12 +194,11 @@
 		   (pylon::grab-sf *cams* *buf-s*)
 		 (push (list  (- (get-us-time) start) cam success-p w h framenr timestamp) *log*)
 		 (when do-update-p
-		   (draw-frame *buf-s* w h cam)
-		   (let ((x0 (cam-dst-x cam))
-			 (y0 512)
-			 (a 45))
-		     #+nil (draw-rect (+ x0 230 (- a)) (+ y0 82 (- a))
-				(+ x0 230 (+ a)) (+ y0 82 (+ a)))))))
+		   (let ((x 68)
+			 (y 72)
+			 (a 32))
+		     (draw-frame *buf-s* w h cam (- x a 1) (- y a 1) (+ x a) (+ y a))
+		     #+nil (draw-rect )))))
 	     (when do-update-p
 	       (setf last-presentation-time current)))))
      :name "camera-acquisition")))
@@ -199,7 +211,7 @@
        (defparameter *log* nil)
        (reset-camera-timers *cams* 3)
        (pylon:start-grabbing *cams*)
-       (let ((th (start-acquisition-thread :n 2000)))
+       (let ((th (start-acquisition-thread :n 10)))
 	 (sleep .001)
 	 (sb-thread:join-thread th)))
   (pylon:stop-grabbing *cams*))
