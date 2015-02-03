@@ -194,11 +194,11 @@
 		   (pylon::grab-sf *cams* *buf-s*)
 		 (push (list  (- (get-us-time) start) cam success-p w h framenr timestamp) *log*)
 		 (when do-update-p
-		   (let ((x 68)
-			 (y 72)
-			 (a 32))
-		     (draw-frame *buf-s* w h cam (- x a 1) (- y a 1) (+ x a) (+ y a))
-		     #+nil (draw-rect )))))
+		   (let ((k '((90 222) (226 172) (68 72))))
+		    (destructuring-bind (x y) (elt k cam)
+		      (let ((a 32))
+			(draw-frame *buf-s* w h cam (- x a 1) (- y a 1) (+ x a) (+ y a))
+			#+nil (draw-rect )))))))
 	     (when do-update-p
 	       (setf last-presentation-time current)))))
      :name "camera-acquisition")))
