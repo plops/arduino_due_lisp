@@ -20,13 +20,10 @@
 
 (fftw::%fftwf_plan_with_nthreads 6)
 
-#+nil
-(pylon:initialize)
-
-#+nil
-(defparameter *cams* (pylon:create (pylon::factory) 3) "Handle to multiple Pylon cameras.")
-#+nil
-(pylon:cams-open *cams*)
+(progn
+  (pylon:initialize)
+  (defparameter *cams* (pylon:create (pylon::factory) 3) "Handle to multiple Pylon cameras.")
+  (pylon:cams-open *cams*))
 
 #+nil
 (loop for j below 3 collect
@@ -46,6 +43,7 @@
          :rate (pylon:get-value-f *cams* j "ResultingFrameRateAbs")
          ;; :temp (pylon:get-value-f *cams* j "TemperatureAbs")
 	 )))
+
 ;; => ((21433565 1 1 256 256 783 342   70 0 125000000 1500 :TRIGGER-MODE 0 :LAST-ERROR 0 :RATE-P 0 :REVERSE-X 0 :RATE 105.82011)
 ;;     (21433566 1 1 512 512 789 112 2975 0 125000000 1500 :TRIGGER-MODE 0 :LAST-ERROR 0 :RATE-P 0 :REVERSE-X 0 :RATE 54.318306)
 ;;     (21433540 1 1 256 256 996 439   35 0 125000000 1500 :TRIGGER-MODE 0 :LAST-ERROR 0 :RATE-P 0 :REVERSE-X 1 :RATE 105.82011))
@@ -53,7 +51,7 @@
 #+nil
 (progn ;; open a window and draw a line
   (connect)
-  (make-window :width (+ 512 280 280) :height (+ 512 512))
+  (make-window :width (+ 512 256 256) :height (+ 512 512))
   (draw-window 0 0 100 100))
 
 (defun put-sf-image (a w h &key (dst-x 0) (dst-y 0))
@@ -120,7 +118,7 @@
 (fftw::%fftwf_import_wisdom_from_filename "fiberholo.fftwf.wisdom")
 (time
  (progn 
-   (progn (fftw::rftf *buf-s* :out-arg *buf-cs* :w 280 :h 280 :flag fftw::+patient+) nil)
+   (progn (fftw::rftf *buf-s* :out-arg *buf-cs* :w 256 :h 256 :flag fftw::+patient+) nil)
    (progn (fftw::rftf *buf-s* :out-arg *buf-cs* :w 512 :h 512 :flag fftw::+patient+) nil)))
 (fftw::%fftwf_export_wisdom_to_filename "fiberholo.fftwf.wisdom")
 
@@ -129,6 +127,7 @@
  (multiple-value-bind (s us) (sb-unix::get-time-of-day)
    (+ (* 1000000 s) us)))
 
+(defparameter *log* nil)
 #+nil
 (let ((old-time 0)
       (old-stamp 0)
@@ -151,19 +150,19 @@
     (pylon::command-execute cams i "GevTimestampControlReset")))
 
 
-(defparameter *plan280* (fftw::rplanf *buf-s* :out *buf-cs* :w 280 :h 280 :flag fftw::+measure+))
+(defparameter *plan256* (fftw::rplanf *buf-s* :out *buf-cs* :w 256 :h 256 :flag fftw::+measure+))
 (defparameter *plan512* (fftw::rplanf *buf-s* :out *buf-cs* :w 512 :h 512 :flag fftw::+measure+))
 
 (defun cam-dst-x (cam)
   (ecase cam
     (0 0)
-    (1 280)
-    (2 (+ 512 280))))
+    (1 256)
+    (2 (+ 512 256))))
 
 
 (defun draw-frame (buf w h cam x1 y1 x2 y2)
   (put-sf-image buf w h :dst-x (cam-dst-x cam) )
-  (cond ((or (= 0 cam) (= 2 cam)) (fftw::%fftwf_execute *plan280*))
+  (cond ((or (= 0 cam) (= 2 cam)) (fftw::%fftwf_execute *plan256*))
 	((= 1 cam) (fftw::%fftwf_execute *plan512*)))
   (put-csf-image *buf-cs* (1+ (floor w 2)) h x1 y1 x2 y2  :dst-x (cam-dst-x cam) :dst-y 512))
 
@@ -172,11 +171,6 @@
   (draw-window x1 y2 x2 y2)
   (draw-window x1 y1 x1 y2)
   (draw-window x2 y1 x2 y2))
-
-; 65 230 82
-; 66 482 429
-; 40 206 213
-
 
 (let ((last-presentation-time 0)
       (start 0))
@@ -193,7 +187,7 @@
 		   (pylon::grab-sf *cams* *buf-s*)
 		 (push (list  (- (get-us-time) start) cam success-p w h framenr timestamp) *log*)
 		 (when do-update-p
-		   (let ((k '((90 222) (226 172) (68 72))))
+		   (let ((k '((84 208) (226 172) (64 68))))
 		    (destructuring-bind (x y) (elt k cam)
 		      (let ((a 32))
 			(draw-frame *buf-s* w h cam (- x a 1) (- y a 1) (+ x a) (+ y a))
