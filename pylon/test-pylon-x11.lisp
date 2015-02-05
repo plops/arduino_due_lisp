@@ -186,6 +186,8 @@
 
 (defparameter *buf-s* (make-array (list 512 512) :element-type 'single-float))
 (defparameter *buf-cs* (make-array (list 512 512) :element-type '(complex single-float)))
+(defparameter *buf-cs64in* (make-array (list 64 64) :element-type '(complex single-float)))
+(defparameter *buf-cs64out* (make-array (list 64 64) :element-type '(complex single-float)))
 
 (fftw::%fftwf_import_wisdom_from_filename "fiberholo.fftwf.wisdom")
 (time
@@ -221,7 +223,7 @@
   (dotimes (i n) ;; reset frame timers on the cameras ;
     (pylon::command-execute cams i "GevTimestampControlReset")))
 
-
+(defparameter *plan64* (fftw::planf *buf-cs64in* :out *buf-cs64out* :w 64 :h 64 :flag fftw::+measure+ :sign fftw::+backward+))
 (defparameter *plan256* (fftw::rplanf *buf-s* :out *buf-cs* :w 256 :h 256 :flag fftw::+measure+))
 (defparameter *plan512* (fftw::rplanf *buf-s* :out *buf-cs* :w 512 :h 512 :flag fftw::+measure+))
 
@@ -234,8 +236,6 @@
 (let* ((n 10)
        (store (loop for i from 0 below n collect (make-array (list 64 64) :element-type '(complex single-float))))
        (current-index 0))
-  ;; threads do not inherit dynamic bindings from the parent thread 
-  ;;  global special values are visible across all threads
   (defun get-stored-array (&optional (index current-index index-p))
     (declare (values (simple-array (complex single-float) 2) &optional))
     (prog1
@@ -246,7 +246,7 @@
 #+nil
 (get-current-index)
 #+nil
-(get-stored-array 0)
+(get-stored-array 1)
 (defun draw-frame (buf w h cam x y &key (extract-w 64) (extract-h extract-w) (scale #.(/ 20s0 4095)) (offset (- 12000s0)))
   (put-sf-image buf w h :dst-x (cam-dst-x cam) )
   (cond ((or (= 0 cam) (= 2 cam)) (fftw::%fftwf_execute *plan256*))
@@ -260,7 +260,8 @@
 		  (+ y ha)
 		  :dst-x (cam-dst-x cam) :dst-y 512 
 		  :scale scale :offset offset))
-  (extract-csf*  *buf-cs* (get-stored-array) :x x :y y :w extract-w :h extract-h))
+  (extract-csf* *buf-cs* *buf-cs64in* :x x :y y :w extract-w :h extract-h)
+  (fftw::%fftwf_execute *plan64*))
 
 (defun draw-rect (x1 y1 x2 y2)
   (draw-window x1 y1 x2 y1)
