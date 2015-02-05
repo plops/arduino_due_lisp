@@ -16,14 +16,85 @@
   (:use :cl :cffi :pure-x11))
 
 (in-package :pylon-test-x11)
-(fftw:prepare-threads)
-
-(fftw::%fftwf_plan_with_nthreads 6)
 
 (progn
   (pylon:initialize)
   (defparameter *cams* (pylon:create (pylon::factory) 3) "Handle to multiple Pylon cameras.")
   (pylon:cams-open *cams*))
+
+#+nil
+(pylon:terminate *cams*)
+
+(defparameter *ard* 
+  (multiple-value-list
+   (arduino-serial-sbcl:open-serial 
+    (first (directory "/dev/ttyACM0")))))
+
+#+nil
+(arduino-serial-sbcl:close-serial (second *ard*))
+
+(defvar *trigger-outputs-initialized* nil)
+
+(defun initialize-trigger-outputs ()
+  (arduino-serial-sbcl:talk-arduino
+   (second *ard*) 
+   (first *ard*)
+   "(progn
+ (pin-mode 6 1)
+ (pin-mode 10 1)
+ (pin-mode 11 1)
+ (pin-mode 12 1))")
+  (setf *trigger-outputs-initialized* t))
+
+(initialize-trigger-outputs)
+(defun trigger-all-cameras-seq (n &key (delay-ms 24))
+  (unless *trigger-outputs-initialized*
+    (initialize-trigger-outputs))
+  (arduino-serial-sbcl:talk-arduino
+   (second *ard*) 
+   (first *ard*)
+   (format nil 
+	   "(progn
+  (set 'i 0)
+  (while (< i ~a)
+    (delay ~a)
+    (digital-write 11 1)
+    (digital-write 12 1) 
+    (digital-write 10 1) 
+    (delay 1)
+    (digital-write 11 0)
+    (digital-write 12 0) 
+    (digital-write 10 0)
+    (set 'i (+ i 1))))
+"	   n delay-ms)
+   :time .1d0))
+
+#+nil
+(arduino-serial-sbcl:talk-arduino
+   ( second *ard*) 
+   (first *ard*)
+   "(progn (+ 1 2))")
+#+nil
+(arduino-serial-sbcl:talk-arduino
+   ( second *ard*) 
+   (first *ard*)
+   "(dac 1600 1920)")
+
+(defun arduino-dac (x y)
+  (declare (type (integer 0 4095) x y))
+ (arduino-serial-sbcl:talk-arduino
+  ( second *ard*) 
+  (first *ard*)
+  (format nil "(dac ~a ~a)" x y)))
+
+(defun arduino-trigger (&optional (active nil))
+  (dotimes (i 3)
+    (pylon:set-value-e *cams* i "TriggerMode" (if active 1 0))))
+
+(fftw:prepare-threads)
+
+(fftw::%fftwf_plan_with_nthreads 6)
+
 
 #+nil
 (loop for j below 3 collect
@@ -48,7 +119,7 @@
 ;;     (21433566 1 1 512 512 789 112 2975 0 125000000 1500 :TRIGGER-MODE 0 :LAST-ERROR 0 :RATE-P 0 :REVERSE-X 0 :RATE 54.318306)
 ;;     (21433540 1 1 256 256 996 439   35 0 125000000 1500 :TRIGGER-MODE 0 :LAST-ERROR 0 :RATE-P 0 :REVERSE-X 1 :RATE 105.82011))
 
-#+nil
+
 (progn ;; open a window and draw a line
   (connect)
   (make-window :width (+ 512 256 256) :height (+ 512 512))
@@ -76,7 +147,7 @@
 	     (aref b1 (+ 2 (* 4 i))) v)))
     (put-image-big-req b :dst-x dst-x :dst-y dst-y) ))
 
-(defun put-csf-image (a w h x0 y0 x1 y1 &key (dst-x 0) (dst-y 0))
+(defun put-csf-image (a w h x0 y0 x1 y1 &key (dst-x 0) (dst-y 0) (scale (/ 20s0 4095)) (offset 0s0))
   (declare (type (simple-array (complex single-float) 2) a)
 	   (type (unsigned-byte 16) w h dst-x dst-y)
 	   (type fixnum x1 y1 x0 y0)
@@ -87,13 +158,12 @@
 			:element-type '(unsigned-byte 8)
 			:initial-element 255))
 	 (b1 (sb-ext:array-storage-vector b))
-	 (n (* w h))
-	 (scale (/ 20s0 4095)))
+	 (n (* w h)))
     (declare (type (simple-array (complex single-float) 1) a1)
 	     (type (simple-array (unsigned-byte 8) 1) b1))
     
     (dotimes (i n)
-      (let ((v (min 255 (max 0 (round (* scale (- (abs (aref a1 i)) 12000)))))))
+      (let ((v (min 255 (max 0 (round (* scale (+ (abs (aref a1 i)) offset)))))))
 	(declare (type (unsigned-byte 8) v))
 	(setf (aref b1 (+ 0 (* 4 i))) v
 	     (aref b1 (+ 1 (* 4 i))) v
@@ -160,11 +230,12 @@
     (2 (+ 512 256))))
 
 
-(defun draw-frame (buf w h cam x1 y1 x2 y2)
+(defun draw-frame (buf w h cam x1 y1 x2 y2 &key (scale #.(/ 20s0 4095)) (offset (- 12000s0)))
   (put-sf-image buf w h :dst-x (cam-dst-x cam) )
   (cond ((or (= 0 cam) (= 2 cam)) (fftw::%fftwf_execute *plan256*))
 	((= 1 cam) (fftw::%fftwf_execute *plan512*)))
-  (put-csf-image *buf-cs* (1+ (floor w 2)) h x1 y1 x2 y2  :dst-x (cam-dst-x cam) :dst-y 512))
+  (put-csf-image *buf-cs* (1+ (floor w 2)) h x1 y1 x2 y2  :dst-x (cam-dst-x cam) :dst-y 512 
+		 :scale scale :offset offset))
 
 (defun draw-rect (x1 y1 x2 y2)
   (draw-window x1 y1 x2 y1)
@@ -187,10 +258,14 @@
 		   (pylon::grab-sf *cams* *buf-s*)
 		 (push (list  (- (get-us-time) start) cam success-p w h framenr timestamp) *log*)
 		 (when do-update-p
-		   (let ((k '((84 208) (226 172) (64 68))))
+		   (let ((k '((84 208) (225 173) (64 68))))
 		    (destructuring-bind (x y) (elt k cam)
 		      (let ((a 32))
-			(draw-frame *buf-s* w h cam (- x a 1) (- y a 1) (+ x a) (+ y a))
+			(draw-frame *buf-s* w h cam (- x a 1) (- y a 1) (+ x a) (+ y a)
+				    :scale (/ 40s0 4095) :offset (let ((o -12000)) (ecase cam 
+									   (0 o)
+									   (1 (* 2 o))
+									   (2 o))))
 			#+nil (draw-rect )))))))
 	     (when do-update-p
 	       (setf last-presentation-time current)))))
@@ -199,12 +274,15 @@
 
 
 #+nil
-(unwind-protect 
-     (progn
-       (defparameter *log* nil)
-       (reset-camera-timers *cams* 3)
-       (pylon:start-grabbing *cams*)
-       (let ((th (start-acquisition-thread :n 10)))
-	 (sleep .001)
-	 (sb-thread:join-thread th)))
-  (pylon:stop-grabbing *cams*))
+(let ((n 100))
+ (unwind-protect 
+      (progn
+	(defparameter *log* nil)
+	(reset-camera-timers *cams* 3)
+	(arduino-trigger nil)
+	(pylon:start-grabbing *cams*)
+	(let ((th (start-acquisition-thread :n n)))
+	  (sleep .001)
+	  (trigger-all-cameras-seq (* 4 n))
+	  (sb-thread:join-thread th)))
+   (pylon:stop-grabbing *cams*)))
