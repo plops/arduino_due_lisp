@@ -234,6 +234,8 @@
 (let* ((n 10)
        (store (loop for i from 0 below n collect (make-array (list 64 64) :element-type '(complex single-float))))
        (current-index 0))
+  ;; threads do not inherit dynamic bindings from the parent thread 
+  ;;  global special values are visible across all threads
   (defun get-stored-array (&optional (index current-index index-p))
     (declare (values (simple-array (complex single-float) 2) &optional))
     (prog1
@@ -243,7 +245,8 @@
   (defun get-current-index () current-index))
 #+nil
 (get-current-index)
-
+#+nil
+(get-stored-array 0)
 (defun draw-frame (buf w h cam x y &key (extract-w 64) (extract-h extract-w) (scale #.(/ 20s0 4095)) (offset (- 12000s0)))
   (put-sf-image buf w h :dst-x (cam-dst-x cam) )
   (cond ((or (= 0 cam) (= 2 cam)) (fftw::%fftwf_execute *plan256*))
@@ -257,7 +260,7 @@
 		  (+ y ha)
 		  :dst-x (cam-dst-x cam) :dst-y 512 
 		  :scale scale :offset offset))
-  (extract-csf* (get-stored-array) *buf-cs* :x x :y y :w extract-w :h extract-h))
+  (extract-csf*  *buf-cs* (get-stored-array) :x x :y y :w extract-w :h extract-h))
 
 (defun draw-rect (x1 y1 x2 y2)
   (draw-window x1 y1 x2 y1)
