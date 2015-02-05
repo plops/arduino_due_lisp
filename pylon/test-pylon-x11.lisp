@@ -5,15 +5,17 @@
 	  #p"/home/martin/arduino_due_lisp/pylon/"
 	  #p"/home/martin/arduino_due_lisp/image-processing/"
 	  #p"/home/martin/stage/cl-pure-x11/"
-	  #p"/home/martin/stage/cl-cffi-fftw3/"))
+	  #p"/home/martin/stage/cl-cffi-fftw3/"
+	  #p"/home/martin/arduino_due_lisp/image-processing/"))
   (asdf:load-system "pylon")
   (asdf:load-system "arduino-serial-sbcl")
   (asdf:load-system "pure-x11")
-  (asdf:load-system "fftw"))
+  (asdf:load-system "fftw")
+  (asdf:load-system "image-processing"))
 
 
 (defpackage :pylon-test-x11
-  (:use :cl :cffi :pure-x11))
+  (:use :cl :cffi :pure-x11 :image-processing))
 
 (in-package :pylon-test-x11)
 
@@ -122,7 +124,7 @@
 
 (progn ;; open a window and draw a line
   (connect)
-  (make-window :width (+ 512 256 256) :height (+ 512 512))
+  (make-window :width (+ 512 256 256) :height (+ 512 512 64))
   (draw-window 0 0 100 100))
 
 (defun put-sf-image (a w h &key (dst-x 0) (dst-y 0))
@@ -235,7 +237,8 @@
   (cond ((or (= 0 cam) (= 2 cam)) (fftw::%fftwf_execute *plan256*))
 	((= 1 cam) (fftw::%fftwf_execute *plan512*)))
   (put-csf-image *buf-cs* (1+ (floor w 2)) h x1 y1 x2 y2  :dst-x (cam-dst-x cam) :dst-y 512 
-		 :scale scale :offset offset))
+		 :scale scale :offset offset)
+  (extract-csf* (aref *result* j i cam) a :x x :y y :w w :h h))
 
 (defun draw-rect (x1 y1 x2 y2)
   (draw-window x1 y1 x2 y1)
@@ -262,7 +265,7 @@
 		    (destructuring-bind (x y) (elt k cam)
 		      (let ((a 32))
 			(draw-frame *buf-s* w h cam (- x a 1) (- y a 1) (+ x a) (+ y a)
-				    :scale (/ 40s0 4095) :offset (let ((o -12000)) (ecase cam 
+				    :scale (/ 40s0 4095) :offset (let ((o -9000)) (ecase cam 
 									   (0 o)
 									   (1 (* 2 o))
 									   (2 o))))
