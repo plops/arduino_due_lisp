@@ -231,14 +231,33 @@
     (1 256)
     (2 (+ 512 256))))
 
+(let* ((n 10)
+       (store (loop for i from 0 below n collect (make-array (list 64 64) :element-type '(complex single-float))))
+       (current-index 0))
+  (defun get-stored-array (&optional (index current-index index-p))
+    (declare (values (simple-array (complex single-float) 2) &optional))
+    (prog1
+	(elt store (mod index n))
+      (unless index-p
+	(setf current-index (mod (1+ current-index) n)))))
+  (defun get-current-index () current-index))
+#+nil
+(get-current-index)
 
-(defun draw-frame (buf w h cam x1 y1 x2 y2 &key (scale #.(/ 20s0 4095)) (offset (- 12000s0)))
+(defun draw-frame (buf w h cam x y &key (extract-w 64) (extract-h extract-w) (scale #.(/ 20s0 4095)) (offset (- 12000s0)))
   (put-sf-image buf w h :dst-x (cam-dst-x cam) )
   (cond ((or (= 0 cam) (= 2 cam)) (fftw::%fftwf_execute *plan256*))
 	((= 1 cam) (fftw::%fftwf_execute *plan512*)))
-  (put-csf-image *buf-cs* (1+ (floor w 2)) h x1 y1 x2 y2  :dst-x (cam-dst-x cam) :dst-y 512 
-		 :scale scale :offset offset)
-  (extract-csf* (aref *result* j i cam) a :x x :y y :w w :h h))
+  (let ((wa (floor extract-w 2))
+	(ha (floor extract-h 2)))
+   (put-csf-image *buf-cs* (1+ (floor w 2)) h 
+		  (- x wa 1) 
+		  (- y ha 1)
+		  (+ x wa) 
+		  (+ y ha)
+		  :dst-x (cam-dst-x cam) :dst-y 512 
+		  :scale scale :offset offset))
+  (extract-csf* (get-stored-array) *buf-cs* :x x :y y :w extract-w :h extract-h))
 
 (defun draw-rect (x1 y1 x2 y2)
   (draw-window x1 y1 x2 y1)
@@ -263,13 +282,12 @@
 		 (when do-update-p
 		   (let ((k '((84 208) (225 173) (64 68))))
 		    (destructuring-bind (x y) (elt k cam)
-		      (let ((a 32))
-			(draw-frame *buf-s* w h cam (- x a 1) (- y a 1) (+ x a) (+ y a)
-				    :scale (/ 40s0 4095) :offset (let ((o -9000)) (ecase cam 
-									   (0 o)
-									   (1 (* 2 o))
-									   (2 o))))
-			#+nil (draw-rect )))))))
+		      (draw-frame *buf-s* w h cam x y :extract-w 64 
+				  :scale (/ 40s0 4095) :offset (let ((o -9000)) (ecase cam 
+										  (0 o)
+										  (1 (* 2 o))
+										  (2 o))))
+		      #+nil (draw-rect ))))))
 	     (when do-update-p
 	       (setf last-presentation-time current)))))
      :name "camera-acquisition")))
