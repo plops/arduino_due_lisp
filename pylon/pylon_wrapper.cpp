@@ -461,8 +461,8 @@ extern "C" {
 	// context allows to determine which camera produced the grab result
 	intptr_t cameraContextValue = ptrGrabResult->GetCameraContext();
 	*camera = cameraContextValue;
-	cout << "Camera " <<  cameraContextValue << ": " << (*cameras)[ cameraContextValue ].GetDeviceInfo().GetFullName() << endl;
-	cout << "GrabSucceeded: " << ptrGrabResult->GrabSucceeded() << endl;
+	//cout << "Camera " <<  cameraContextValue << ": " << (*cameras)[ cameraContextValue ].GetDeviceInfo().GetFullName() << endl;
+	//cout << "GrabSucceeded: " << ptrGrabResult->GrabSucceeded() << endl;
 	*success_p = ptrGrabResult->GrabSucceeded();
 	if(!ptrGrabResult->GrabSucceeded()){
 	  std::cout << "Error: " << ptrGrabResult->GetErrorCode() << " " << ptrGrabResult->GetErrorDescription();
@@ -473,10 +473,10 @@ extern "C" {
 
 	  return;
 	}
-	cout << "SizeX: " << ptrGrabResult->GetWidth() << endl;
-	cout << "SizeY: " << ptrGrabResult->GetHeight() << endl;
+	//cout << "SizeX: " << ptrGrabResult->GetWidth() << endl;
+	//cout << "SizeY: " << ptrGrabResult->GetHeight() << endl;
 	const uint8_t *pImageBuffer = (uint8_t *) ptrGrabResult->GetBuffer();
-	cout << "Gray value of first pixel: " << (uint32_t) pImageBuffer[0] << endl << endl;
+	//cout << "Gray value of first pixel: " << (uint32_t) pImageBuffer[0] << endl << endl;
 
 	*w = ptrGrabResult->GetWidth();
 	*h = ptrGrabResult->GetHeight(); // FIXME this doesnt work with 12 bit

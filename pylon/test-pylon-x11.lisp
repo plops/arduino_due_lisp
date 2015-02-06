@@ -256,7 +256,7 @@
 (get-stored-array 0)
 
 #+nil
-(put-csf-image (get-stored-array 0) >w 64 :h 64 :scale 100000s0 :offset 0s0)
+(put-csf-image (get-stored-array 3) :w 64 :h 64 :scale 7s-5 :offset 0s0)
 #+nil
 (draw-window 0 0 100 200)
 (defun draw-frame (buf w h cam x y &key (extract-w 64) (extract-h extract-w) (scale #.(/ 20s0 4095)) (offset (- 12000s0)))
@@ -272,23 +272,24 @@
 		  :y1 (+ y ha)
 		  :dst-x (cam-dst-x cam) :dst-y 512 
 		  :scale scale :offset offset)
-   (extract-csf* *buf-cs* *buf-cs64in* :w (1+ (floor w 2))
-		 :h h
-		 :x  (- x wa 1) :y (- y ha 1) :w-extract extract-w :h-extract extract-h))
+   (extract-csf* *buf-cs* *buf-cs64in* 
+		 :w (1+ (floor w 2)) :h h
+		 :x  (- x wa 1) :y (- y ha 1)
+		 :w-extract extract-w :h-extract extract-h))
   
- ; (fftw::%fftwf_execute *plan64*)
-  #+nil(let* ((a (get-stored-array))
+  (fftw::%fftwf_execute *plan64*)
+  (let* ((a (get-stored-array))
 	 (pixels1 (expt (cond ((or (= 0 cam) (= 2 cam)) 256)
 			      ((= 1 cam) 512)
 			      (t (error "unexpected value for camera index: ~a." cam)))
-			2))
-	 (pixels2 (* 64 64))
+			1))
+	 (pixels2 (* 64))
 	 (s (/ (* pixels1 pixels2))))
     (declare (type (simple-array (complex single-float) 2) a *buf-cs64out*))
-   (dotimes (i 64)
-     (dotimes (j 64)
-       (setf (aref a j i) (* s (aref *buf-cs64out* j i))))))
-  (put-csf-image *buf-cs64in* :w 64 :h 64 :dst-x (cam-dst-x cam) :dst-y (- 512 64) :scale 3s-3 :offset 0s0))
+    (dotimes (i 64)
+      (dotimes (j 64)
+	(setf (aref a j i) (aref *buf-cs64out* j i))))
+    (put-csf-image a :w 64 :h 64 :dst-x (cam-dst-x cam) :dst-y (- 512 64) :scale 1s-4 :offset 0s0)))
 
 (defun draw-rect (x1 y1 x2 y2)
   (draw-window x1 y1 x2 y1)
@@ -314,7 +315,7 @@
 		   (let ((k '((84 208) (230 173) (62 68))))
 		    (destructuring-bind (x y) (elt k cam)
 		      (draw-frame *buf-s* w h cam x y :extract-w 64 
-				  :scale (/ 10s0 4095) :offset (let ((o 000)) (ecase cam 
+				  :scale (/ 40s0 4095) :offset (let ((o 000)) (ecase cam 
 										  (0 o)
 										  (1 (* 2 o))
 										  (2 o))))
