@@ -268,8 +268,8 @@
 		  :dst-x (cam-dst-x cam) :dst-y 512 
 		  :scale scale :offset offset))
   (extract-csf* *buf-cs* *buf-cs64in* :x x :y y :w extract-w :h extract-h)
-  (fftw::%fftwf_execute *plan64*)
-  (let* ((a (get-stored-array))
+ ; (fftw::%fftwf_execute *plan64*)
+  #+nil(let* ((a (get-stored-array))
 	 (pixels1 (expt (cond ((or (= 0 cam) (= 2 cam)) 256)
 			      ((= 1 cam) 512)
 			      (t (error "unexpected value for camera index: ~a." cam)))
@@ -280,7 +280,7 @@
    (dotimes (i 64)
      (dotimes (j 64)
        (setf (aref a j i) (* s (aref *buf-cs64out* j i))))))
-  (put-csf-image (get-stored-array 0) 64 64 :dst-x (cam-dst-x cam) :dst-y 540 :scale 100000s0 :offset 0s0))
+  (put-csf-image *buf-cs64in* 64 64 :dst-x (cam-dst-x cam) :dst-y 540 :scale 3s-3 :offset 0s0))
 
 (defun draw-rect (x1 y1 x2 y2)
   (draw-window x1 y1 x2 y1)
