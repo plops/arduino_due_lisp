@@ -182,7 +182,7 @@
        (declare (type fixnum j))
        (dotimes (i w)
 	 (declare (type fixnum i))
-	 (setf (aref out j i) (aref a (mod (+ j oy) hh) (mod (+ i ox) ww))))))
+	 (setf (aref out j i) (aref a j i) #+nil(aref a (mod (+ j oy) hh) (mod (+ i ox) ww))))))
     nil))
 
 (defun extract-cdf* (a &key

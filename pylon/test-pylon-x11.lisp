@@ -149,7 +149,8 @@
 	     (aref b1 (+ 2 (* 4 i))) v)))
     (put-image-big-req b :dst-x dst-x :dst-y dst-y) ))
 
-(defun put-csf-image (a w h  &key (x0 0 x0-p) (y0 0 y0-p) (x1 0 x1-p) (y1 0 y1-p)
+(defun put-csf-image (a &key (w (array-dimension a 0)) (h (array-dimension a 1))
+			  (x0 0 x0-p) (y0 0 y0-p) (x1 0 x1-p) (y1 0 y1-p)
 			       (dst-x 0) (dst-y 0) (scale (/ 20s0 4095)) (offset 0s0))
   (declare (type (simple-array (complex single-float) 2) a)
 	   (type (unsigned-byte 16) w h dst-x dst-y)
@@ -251,7 +252,7 @@
 (get-stored-array 0)
 
 #+nil
-(put-csf-image (get-stored-array 0) 64 64 :scale 100000s0 :offset 0s0)
+(put-csf-image (get-stored-array 0) >w 64 :h 64 :scale 100000s0 :offset 0s0)
 #+nil
 (draw-window 0 0 100 200)
 (defun draw-frame (buf w h cam x y &key (extract-w 64) (extract-h extract-w) (scale #.(/ 20s0 4095)) (offset (- 12000s0)))
@@ -260,14 +261,15 @@
 	((= 1 cam) (fftw::%fftwf_execute *plan512*)))
   (let ((wa (floor extract-w 2))
 	(ha (floor extract-h 2)))
-   (put-csf-image *buf-cs* (1+ (floor w 2)) h 
+   (put-csf-image *buf-cs* :w (1+ (floor w 2)) :h h 
 		  :x0 (- x wa 1) 
 		  :y0 (- y ha 1)
 		  :x1 (+ x wa) 
 		  :y1 (+ y ha)
 		  :dst-x (cam-dst-x cam) :dst-y 512 
-		  :scale scale :offset offset))
-  (extract-csf* *buf-cs* *buf-cs64in* :x x :y y :w extract-w :h extract-h)
+		  :scale scale :offset offset)
+   (extract-csf* *buf-cs* *buf-cs64in* :x  0 #+nil (- x wa 1) :y 0 #+nil (- y ha 1) :w extract-w :h extract-h))
+  
  ; (fftw::%fftwf_execute *plan64*)
   #+nil(let* ((a (get-stored-array))
 	 (pixels1 (expt (cond ((or (= 0 cam) (= 2 cam)) 256)
@@ -280,7 +282,7 @@
    (dotimes (i 64)
      (dotimes (j 64)
        (setf (aref a j i) (* s (aref *buf-cs64out* j i))))))
-  (put-csf-image *buf-cs64in* 64 64 :dst-x (cam-dst-x cam) :dst-y 540 :scale 3s-3 :offset 0s0))
+  (put-csf-image *buf-cs64in* :w 64 :h 64 :dst-x (cam-dst-x cam) :dst-y (- 512 64) :scale 3s-3 :offset 0s0))
 
 (defun draw-rect (x1 y1 x2 y2)
   (draw-window x1 y1 x2 y1)
@@ -306,7 +308,7 @@
 		   (let ((k '((84 208) (225 173) (64 68))))
 		    (destructuring-bind (x y) (elt k cam)
 		      (draw-frame *buf-s* w h cam x y :extract-w 64 
-				  :scale (/ 40s0 4095) :offset (let ((o -9000)) (ecase cam 
+				  :scale (/ 10s0 4095) :offset (let ((o 000)) (ecase cam 
 										  (0 o)
 										  (1 (* 2 o))
 										  (2 o))))
