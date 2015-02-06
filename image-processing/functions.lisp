@@ -160,29 +160,33 @@
 	       (aref a (mod (+ j oy) hh) (mod (+ i ox) ww))))))
     b))
 
+
+
 (defun extract-csf* (a out &key
+			     (w (array-dimension a 1))
+			     (h (array-dimension a 0))
                 (x (floor (array-dimension a 1) 2))
                 (y (floor (array-dimension a 0) 2))
-                (w (next-power-of-two (min x y
+                (w-extract (next-power-of-two (min x y
                                            (- (array-dimension a 1) x)
                                            (- (array-dimension a 0) y))))
-                (h w))
+                (h-extract w))
   (declare (optimize (speed 3))
 	   (type (simple-array (complex single-float) 2) a)
 	   (type (simple-array (complex single-float) 2) out)
-	   (type fixnum x y w h)
+	   (type fixnum x y w-extract h-extract)
+	   (type (integer 0 4095) w h)
 	   (values null &optional))
   (let* ((ox x #+nil (- x (floor w 2)))
-         (oy y #+nil (- y (floor h 2))))
+         (oy y #+nil (- y (floor h 2)))
+	 (a1 (sb-ext:array-storage-vector a)))
     (declare (type (array (complex single-float) 2) out)
 	     (type fixnum ox oy))
-    (destructuring-bind (hh ww) (array-dimensions a)
-      (declare (type fixnum hh ww))
-     (dotimes (j h)
-       (declare (type fixnum j))
-       (dotimes (i w)
-	 (declare (type fixnum i))
-	 (setf (aref out j i) (aref a j i) #+nil(aref a (mod (+ j oy) hh) (mod (+ i ox) ww))))))
+    (dotimes (j h-extract)
+      (declare (type (integer 0 4095) j))
+      (dotimes (i w-extract)
+	(declare (type (integer 0 4095) i))
+	(setf (aref out j i) (aref a1 (+ (mod (+ i ox) w) (* w (mod (+ j oy) h)))))))
     nil))
 
 (defun extract-cdf* (a &key

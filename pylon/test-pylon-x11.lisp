@@ -149,7 +149,7 @@
 	     (aref b1 (+ 2 (* 4 i))) v)))
     (put-image-big-req b :dst-x dst-x :dst-y dst-y) ))
 
-(defun put-csf-image (a &key (w (array-dimension a 0)) (h (array-dimension a 1))
+(defun put-csf-image (a &key (w (array-dimension a 1)) (h (array-dimension a 0))
 			  (x0 0 x0-p) (y0 0 y0-p) (x1 0 x1-p) (y1 0 y1-p)
 			       (dst-x 0) (dst-y 0) (scale (/ 20s0 4095)) (offset 0s0))
   (declare (type (simple-array (complex single-float) 2) a)
@@ -166,12 +166,16 @@
     (declare (type (simple-array (complex single-float) 1) a1)
 	     (type (simple-array (unsigned-byte 8) 1) b1))
     
-    (dotimes (i n)
-      (let ((v (min 255 (max 0 (round (* scale (+ (abs (aref a1 i)) offset)))))))
-	(declare (type (unsigned-byte 8) v))
-	(setf (aref b1 (+ 0 (* 4 i))) v
-	     (aref b1 (+ 1 (* 4 i))) v
-	     (aref b1 (+ 2 (* 4 i))) v)))
+    (progn ;dotimes (j h)
+     (dotimes (i n)
+       (let ((v (min 255 (max 0 (round (* scale (+ (abs (aref a1 i)) offset)))))))
+	 (declare (type (unsigned-byte 8) v))
+	 (setf (aref b1 (+ 0 (* 4 i))) v
+	       (aref b1 (+ 1 (* 4 i))) v
+	       (aref b1 (+ 2 (* 4 i))) v)
+	 #+nil (setf (aref b j i 0) v
+	       (aref b j i 1) v
+	       (aref b j i 2) v))))
     (when (and x0-p x1-p y0-p y1-p)
      (let ((v 255)
 	   (xx0 (max 0 (min w (min x0 x1))))
@@ -268,7 +272,9 @@
 		  :y1 (+ y ha)
 		  :dst-x (cam-dst-x cam) :dst-y 512 
 		  :scale scale :offset offset)
-   (extract-csf* *buf-cs* *buf-cs64in* :x  0 #+nil (- x wa 1) :y 0 #+nil (- y ha 1) :w extract-w :h extract-h))
+   (extract-csf* *buf-cs* *buf-cs64in* :w (1+ (floor w 2))
+		 :h h
+		 :x  (- x wa 1) :y (- y ha 1) :w-extract extract-w :h-extract extract-h))
   
  ; (fftw::%fftwf_execute *plan64*)
   #+nil(let* ((a (get-stored-array))
