@@ -311,7 +311,7 @@
 		   (pylon::grab-sf *cams* *buf-s*)
 		 (push (list  (- (get-us-time) start) cam success-p w h framenr timestamp) *log*)
 		 (when do-update-p
-		   (let ((k '((84 208) (225 173) (64 68))))
+		   (let ((k '((84 208) (230 173) (62 68))))
 		    (destructuring-bind (x y) (elt k cam)
 		      (draw-frame *buf-s* w h cam x y :extract-w 64 
 				  :scale (/ 10s0 4095) :offset (let ((o 000)) (ecase cam 
