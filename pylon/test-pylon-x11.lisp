@@ -248,7 +248,12 @@
 #+nil
 (get-current-index)
 #+nil
-(get-stored-array 1)
+(get-stored-array 0)
+
+#+nil
+(put-csf-image (get-stored-array 0) 64 64 :scale 100000s0 :offset 0s0)
+#+nil
+(draw-window 0 0 100 200)
 (defun draw-frame (buf w h cam x y &key (extract-w 64) (extract-h extract-w) (scale #.(/ 20s0 4095)) (offset (- 12000s0)))
   (put-sf-image buf w h :dst-x (cam-dst-x cam) )
   (cond ((or (= 0 cam) (= 2 cam)) (fftw::%fftwf_execute *plan256*))
@@ -274,7 +279,8 @@
     (declare (type (simple-array (complex single-float) 2) a *buf-cs64out*))
    (dotimes (i 64)
      (dotimes (j 64)
-       (setf (aref a j i) (* s (aref *buf-cs64out* j i)))))))
+       (setf (aref a j i) (* s (aref *buf-cs64out* j i))))))
+  (put-csf-image (get-stored-array 0) 64 64 :dst-x (cam-dst-x cam) :dst-y 540 :scale 100000s0 :offset 0s0))
 
 (defun draw-rect (x1 y1 x2 y2)
   (draw-window x1 y1 x2 y1)
