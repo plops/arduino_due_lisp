@@ -149,7 +149,8 @@
 	     (aref b1 (+ 2 (* 4 i))) v)))
     (put-image-big-req b :dst-x dst-x :dst-y dst-y) ))
 
-(defun put-csf-image (a w h x0 y0 x1 y1 &key (dst-x 0) (dst-y 0) (scale (/ 20s0 4095)) (offset 0s0))
+(defun put-csf-image (a w h  &key (x0 0 x0-p) (y0 0 y0-p) (x1 0 x1-p) (y1 0 y1-p)
+			       (dst-x 0) (dst-y 0) (scale (/ 20s0 4095)) (offset 0s0))
   (declare (type (simple-array (complex single-float) 2) a)
 	   (type (unsigned-byte 16) w h dst-x dst-y)
 	   (type fixnum x1 y1 x0 y0)
@@ -170,18 +171,19 @@
 	(setf (aref b1 (+ 0 (* 4 i))) v
 	     (aref b1 (+ 1 (* 4 i))) v
 	     (aref b1 (+ 2 (* 4 i))) v)))
-    (let ((v 255)
-	  (xx0 (max 0 (min w (min x0 x1))))
-	  (xx1 (max 0 (min w (max x0 x1))))
-	  (yy0 (max 0 (min h (min y0 y1))))
-	  (yy1 (max 0 (min h (max y0 y1)))))
-      (dotimes (c 3)
-	(loop for i from xx0 upto xx1 do
-	     (setf (aref b yy0 i c) v
-		   (aref b yy1 i c) v))
-	(loop for j from yy0 upto yy1 do
-	     (setf (aref b j xx0 c) v
-		   (aref b j xx1 c) v))))
+    (when (and x0-p x1-p y0-p y1-p)
+     (let ((v 255)
+	   (xx0 (max 0 (min w (min x0 x1))))
+	   (xx1 (max 0 (min w (max x0 x1))))
+	   (yy0 (max 0 (min h (min y0 y1))))
+	   (yy1 (max 0 (min h (max y0 y1)))))
+       (dotimes (c 3)
+	 (loop for i from xx0 upto xx1 do
+	      (setf (aref b yy0 i c) v
+		    (aref b yy1 i c) v))
+	 (loop for j from yy0 upto yy1 do
+	      (setf (aref b j xx0 c) v
+		    (aref b j xx1 c) v)))))
     (put-image-big-req b :dst-x dst-x :dst-y dst-y) ))
 
 (defparameter *buf-s* (make-array (list 512 512) :element-type 'single-float))
@@ -254,14 +256,25 @@
   (let ((wa (floor extract-w 2))
 	(ha (floor extract-h 2)))
    (put-csf-image *buf-cs* (1+ (floor w 2)) h 
-		  (- x wa 1) 
-		  (- y ha 1)
-		  (+ x wa) 
-		  (+ y ha)
+		  :x0 (- x wa 1) 
+		  :y0 (- y ha 1)
+		  :x1 (+ x wa) 
+		  :y1 (+ y ha)
 		  :dst-x (cam-dst-x cam) :dst-y 512 
 		  :scale scale :offset offset))
   (extract-csf* *buf-cs* *buf-cs64in* :x x :y y :w extract-w :h extract-h)
-  (fftw::%fftwf_execute *plan64*))
+  (fftw::%fftwf_execute *plan64*)
+  (let* ((a (get-stored-array))
+	 (pixels1 (expt (cond ((or (= 0 cam) (= 2 cam)) 256)
+			      ((= 1 cam) 512)
+			      (t (error "unexpected value for camera index: ~a." cam)))
+			2))
+	 (pixels2 (* 64 64))
+	 (s (/ (* pixels1 pixels2))))
+    (declare (type (simple-array (complex single-float) 2) a *buf-cs64out*))
+   (dotimes (i 64)
+     (dotimes (j 64)
+       (setf (aref a j i) (* s (aref *buf-cs64out* j i)))))))
 
 (defun draw-rect (x1 y1 x2 y2)
   (draw-window x1 y1 x2 y1)
