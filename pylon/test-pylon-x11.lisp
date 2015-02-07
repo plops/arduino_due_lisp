@@ -151,7 +151,8 @@
 
 (defun put-csf-image (a &key (w (array-dimension a 1)) (h (array-dimension a 0))
 			  (x0 0 x0-p) (y0 0 y0-p) (x1 0 x1-p) (y1 0 y1-p)
-			       (dst-x 0) (dst-y 0) (scale (/ 20s0 4095)) (offset 0s0))
+			  (dst-x 0) (dst-y 0) (scale (/ 20s0 4095)) (offset 0s0)
+			  (fun #'abs))
   (declare (type (simple-array (complex single-float) 2) a)
 	   (type (unsigned-byte 16) w h dst-x dst-y)
 	   (type fixnum x1 y1 x0 y0)
@@ -168,7 +169,7 @@
     
     (progn ;dotimes (j h)
      (dotimes (i n)
-       (let ((v (min 255 (max 0 (round (* scale (+ (abs (aref a1 i)) offset)))))))
+       (let ((v (min 255 (max 0 (round (* scale (+ (funcall fun (aref a1 i)) offset)))))))
 	 (declare (type (unsigned-byte 8) v))
 	 (setf (aref b1 (+ 0 (* 4 i))) v
 	       (aref b1 (+ 1 (* 4 i))) v
@@ -270,7 +271,9 @@
 (dotimes (i (get-stored-array-length))
  (put-csf-image (get-stored-array i) :w 64 :h 64 :dst-x (* 64 (floor i 3))
 		:dst-y (* 64 (mod i 3))
-		:scale 1s0 :offset 0s0))
+		:scale 30s0 :offset 3s0
+		:fun #'phase
+		))
 #+nil
 (draw-window 0 0 100 200)
 (defun draw-frame (buf w h cam x y &key (extract-w 64) (extract-h extract-w) (scale #.(/ 20s0 4095)) (offset (- 12000s0)))
