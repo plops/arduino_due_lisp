@@ -231,6 +231,9 @@
     (pylon::command-execute cams i "GevTimestampControlReset")))
 
 (defparameter *plan64* (fftw::planf *buf-cs64in* :out *buf-cs64out* :w 64 :h 64 :flag fftw::+measure+ :sign fftw::+backward+))
+#+nil
+(fftw::%fftwf_destroy_plan *plan64*)
+
 (defparameter *plan256* (fftw::rplanf *buf-s* :out *buf-cs* :w 256 :h 256 :flag fftw::+measure+))
 (defparameter *plan512* (fftw::rplanf *buf-s* :out *buf-cs* :w 512 :h 512 :flag fftw::+measure+))
 
@@ -240,11 +243,15 @@
     (1 256)
     (2 (+ 512 256))))
 
+(defparameter *store* (loop for i from 0 below 10 collect (make-array (list 64 64) :element-type '(complex single-float))))
+(defparameter *store-index* 0)
+
 (let* ((n 10)
        (store (loop for i from 0 below n collect (make-array (list 64 64) :element-type '(complex single-float))))
        (current-index 0))
   (defun get-stored-array (&optional (index current-index index-p))
     (declare (values (simple-array (complex single-float) 2) &optional))
+    (format t "storing in index ~a~%" index)
     (prog1
 	(elt store (mod index n))
       (unless index-p
@@ -256,7 +263,8 @@
 (get-stored-array 0)
 
 #+nil
-(put-csf-image (get-stored-array 3) :w 64 :h 64 :scale 7s-5 :offset 0s0)
+(dotimes (i (length *store*))
+ (put-csf-image (elt *store* i) :w 64 :h 64 :dst-x (* 64 i) :scale 1s0 :offset 0s0))
 #+nil
 (draw-window 0 0 100 200)
 (defun draw-frame (buf w h cam x y &key (extract-w 64) (extract-h extract-w) (scale #.(/ 20s0 4095)) (offset (- 12000s0)))
@@ -278,7 +286,7 @@
 		 :w-extract extract-w :h-extract extract-h))
   
   (fftw::%fftwf_execute *plan64*)
-  (let* ((a (get-stored-array))
+  (let* ((a (elt *store* *store-index*))
 	 (pixels1 (expt (cond ((or (= 0 cam) (= 2 cam)) 256)
 			      ((= 1 cam) 512)
 			      (t (error "unexpected value for camera index: ~a." cam)))
@@ -286,10 +294,12 @@
 	 (pixels2 (* 64))
 	 (s (/ (* pixels1 pixels2))))
     (declare (type (simple-array (complex single-float) 2) a *buf-cs64out*))
+    (setf *store-index* (mod (1+ *store-index*)
+			     (length *store*)))
     (dotimes (i 64)
       (dotimes (j 64)
-	(setf (aref a j i) (aref *buf-cs64out* j i))))
-    (put-csf-image a :w 64 :h 64 :dst-x (cam-dst-x cam) :dst-y (- 512 64) :scale 1s-4 :offset 0s0)))
+	(setf (aref a j i) (* s (aref *buf-cs64out* j i)))))
+    (put-csf-image a :w 64 :h 64 :dst-x (cam-dst-x cam) :dst-y (- 512 64) :scale 1s0 :offset 0s0)))
 
 (defun draw-rect (x1 y1 x2 y2)
   (draw-window x1 y1 x2 y1)
@@ -327,7 +337,7 @@
 
 
 #+nil
-(let ((n 100))
+(let ((n 10))
  (unwind-protect 
       (progn
 	(defparameter *log* nil)
