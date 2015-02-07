@@ -271,8 +271,9 @@
 (dotimes (i (get-stored-array-length))
  (put-csf-image (get-stored-array i) :w 64 :h 64 :dst-x (* 64 (floor i 3))
 		:dst-y (* 64 (mod i 3))
-		:scale 30s0 :offset 3s0
-		:fun #'phase
+		; :scale (/ 255 (* 2 3.1415)) :offset 3.1416s0 :fun #'phase
+		;:scale .5s0 :offset 1s0 :fun #'realpart
+		:scale 1s0 :offset 0s0 :fun #'abs
 		))
 #+nil
 (draw-window 0 0 100 200)
@@ -308,7 +309,7 @@
 			     (length *store*)))
     (dotimes (i 64)
       (dotimes (j 64)
-	(setf (aref a j i) (* s (aref *buf-cs64out* j i)))))
+	(setf (aref a j i) (* s (expt -1 (+ i j)) (aref *buf-cs64out* j i)))))
     (put-csf-image a :w 64 :h 64 :dst-x (cam-dst-x cam) :dst-y (- 512 64) :scale 1s0 :offset 0s0)))
 
 (defun draw-rect (x1 y1 x2 y2)
