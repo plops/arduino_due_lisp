@@ -268,13 +268,16 @@
 (dotimes (i (length *store*))
  (put-csf-image (elt *store* i) :w 64 :h 64 :dst-x (* 64 i) :scale 1s0 :offset 0s0))
 #+nil
-(dotimes (i (get-stored-array-length))
- (put-csf-image (get-stored-array i) :w 64 :h 64 :dst-x (* 64 (floor i 3))
-		:dst-y (* 64 (mod i 3))
-		; :scale (/ 255 (* 2 3.1415)) :offset 3.1416s0 :fun #'phase
-		;:scale .5s0 :offset 1s0 :fun #'realpart
-		:scale 1s0 :offset 0s0 :fun #'abs
-		))
+(progn
+  (draw-window 0 0 100 100)
+ (dotimes (i (get-stored-array-length))
+   (put-csf-image (get-stored-array i) :w 64 :h 64 :dst-x (* 65 (floor i 3))
+		  :dst-y (* 65 (mod i 3))
+					; :scale (/ 255 (* 2 3.1415)) :offset 3.1416s0 :fun #'phase
+					; :scale 1s0 :offset 70s0 :fun #'realpart
+					; :scale 1s0 :offset 70s0 :fun #'imagpart
+		  :scale 100s0 :offset 0s0 :fun #'abs
+		  )))
 #+nil
 (draw-window 0 0 100 200)
 (defun draw-frame (buf w h cam x y &key (extract-w 64) (extract-h extract-w) (scale #.(/ 20s0 4095)) (offset (- 12000s0)))
@@ -295,7 +298,7 @@
 		 :x  (- x wa 1) :y (- y ha 1)
 		 :w-extract extract-w :h-extract extract-h))
   
-  (fftw::%fftwf_execute *plan64*)
+  #+nil (fftw::%fftwf_execute *plan64*)
   (let* ((a (get-stored-array)
 	   #+nil (elt *store* *store-index*))
 	 (pixels1 (expt (cond ((or (= 0 cam) (= 2 cam)) 256)
@@ -309,8 +312,8 @@
 			     (length *store*)))
     (dotimes (i 64)
       (dotimes (j 64)
-	(setf (aref a j i) (* s (expt -1 (+ i j)) (aref *buf-cs64out* j i)))))
-    (put-csf-image a :w 64 :h 64 :dst-x (cam-dst-x cam) :dst-y (- 512 64) :scale 1s0 :offset 0s0)))
+	(setf (aref a j i) (* s (expt -1 (+ i j)) (aref *buf-cs64in* j i)))))
+    (put-csf-image *buf-cs64in* :w 64 :h 64 :dst-x (cam-dst-x cam) :dst-y (- 512 64) :scale 1s0 :offset 0s0)))
 
 (defun draw-rect (x1 y1 x2 y2)
   (draw-window x1 y1 x2 y1)
