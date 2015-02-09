@@ -246,15 +246,17 @@
 
 (defparameter *store* (loop for i from 0 below 10 collect (make-array (list 64 64) :element-type '(complex single-float))))
 (defparameter *store-index* 0)
-
-(let* ((n (* 3 16))
-       (store (loop for i from 0 below n collect (make-array (list 64 64) :element-type '(complex single-float))))
+(loop for i below 3 collect (loop for j below 2 collect (list j i)))
+(let* ((n (* 3 32))
+       (store (loop for i from 0 below n collect
+		   (loop for cam below 3 collect
+			(make-array (list 64 64) :element-type '(complex single-float)))))
        (current-index 0))
-  (defun get-stored-array (&optional (index current-index index-p))
+  (defun get-stored-array (cam &optional (index current-index index-p))
     (declare (values (simple-array (complex single-float) 2) &optional))
     (format t "storing in index ~a~%" index)
     (prog1
-	(elt store (mod index (length store)))
+	(elt (elt store (mod index (length store))) cam)
       (unless index-p
 	(setf current-index (mod (1+ current-index) (length store))))))
   (defun get-current-index () current-index)
@@ -270,36 +272,41 @@
 #+nil
 (let ((scale 1s0)
       (offset 70s0))
- (progn
-   (draw-window 0 0 100 100)
-   (dotimes (i (get-stored-array-length))
-     (put-csf-image (get-stored-array i) :w 64 :h 64 :dst-x (* 65 (floor i 3))
-		    :dst-y (* 65 (mod i 3))
-		    :scale (/ 255 (* 2 3.1415)) :offset 3.1416s0 :fun #'phase))
-   (dotimes (i (get-stored-array-length))
-     (put-csf-image (get-stored-array i) :w 64 :h 64 :dst-x (* 65 (floor i 3))
-		    :dst-y (+ (* 3 65) (* 65 (mod i 3)))
-		    :scale scale :offset 0s0 :fun #'abs))
-   (dotimes (i (get-stored-array-length))
-     (put-csf-image (get-stored-array i) :w 64 :h 64 :dst-x (* 65 (floor i 3))
-		    :dst-y (+ (* 6 65) (* 65 (mod i 3)))
-		    :scale scale :offset offset :fun #'realpart))
-   (dotimes (i (get-stored-array-length))
-     (put-csf-image (get-stored-array i) :w 64 :h 64 :dst-x (* 65 (floor i 3))
-		    :dst-y (+ (* 9 65) (* 65 (mod i 3)))
-		    :scale scale :offset offset :fun #'imagpart))))
+  (let ((len (min 16 (get-stored-array-length))))
+    (draw-window 0 0 100 100)
+    (dotimes (cam 3)
+      (dotimes (i len)
+	(put-csf-image (get-stored-array cam i) :w 64 :h 64 :dst-x (* 65 i)
+		       :dst-y (* 65 cam)
+		       :scale (/ 255 (* 2 3.1415)) :offset 3.1416s0 :fun #'phase))
+      (dotimes (i len)
+	(put-csf-image (get-stored-array cam i) :w 64 :h 64 :dst-x (* 65 i)
+		       :dst-y (+ (* 3 65) (* 65 cam))
+		       :scale scale :offset 0s0 :fun #'abs))
+      (dotimes (i len)
+	(put-csf-image (get-stored-array cam i) :w 64 :h 64 :dst-x (* 65 i)
+		       :dst-y (+ (* 6 65) (* 65 cam))
+		       :scale scale :offset offset :fun #'realpart))
+      (dotimes (i len)
+	(put-csf-image (get-stored-array cam i) :w 64 :h 64 :dst-x (* 65 i)
+		       :dst-y (+ (* 9 65) (* 65 cam))
+		       :scale scale :offset offset :fun #'imagpart)))))
 
 #+nil
-(let ((a (make-array (list 64 64) :element-type '(complex single-float) :initial-element (complex 0s0))))
-  (loop for k from 0 below (get-stored-array-length) by 3 do
+(let ((a (make-array (list 64 64) :element-type '(complex single-float) :initial-element (complex 0s0)))
+      (st 3))
+  (loop for k from st below (get-stored-array-length) by 3 do
        (let ((b (get-stored-array k)))
 	(dotimes (i 64)
 	  (dotimes (j 64)
 	    (incf (aref a j i) (aref b j i)))))
     )
   (put-csf-image a :w 64 :h 64 :dst-x 0
-		    :dst-y 0
-		    :scale .1s0 :offset 0s0 :fun #'abs))
+		    :dst-y (* 65 st)
+		    ;:scale (/ 255 (* 2 3.1415)) :offset 3.1416s0 :fun #'phase
+		    
+		    :scale (/ 1s0 32) :offset 0s0 :fun #'abs
+		    ))
 
 #+nil
 (draw-window 0 0 100 200)
@@ -322,7 +329,7 @@
 		 :w-extract extract-w :h-extract extract-h))
   
   (fftw::%fftwf_execute *plan64*)
-  (let* ((a (get-stored-array)
+  (let* ((a (get-stored-array cam)
 	   #+nil (elt *store* *store-index*))
 	 (pixels1 (expt (cond ((or (= 0 cam) (= 2 cam)) 256)
 			      ((= 1 cam) 512)
@@ -374,7 +381,7 @@
 
 
 #+nil
-(let ((n 16))
+(let ((n 32))
  (unwind-protect 
       (progn
 	(defparameter *log* nil)
