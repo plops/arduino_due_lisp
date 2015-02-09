@@ -71,6 +71,25 @@
 "	   n delay-ms)
    :time .1d0))
 
+(defun trigger-all-cameras-once ()
+  (unless *trigger-outputs-initialized*
+    (initialize-trigger-outputs))
+  (arduino-serial-sbcl:talk-arduino
+   (second *ard*) 
+   (first *ard*)
+   (format nil 
+	   "(progn
+    (delay 1)
+    (digital-write 11 1)
+    (digital-write 12 1) 
+    (digital-write 10 1) 
+    (delay 1)
+    (digital-write 11 0)
+    (digital-write 12 0) 
+    (digital-write 10 0))
+")
+   :time .1d0))
+
 #+nil
 (arduino-serial-sbcl:talk-arduino
    ( second *ard*) 
@@ -247,7 +266,7 @@
 (defparameter *store* (loop for i from 0 below 10 collect (make-array (list 64 64) :element-type '(complex single-float))))
 (defparameter *store-index* 0)
 
-(let* ((n 100)
+(let* ((n 200)
        (store (loop for i from 0 below n collect
 		   (loop for cam below 3 collect
 			(make-array (list 64 64) :element-type '(complex single-float)))))
@@ -270,52 +289,67 @@
 #+nil
 (dotimes (i (length *store*))
  (put-csf-image (elt *store* i) :w 64 :h 64 :dst-x (* 64 i) :scale 1s0 :offset 0s0))
+(defparameter *avg* nil)
+
+
+(defun display-mosaic (&key (start 0) (end (+ start 15)) (subtract-avg nil))
+  (when subtract-avg (calc-avg))
+  (let ((scale 1s0)
+       (offset 70s0))
+   (progn 
+     ;(draw-window 0 0 100 100)
+     (dotimes (cam 3)
+       (loop for i from start below (min end (get-stored-array-length)) do
+	 (let ((z (if subtract-avg
+		      (image-processing::.-csf (get-stored-array cam i) (elt *avg* cam))
+		      (get-stored-array cam i)))
+	       (si (- i start))) 
+	   (put-csf-image z
+			  :w 64 :h 64 :dst-x (* 65 si)
+			  :dst-y (* 65 cam)
+			  :scale (/ 255 (* 2 3.1415)) :offset 3.1416s0 :fun #'phase)
+	   (put-csf-image z
+			  :w 64 :h 64 :dst-x (* 65 si)
+			  :dst-y (+ (* 3 65) (* 65 cam))
+			  :scale scale :offset 0s0 :fun #'abs)
+	   (put-csf-image z
+			  :w 64 :h 64 :dst-x (* 65 si)
+			  :dst-y (+ (* 6 65) (* 65 cam))
+			  :scale scale :offset offset :fun #'realpart)
+	   (put-csf-image z
+			  :w 64 :h 64 :dst-x (* 65 si)
+			  :dst-y (+ (* 9 65) (* 65 cam))
+			  :scale scale :offset offset :fun #'imagpart)))))))
 #+nil
-(let ((scale 1s0)
-      (offset 70s0))
-  (let ((len (min 15 (get-stored-array-length))))
-    (draw-window 0 0 100 100)
-    (dotimes (cam 3)
-      (dotimes (i len)
-	(put-csf-image (image-processing::.-csf (get-stored-array cam i) (elt *avg* cam))
-		       :w 64 :h 64 :dst-x (* 65 i)
-		       :dst-y (* 65 cam)
-		       :scale (/ 255 (* 2 3.1415)) :offset 3.1416s0 :fun #'phase))
-      (dotimes (i len)
-	(put-csf-image (image-processing::.-csf (get-stored-array cam i) (elt *avg* cam))
-		       :w 64 :h 64 :dst-x (* 65 i)
-		       :dst-y (+ (* 3 65) (* 65 cam))
-		       :scale scale :offset 0s0 :fun #'abs))
-      (dotimes (i len)
-	(put-csf-image (image-processing::.-csf (get-stored-array cam i) (elt *avg* cam))
-		       :w 64 :h 64 :dst-x (* 65 i)
-		       :dst-y (+ (* 6 65) (* 65 cam))
-		       :scale scale :offset offset :fun #'realpart))
-      (dotimes (i len)
-	(put-csf-image (image-processing::.-csf (get-stored-array cam i) (elt *avg* cam))
-		       :w 64 :h 64 :dst-x (* 65 i)
-		       :dst-y (+ (* 9 65) (* 65 cam))
-		       :scale scale :offset offset :fun #'imagpart)))))
+(progn
+  (arduino-dac 1600 2030)
+  (acquire)
+  (display-mosaic :start 30 :subtract-avg t))
 
 #+nil
-(let ((avg (loop for i below 3 collect
-		(make-array (list 64 64) :element-type '(complex single-float)
-			    :initial-element (complex 0s0))))
-      (len (get-stored-array-length)))
- (dotimes (cam 3)
-   (let ((a (elt avg cam)))
-     (loop for k from 0 below len do
-	  (let ((b (get-stored-array cam k)))
-	    (dotimes (i 64)
-	      (dotimes (j 64)
-		(incf (aref a j i) (/ (aref b j i) len))))))
-    (put-csf-image a :w 64 :h 64 :dst-x 0
-		   :dst-y (* 65 cam)
-		  ; :scale (/ 255 (* 2 3.1415)) :offset 3.1416s0 :fun #'phase
-		   
-				       :scale 2s0 :offset 0s0 :fun #'abs
-		   )))
- (defparameter *avg* avg))
+(display-mosaic :start 170 :subtract-avg nil)
+
+(defun calc-avg ()
+ (let ((avg (loop for i below 3 collect
+		 (make-array (list 64 64) :element-type '(complex single-float)
+			     :initial-element (complex 0s0))))
+       (len (get-stored-array-length)))
+   (dotimes (cam 3)
+     (let ((a (elt avg cam)))
+       (loop for k from 0 below len do
+	    (let ((b (get-stored-array cam k)))
+	      (dotimes (i 64)
+		(dotimes (j 64)
+		  (incf (aref a j i) (/ (aref b j i) len))))))
+       (put-csf-image a :w 64 :h 64 :dst-x 0
+		      :dst-y (* 65 cam)
+		      :scale 2s0 :offset 0s0 :fun #'abs
+		      )
+       (put-csf-image a :w 64 :h 64 :dst-x 65
+		      :dst-y (* 65 cam)
+		      :scale (/ 255 (* 2 3.1415)) :offset 3.1416s0 :fun #'phase
+		      )))
+   (defparameter *avg* avg)))
 
 #+nil
 (draw-window 0 0 100 200)
@@ -390,16 +424,17 @@
 
 
 
-#+nil
-(let ((n 100))
- (unwind-protect 
-      (progn
-	(defparameter *log* nil)
-	(reset-camera-timers *cams* 3)
-	(arduino-trigger nil)
-	(pylon:start-grabbing *cams*)
-	(let ((th (start-acquisition-thread :n n)))
-	  (sleep .001)
-	  (trigger-all-cameras-seq (* 4 n))
-	  (sb-thread:join-thread th)))
-   (pylon:stop-grabbing *cams*)))
+(defun acquire ()
+ (let ((n (get-stored-array-length)))
+   (unwind-protect 
+	(progn
+	  (defparameter *log* nil)
+	  (reset-camera-timers *cams* 3)
+	  (arduino-trigger t)
+	  (pylon:start-grabbing *cams*)
+	  (let ((th (start-acquisition-thread :n n)))
+	    (sleep .001)
+	    (dotimes (i (* 4 n))
+	     (trigger-all-cameras-once))
+	    (sb-thread:join-thread th)))
+     (pylon:stop-grabbing *cams*))))
