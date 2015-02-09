@@ -328,7 +328,7 @@
   (display-mosaic :start 30 :subtract-avg t))
 
 #+nil
-(display-mosaic :start 0 :subtract-avg nil)
+(display-mosaic :start 40 :subtract-avg nil)
 
 (defun calc-avg ()
  (let ((avg (loop for i below 3 collect
@@ -354,7 +354,7 @@
 
 #+nil
 (draw-window 0 0 100 200)
-(defun draw-frame (buf w h cam x y &key (extract-w 64) (extract-h extract-w) (scale #.(/ 20s0 4095)) (offset (- 12000s0)))
+(defun draw-frame (buf w h cam framenr x y &key (extract-w 64) (extract-h extract-w) (scale #.(/ 20s0 4095)) (offset (- 12000s0)))
   (put-sf-image buf w h :dst-x (cam-dst-x cam) )
   (cond ((or (= 0 cam) (= 2 cam)) (fftw::%fftwf_execute *plan256*))
 	((= 1 cam) (fftw::%fftwf_execute *plan512*)))
@@ -373,7 +373,7 @@
 		 :w-extract extract-w :h-extract extract-h))
   
   (fftw::%fftwf_execute *plan64*)
-  (let* ((a (get-stored-array cam)
+  (let* ((a (get-stored-array cam framenr)
 	   #+nil (elt *store* *store-index*))
 	 (pixels1 (expt (cond ((or (= 0 cam) (= 2 cam)) 256)
 			      ((= 1 cam) 512)
@@ -413,7 +413,7 @@
 		 (when do-update-p
 		   (let ((k '((84 208) (230 172) (62 68))))
 		    (destructuring-bind (x y) (elt k cam)
-		      (draw-frame *buf-s* w h cam x y :extract-w 64 
+		      (draw-frame *buf-s* w h cam (1- framenr) x y :extract-w 64 
 				  :scale (/ 40s0 4095) :offset (let ((o -12000)) (ecase cam 
 										  (0 o)
 										  (1 (* 2 o))
@@ -437,7 +437,7 @@
 	  (let ((th (start-acquisition-thread :n n)))
 	    (sleep .001)
 	    (dotimes (i n)
-	      (arduino-dac 1600 (- 323 (* 1 i)))
+	      (arduino-dac 1600 (- 3100 (* 15 i)))
 	      (trigger-all-cameras-once))
 	    (sb-thread:join-thread th)))
      (pylon:stop-grabbing *cams*))))
