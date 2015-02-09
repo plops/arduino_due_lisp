@@ -80,7 +80,7 @@
 (arduino-serial-sbcl:talk-arduino
    ( second *ard*) 
    (first *ard*)
-   "(dac 1600 1920)")
+   "(dac 1600 2120)")
 
 (defun arduino-dac (x y)
   (declare (type (integer 0 4095) x y))
@@ -268,32 +268,39 @@
 (dotimes (i (length *store*))
  (put-csf-image (elt *store* i) :w 64 :h 64 :dst-x (* 64 i) :scale 1s0 :offset 0s0))
 #+nil
-(progn
-  (draw-window 0 0 100 100)
- (dotimes (i (get-stored-array-length))
-   (put-csf-image (get-stored-array i) :w 64 :h 64 :dst-x (* 65 (floor i 3))
-		  :dst-y (* 65 (mod i 3))
-		  :scale (/ 255 (* 2 3.1415)) :offset 3.1416s0 :fun #'phase
-							  ))
- (dotimes (i (get-stored-array-length))
-   (put-csf-image (get-stored-array i) :w 64 :h 64 :dst-x (* 65 (floor i 3))
-		  :dst-y (+ (* 3 65) (* 65 (mod i 3)))
-		  :scale 1s0 :offset 0s0 :fun #'abs)
-   
-   
-   
-   )
-(dotimes (i (get-stored-array-length))
-   (put-csf-image (get-stored-array i) :w 64 :h 64 :dst-x (* 65 (floor i 3))
-		  :dst-y (+ (* 6 65) (* 65 (mod i 3)))
-			 		; :scale (/ 255 (* 2 3.1415)) :offset 3.1416s0 :fun #'phase
-					; :scale 1s0 :offset 70s0 :fun #'realpart
-					 :scale 1s0 :offset 70s0 :fun #'imagpart
-		  )
-   
-   
-   
-   ))
+(let ((scale 1s0)
+      (offset 70s0))
+ (progn
+   (draw-window 0 0 100 100)
+   (dotimes (i (get-stored-array-length))
+     (put-csf-image (get-stored-array i) :w 64 :h 64 :dst-x (* 65 (floor i 3))
+		    :dst-y (* 65 (mod i 3))
+		    :scale (/ 255 (* 2 3.1415)) :offset 3.1416s0 :fun #'phase))
+   (dotimes (i (get-stored-array-length))
+     (put-csf-image (get-stored-array i) :w 64 :h 64 :dst-x (* 65 (floor i 3))
+		    :dst-y (+ (* 3 65) (* 65 (mod i 3)))
+		    :scale scale :offset 0s0 :fun #'abs))
+   (dotimes (i (get-stored-array-length))
+     (put-csf-image (get-stored-array i) :w 64 :h 64 :dst-x (* 65 (floor i 3))
+		    :dst-y (+ (* 6 65) (* 65 (mod i 3)))
+		    :scale scale :offset offset :fun #'realpart))
+   (dotimes (i (get-stored-array-length))
+     (put-csf-image (get-stored-array i) :w 64 :h 64 :dst-x (* 65 (floor i 3))
+		    :dst-y (+ (* 9 65) (* 65 (mod i 3)))
+		    :scale scale :offset offset :fun #'imagpart))))
+
+#+nil
+(let ((a (make-array (list 64 64) :element-type '(complex single-float) :initial-element (complex 0s0))))
+  (loop for k from 0 below (get-stored-array-length) by 3 do
+       (let ((b (get-stored-array k)))
+	(dotimes (i 64)
+	  (dotimes (j 64)
+	    (incf (aref a j i) (aref b j i)))))
+    )
+  (put-csf-image a :w 64 :h 64 :dst-x 0
+		    :dst-y 0
+		    :scale .1s0 :offset 0s0 :fun #'abs))
+
 #+nil
 (draw-window 0 0 100 200)
 (defun draw-frame (buf w h cam x y &key (extract-w 64) (extract-h extract-w) (scale #.(/ 20s0 4095)) (offset (- 12000s0)))
@@ -314,7 +321,7 @@
 		 :x  (- x wa 1) :y (- y ha 1)
 		 :w-extract extract-w :h-extract extract-h))
   
-   (fftw::%fftwf_execute *plan64*)
+  (fftw::%fftwf_execute *plan64*)
   (let* ((a (get-stored-array)
 	   #+nil (elt *store* *store-index*))
 	 (pixels1 (expt (cond ((or (= 0 cam) (= 2 cam)) 256)
@@ -323,8 +330,7 @@
 			1))
 	 (pixels2 (* 64))
 	 (s (/ (* pixels1 pixels2))))
-    (declare (type (simple-array (complex single-float) 2) a *buf-cs64out*
-		   *buf-cs64in*))
+    (declare (type (simple-array (complex single-float) 2) a *buf-cs64out*  *buf-cs64in*))
     #+nil (setf *store-index* (mod (1+ *store-index*)
 			     (length *store*)))
     (dotimes (i 64)
@@ -353,7 +359,7 @@
 		   (pylon::grab-sf *cams* *buf-s*)
 		 (push (list  (- (get-us-time) start) cam success-p w h framenr timestamp) *log*)
 		 (when do-update-p
-		   (let ((k '((84 208) (236 165) (62 68))))
+		   (let ((k '((84 208) (230 172) (62 68))))
 		    (destructuring-bind (x y) (elt k cam)
 		      (draw-frame *buf-s* w h cam x y :extract-w 64 
 				  :scale (/ 40s0 4095) :offset (let ((o -12000)) (ecase cam 

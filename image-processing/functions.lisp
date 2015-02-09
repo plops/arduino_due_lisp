@@ -186,7 +186,10 @@
       (declare (type (integer 0 4095) j))
       (dotimes (i w-extract)
 	(declare (type (integer 0 4095) i))
-	(setf (aref out j i) (aref a1 (+ (mod (+ i ox) w) (* w (mod (+ j oy) h)))))))
+	(setf (aref out j i) (let* ((iox (+ i ox)))
+			       (if (< iox w)
+				   (aref a1 (+ iox (* w (mod (+ j oy) h))))
+				   (conjugate (aref a1 (+ (- iox w) (* w (mod (+ j oy) h))))))))))
     nil))
 
 (defun extract-cdf* (a &key
