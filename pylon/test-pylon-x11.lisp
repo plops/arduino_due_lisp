@@ -100,7 +100,8 @@
    ( second *ard*) 
    (first *ard*)
    "(dac 1600 2120)")
-
+#+nil
+(trigger-all-cameras-once)
 (defun arduino-dac (x y)
   (declare (type (integer 0 4095) x y))
  (arduino-serial-sbcl:talk-arduino
@@ -327,7 +328,7 @@
   (display-mosaic :start 30 :subtract-avg t))
 
 #+nil
-(display-mosaic :start 170 :subtract-avg nil)
+(display-mosaic :start 0 :subtract-avg nil)
 
 (defun calc-avg ()
  (let ((avg (loop for i below 3 collect
@@ -423,7 +424,8 @@
      :name "camera-acquisition")))
 
 
-
+#+nil
+(acquire)
 (defun acquire ()
  (let ((n (get-stored-array-length)))
    (unwind-protect 
@@ -434,7 +436,8 @@
 	  (pylon:start-grabbing *cams*)
 	  (let ((th (start-acquisition-thread :n n)))
 	    (sleep .001)
-	    (dotimes (i (* 4 n))
-	     (trigger-all-cameras-once))
+	    (dotimes (i n)
+	      (arduino-dac 1600 (- 323 (* 1 i)))
+	      (trigger-all-cameras-once))
 	    (sb-thread:join-thread th)))
      (pylon:stop-grabbing *cams*))))
