@@ -277,37 +277,45 @@
     (draw-window 0 0 100 100)
     (dotimes (cam 3)
       (dotimes (i len)
-	(put-csf-image (get-stored-array cam i) :w 64 :h 64 :dst-x (* 65 i)
+	(put-csf-image (image-processing::.-csf (get-stored-array cam i) (elt *avg* cam))
+		       :w 64 :h 64 :dst-x (* 65 i)
 		       :dst-y (* 65 cam)
 		       :scale (/ 255 (* 2 3.1415)) :offset 3.1416s0 :fun #'phase))
       (dotimes (i len)
-	(put-csf-image (get-stored-array cam i) :w 64 :h 64 :dst-x (* 65 i)
+	(put-csf-image (image-processing::.-csf (get-stored-array cam i) (elt *avg* cam))
+		       :w 64 :h 64 :dst-x (* 65 i)
 		       :dst-y (+ (* 3 65) (* 65 cam))
 		       :scale scale :offset 0s0 :fun #'abs))
       (dotimes (i len)
-	(put-csf-image (get-stored-array cam i) :w 64 :h 64 :dst-x (* 65 i)
+	(put-csf-image (image-processing::.-csf (get-stored-array cam i) (elt *avg* cam))
+		       :w 64 :h 64 :dst-x (* 65 i)
 		       :dst-y (+ (* 6 65) (* 65 cam))
 		       :scale scale :offset offset :fun #'realpart))
       (dotimes (i len)
-	(put-csf-image (get-stored-array cam i) :w 64 :h 64 :dst-x (* 65 i)
+	(put-csf-image (image-processing::.-csf (get-stored-array cam i) (elt *avg* cam))
+		       :w 64 :h 64 :dst-x (* 65 i)
 		       :dst-y (+ (* 9 65) (* 65 cam))
 		       :scale scale :offset offset :fun #'imagpart)))))
 
 #+nil
-(dotimes (cam 3)
- (let ((a (make-array (list 64 64) :element-type '(complex single-float) :initial-element (complex 0s0))))
-   (loop for k from 0 below (get-stored-array-length) by 1 do
-	(let ((b (get-stored-array cam k)))
-	  (dotimes (i 64)
-	    (dotimes (j 64)
-	      (incf (aref a j i) (aref b j i)))))
-	)
-   (put-csf-image a :w 64 :h 64 :dst-x 0
-		  :dst-y (* 65 cam)
-		  ;:scale (/ 255 (* 2 3.1415)) :offset 3.1416s0 :fun #'phase
-		  
-		  :scale (/ 2s0 (get-stored-array-length)) :offset 0s0 :fun #'abs
-		  )))
+(let ((avg (loop for i below 3 collect
+		(make-array (list 64 64) :element-type '(complex single-float)
+			    :initial-element (complex 0s0))))
+      (len (get-stored-array-length)))
+ (dotimes (cam 3)
+   (let ((a (elt avg cam)))
+     (loop for k from 0 below len do
+	  (let ((b (get-stored-array cam k)))
+	    (dotimes (i 64)
+	      (dotimes (j 64)
+		(incf (aref a j i) (/ (aref b j i) len))))))
+    (put-csf-image a :w 64 :h 64 :dst-x 0
+		   :dst-y (* 65 cam)
+		  ; :scale (/ 255 (* 2 3.1415)) :offset 3.1416s0 :fun #'phase
+		   
+				       :scale 2s0 :offset 0s0 :fun #'abs
+		   )))
+ (defparameter *avg* avg))
 
 #+nil
 (draw-window 0 0 100 200)
