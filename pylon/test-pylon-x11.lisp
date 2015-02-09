@@ -328,7 +328,7 @@
   (display-mosaic :start 30 :subtract-avg t))
 
 #+nil
-(display-mosaic :start 40 :subtract-avg nil)
+(display-mosaic :start 80 :subtract-avg nil)
 
 (defun calc-avg ()
  (let ((avg (loop for i below 3 collect
@@ -437,7 +437,9 @@
 	  (let ((th (start-acquisition-thread :n n)))
 	    (sleep .001)
 	    (dotimes (i n)
-	      (arduino-dac 1600 (- 3100 (* 15 i)))
+	      (arduino-dac (- 3100 (* 15 85)) (- 3100 (* 15 70)))
 	      (trigger-all-cameras-once))
 	    (sb-thread:join-thread th)))
      (pylon:stop-grabbing *cams*))))
+
+
