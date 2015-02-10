@@ -270,13 +270,15 @@
 (let* ((n 200)
        (store (loop for i from 0 below n collect
 		   (loop for cam below 3 collect
-			(make-array (list 64 64) :element-type '(complex single-float)))))
+			(loop for pol below 2 collect
+			     (loop for ft below 2 collect 
+				  (make-array (list 64 64) :element-type '(complex single-float)))))))
        (current-index 0))
-  (defun get-stored-array (cam &optional (index current-index index-p))
+  (defun get-stored-array (ft pol cam &optional (index current-index index-p))
     (declare (values (simple-array (complex single-float) 2) &optional))
     (format t "storing in index ~a~%" index)
     (prog1
-	(elt (elt store (mod index (length store))) cam)
+	(elt (elt (elt (elt store (mod index (length store))) cam) pol) ft)
       (unless index-p
 	(setf current-index (mod (1+ current-index) (length store))))))
   (defun get-current-index () current-index)
@@ -300,28 +302,34 @@
        (offset 70s0))
    (progn 
      ;(draw-window 0 0 100 100)
-     (dotimes (cam 3)
-       (loop for i from start below (min end (get-stored-array-length)) do
-	 (let ((z (if subtract-avg
-		      (image-processing::.-csf (get-stored-array cam i) (elt *avg* cam))
-		      (get-stored-array cam i)))
-	       (si (- i start))) 
-	   (put-csf-image z
-			  :w 64 :h 64 :dst-x (* 65 si)
-			  :dst-y (* 65 cam)
-			  :scale (/ 255 (* 2 3.1415)) :offset 3.1416s0 :fun #'phase)
-	   (put-csf-image z
-			  :w 64 :h 64 :dst-x (* 65 si)
-			  :dst-y (+ (* 3 65) (* 65 cam))
-			  :scale scale :offset 0s0 :fun #'abs)
-	   (put-csf-image z
-			  :w 64 :h 64 :dst-x (* 65 si)
-			  :dst-y (+ (* 6 65) (* 65 cam))
-			  :scale scale :offset offset :fun #'realpart)
-	   (put-csf-image z
-			  :w 64 :h 64 :dst-x (* 65 si)
-			  :dst-y (+ (* 9 65) (* 65 cam))
-			  :scale scale :offset offset :fun #'imagpart)))))))
+     (dotimes (ft 2)
+      (dotimes (cam 3)
+	(loop for i from start below (min end (get-stored-array-length)) do
+	     (let ((z (if subtract-avg
+			  (image-processing::.-csf (get-stored-array cam i) (elt *avg* cam))
+			  (get-stored-array ft 0 cam i)))
+		   (si (- i start))) 
+	       (put-csf-image z
+			      :w 64 :h 64 :dst-x (+ (* 65 ft) (* 2 65 si))
+			      :dst-y (* 65 cam)
+			      :scale (/ 255 (* 2 3.1415)) :offset 3.1416s0 :fun #'phase)
+	       (put-csf-image z
+			      :w 64 :h 64 :dst-x (+ (* 65 ft) (* 2 65 si))
+			      :dst-y (+ (* 3 65) (* 65 cam))
+			      :scale (ecase ft (0 100s0)
+					    (1 scale)) :offset 0s0 :fun #'abs)
+	       (let ((scal (ecase ft (0 100s0)
+				  (1 scale)))
+		     (off (ecase ft (0 1s0)
+				  (1 70s0))))
+		 (put-csf-image z
+			       :w 64 :h 64 :dst-x (+ (* 65 ft) (* 2 65 si))
+			       :dst-y (+ (* 6 65) (* 65 cam))
+			       :scale scal :offset off :fun #'realpart)
+		 (put-csf-image z
+				:w 64 :h 64 :dst-x (+ (* 65 ft) (* 2 65 si))
+				:dst-y (+ (* 9 65) (* 65 cam))
+				:scale scal :offset off :fun #'imagpart)))))))))
 #+nil
 (progn
   (arduino-dac 1600 2030)
@@ -329,7 +337,11 @@
   (display-mosaic :start 30 :subtract-avg t))
 
 #+nil
-(display-mosaic :start 30 :subtract-avg t :avg-start 30)
+(calc-avg :start 7)
+#+nil
+(display-mosaic :start 70 :subtract-avg t :avg-start 30)
+#+nil
+(display-mosaic :start 60 :subtract-avg nil)
 
 (defun calc-avg (&key (start 0) (end (get-stored-array-length)))
  (let ((avg (loop for i below 3 collect
@@ -372,9 +384,21 @@
 		 :w (1+ (floor w 2)) :h h
 		 :x  (- x wa 1) :y (- y ha 1)
 		 :w-extract extract-w :h-extract extract-h))
-  
+
+  (let* ((a (get-stored-array 0 0 cam framenr))
+	 (pixels1 (expt (cond ((or (= 0 cam) (= 2 cam)) 256)
+			      ((= 1 cam) 512)
+			      (t (error "unexpected value for camera index: ~a." cam)))
+			1))
+	 (pixels2 (* 64))
+	 (s (/ (* pixels1 pixels2))))
+    (declare (type (simple-array (complex single-float) 2) a *buf-cs64out*  *buf-cs64in*))
+    (dotimes (i 64)
+      (dotimes (j 64)
+	(setf (aref a j i) (* s (expt -1 (+ i j)) (aref *buf-cs64in* j i))))))
+
   (fftw::%fftwf_execute *plan64*)
-  (let* ((a (get-stored-array cam framenr)
+  (let* ((a (get-stored-array 1 0 cam framenr)
 	   #+nil (elt *store* *store-index*))
 	 (pixels1 (expt (cond ((or (= 0 cam) (= 2 cam)) 256)
 			      ((= 1 cam) 512)
@@ -438,7 +462,7 @@
 	  (let ((th (start-acquisition-thread :n n)))
 	    (sleep .001)
 	    (dotimes (i n)
-	      (arduino-dac (- 3100 (* 15 85)) (- 3100 (* 15 70)))
+	      (arduino-dac (- 3100 (* 15 85)) (- 3100 (* 15 i #+nil 70)))
 	      (trigger-all-cameras-once))
 	    (sb-thread:join-thread th)))
      (pylon:stop-grabbing *cams*))))
