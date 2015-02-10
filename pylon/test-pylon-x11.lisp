@@ -90,6 +90,21 @@
 ")
    :time .1d0))
 
+(defun trigger-flipmount-once ()
+  (unless *trigger-outputs-initialized*
+    (initialize-trigger-outputs))
+  (arduino-serial-sbcl:talk-arduino
+   (second *ard*) 
+   (first *ard*)
+   (format nil 
+	   "(progn
+    (delay 1)
+    (digital-write 6 1)
+    (delay 1)
+    (digital-write 6 0))
+")
+   :time .1d0))
+
 #+nil
 (arduino-serial-sbcl:talk-arduino
    ( second *ard*) 
@@ -341,7 +356,7 @@
 #+nil
 (display-mosaic :start 70 :subtract-avg t :avg-start 30)
 #+nil
-(display-mosaic :start 170 :subtract-avg nil)
+(display-mosaic :start 20 :subtract-avg nil)
 
 (defun calc-avg (&key (start 0) (end (get-stored-array-length)))
  (let ((avg (loop for i below 3 collect
@@ -367,7 +382,7 @@
 
 #+nil
 (draw-window 0 0 100 200)
-(defun draw-frame (buf w h cam framenr x y &key (extract-w 64) (extract-h extract-w) (scale #.(/ 20s0 4095)) (offset (- 12000s0)))
+(defun draw-frame (buf w h pol cam framenr x y &key (extract-w 64) (extract-h extract-w) (scale #.(/ 20s0 4095)) (offset (- 12000s0)))
   (put-sf-image buf w h :dst-x (cam-dst-x cam) )
   (cond ((or (= 0 cam) (= 2 cam)) (fftw::%fftwf_execute *plan256*))
 	((= 1 cam) (fftw::%fftwf_execute *plan512*)))
@@ -385,7 +400,7 @@
 		 :x  (- x wa 1) :y (- y ha 1)
 		 :w-extract extract-w :h-extract extract-h))
 
-  (let* ((a (get-stored-array 0 0 cam framenr))
+  (let* ((a (get-stored-array 0 pol cam framenr))
 	 (pixels1 (expt (cond ((or (= 0 cam) (= 2 cam)) 256)
 			      ((= 1 cam) 512)
 			      (t (error "unexpected value for camera index: ~a." cam)))
@@ -398,7 +413,7 @@
 	(setf (aref a j i) (* s (expt -1 (+ i j)) (aref *buf-cs64in* j i))))))
 
   (fftw::%fftwf_execute *plan64*)
-  (let* ((a (get-stored-array 1 0 cam framenr)
+  (let* ((a (get-stored-array 1 pol cam framenr)
 	   #+nil (elt *store* *store-index*))
 	 (pixels1 (expt (cond ((or (= 0 cam) (= 2 cam)) 256)
 			      ((= 1 cam) 512)
@@ -422,7 +437,7 @@
 
 (let ((last-presentation-time 0)
       (start 0))
-  (defun start-acquisition-thread (&key (n 2000) (us-between-x11-updates 200000))
+  (defun start-acquisition-thread (&key (pol 0) (n 2000) (us-between-x11-updates 200000))
     (setf last-presentation-time (get-us-time)
 	  start last-presentation-time)
     (sb-thread:make-thread 
@@ -436,18 +451,16 @@
 		   (pylon::grab-sf *cams* *buf-s*)
 		 (push (list  (- (get-us-time) start) cam success-p w h framenr timestamp) *log*)
 		 (when do-update-p
-		   (let ((k '((84 208) (240 172) (62 68))))
+		   (let ((k '((84 208) (230 172) (62 68))))
 		    (destructuring-bind (x y) (elt k cam)
-		      (draw-frame *buf-s* w h cam (1- framenr) x y :extract-w 64 
+		      (draw-frame *buf-s* w h pol cam (1- framenr) x y :extract-w 64 
 				  :scale (/ 40s0 4095) :offset (let ((o -12000)) (ecase cam 
 										  (0 o)
 										  (1 (* 2 o))
-										  (2 o))))
-		      #+nil (draw-rect ))))))
+										  (2 o)))))))))
 	     (when do-update-p
 	       (setf last-presentation-time current)))))
      :name "camera-acquisition")))
-
 
 #+nil
 (acquire)
@@ -459,7 +472,14 @@
 	  (reset-camera-timers *cams* 3)
 	  (arduino-trigger t)
 	  (pylon:start-grabbing *cams*)
-	  (let ((th (start-acquisition-thread :n n)))
+	  (let ((th (start-acquisition-thread :pol 0 :n n)))
+	    (sleep .001)
+	    (dotimes (i n)
+	      (arduino-dac (- 3100 (* 15 85)) (- 3100 (* 15 i #+nil 70)))
+	      (trigger-all-cameras-once))
+	    (sb-thread:join-thread th))
+	  (trigger-flipmount-once)
+	  (let ((th (start-acquisition-thread :pol 1 :n n)))
 	    (sleep .001)
 	    (dotimes (i n)
 	      (arduino-dac (- 3100 (* 15 85)) (- 3100 (* 15 i #+nil 70)))
