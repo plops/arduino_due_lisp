@@ -293,8 +293,9 @@
 (defparameter *avg* nil)
 
 
-(defun display-mosaic (&key (start 0) (end (+ start 15)) (subtract-avg nil))
-  (when subtract-avg (calc-avg))
+(defun display-mosaic (&key (start 0) (end (+ start 15)) (avg-start 0) (avg-end (get-stored-array-length)) 
+			 (subtract-avg nil))
+  (when subtract-avg (calc-avg :start avg-start :end avg-end))
   (let ((scale 1s0)
        (offset 70s0))
    (progn 
@@ -328,20 +329,20 @@
   (display-mosaic :start 30 :subtract-avg t))
 
 #+nil
-(display-mosaic :start 80 :subtract-avg nil)
+(display-mosaic :start 30 :subtract-avg t :avg-start 30)
 
-(defun calc-avg ()
+(defun calc-avg (&key (start 0) (end (get-stored-array-length)))
  (let ((avg (loop for i below 3 collect
 		 (make-array (list 64 64) :element-type '(complex single-float)
 			     :initial-element (complex 0s0))))
-       (len (get-stored-array-length)))
+       (len (min end (get-stored-array-length))))
    (dotimes (cam 3)
      (let ((a (elt avg cam)))
-       (loop for k from 0 below len do
+       (loop for k from start below len do
 	    (let ((b (get-stored-array cam k)))
 	      (dotimes (i 64)
 		(dotimes (j 64)
-		  (incf (aref a j i) (/ (aref b j i) len))))))
+		  (incf (aref a j i) (/ (aref b j i) (- len start)))))))
        (put-csf-image a :w 64 :h 64 :dst-x 0
 		      :dst-y (* 65 cam)
 		      :scale 2s0 :offset 0s0 :fun #'abs
