@@ -159,6 +159,7 @@ double-float)."
   (w (:pointer :int))
   (h (:pointer :int))
   (image-nr :pointer)
+  (block-id :pointer)
   (timestamp :pointer))
 
 (defun grab-sf (cams buf)
@@ -204,14 +205,16 @@ In case of an error, all four return values are -1."
 				    (wout :int)
 				    (hout :int)
 				    (imagenr :int64)
+                                    (blockid :int64)
 				    (timestamp :int64))
 	  (%grab-sf cams w h bufp
-		 cam success-p wout hout imagenr timestamp)
+		 cam success-p wout hout imagenr blockid timestamp)
 	  (values (cffi:mem-ref cam :int)
 		  (if (= (cffi:mem-ref success-p :int) 1) t nil)
 		  (cffi:mem-ref wout :int)
 		  (cffi:mem-ref hout :int)
 		  (cffi:mem-ref imagenr :int64)
+                  (cffi:mem-ref blockid :int64)
 		  (cffi:mem-ref timestamp :int64)
 		  ))))))
 

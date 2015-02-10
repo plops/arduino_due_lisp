@@ -18,7 +18,7 @@ void pylon_wrapper_cam_close(void*cams,int cam);
 void pylon_wrapper_grab(void*cams,int ww,int hh,unsigned char * buf, int *camera,int*success_p,int*w,int*h);
 void pylon_wrapper_grab_store(void*cams,int nfd,int*fd,int*camera,int*success_p,int*w,int*h,int*framenr);
 void pylon_wrapper_grab_cdf(void*cams,int ww,int hh,double * buf,int*camera,int*success_p,int*w,int*h,int*framenr);
-void pylon_wrapper_grab_sf(void*cams,int ww,int hh,float * buf,int*camera,int*success_p,int*w,int*h,int64_t*framenr,int64_t*timestamp);
+void pylon_wrapper_grab_sf(void*cams,int ww,int hh,float * buf,int*camera,int*success_p,int*w,int*h,int64_t*framenr,int64_t*blockid,int64_t*timestamp);
 int pylon_wrapper_get_max_i(void*cams,int cam,const char*node);
 int pylon_wrapper_get_min_i(void*cams,int cam,const char*node);
 int pylon_wrapper_get_inc_i(void*cams,int cam,const char*node);

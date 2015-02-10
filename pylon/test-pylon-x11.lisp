@@ -462,6 +462,8 @@
 	       (setf last-presentation-time current)))))
      :name "camera-acquisition")))
 
+(trigger-flipmount-once)
+
 #+nil
 (acquire)
 (defun acquire ()
@@ -470,7 +472,7 @@
 	(progn
 	  (defparameter *log* nil)
 	  (reset-camera-timers *cams* 3)
-	  (arduino-trigger t)
+	  (arduino-trigger nil)
 	  (pylon:start-grabbing *cams*)
 	  (let ((th (start-acquisition-thread :pol 0 :n n)))
 	    (sleep .001)
@@ -478,8 +480,9 @@
 	      (arduino-dac (- 3100 (* 15 85)) (- 3100 (* 15 i #+nil 70)))
 	      (trigger-all-cameras-once))
 	    (sb-thread:join-thread th))
-	  (trigger-flipmount-once)
-	  (let ((th (start-acquisition-thread :pol 1 :n n)))
+	  #+nil (trigger-flipmount-once)
+	  #+nil (reset-camera-timers *cams* 3)
+	  #+nil (let ((th (start-acquisition-thread :pol 1 :n n)))
 	    (sleep .001)
 	    (dotimes (i n)
 	      (arduino-dac (- 3100 (* 15 85)) (- 3100 (* 15 i #+nil 70)))

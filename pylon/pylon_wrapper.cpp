@@ -633,13 +633,14 @@ extern "C" {
       *success_p = -1;
     }
   }
-  void pylon_wrapper_grab_sf(void*cams,int ww,int hh,float * buf,int*camera,int*success_p,int*w,int*h,int64_t*imagenr,int64_t*timestamp)
+  void pylon_wrapper_grab_sf(void*cams,int ww,int hh,float * buf,int*camera,int*success_p,int*w,int*h,int64_t*imagenr,int64_t*blockid,int64_t*timestamp)
   {
     *camera = -1;
     *w = -1;
     *h = -1;
     *success_p = -1;
     *imagenr = -1;
+    *blockid = -1;
     *timestamp = -1;
     try{
       CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
@@ -649,28 +650,29 @@ extern "C" {
 	// context allows to determine which camera produced the grab result
 	intptr_t cameraContextValue = ptrGrabResult->GetCameraContext();
 	*camera = cameraContextValue;
-	cout << "Camera " <<  cameraContextValue << ": " << (*cameras)[ cameraContextValue ].GetDeviceInfo().GetFullName() << endl;
+	//cout << "Camera " <<  cameraContextValue << ": " << (*cameras)[ cameraContextValue ].GetDeviceInfo().GetFullName() << endl;
 	cout << "GrabSucceeded: " << ptrGrabResult->GrabSucceeded() 
-	  //	     << " fnr=" << ptrGrabResult->GetFrameNumber() 
+	     << "cam=" << cameraContextValue 
+	  //<< " fnr=" << ptrGrabResult->GetFrameNumber() 
 	     << " bid=" << ptrGrabResult->GetBlockID() 
 	     << " ts=" << ptrGrabResult->GetTimeStamp()  
 	     << " id=" << ptrGrabResult->GetID()  
 	     << " inr=" << ptrGrabResult->GetImageNumber()  
 	     << " skip=" << ptrGrabResult->GetNumberOfSkippedImages()  << endl;
-
+	
 	*imagenr = ptrGrabResult->GetImageNumber();
 	*timestamp = ptrGrabResult->GetTimeStamp();
 
 	*success_p = ptrGrabResult->GrabSucceeded();
-	*imagenr = ptrGrabResult->GetBlockID();
+	*blockid = ptrGrabResult->GetBlockID();
 	if(!ptrGrabResult->GrabSucceeded()){
 	  std::cout << "Error: " << ptrGrabResult->GetErrorCode() << " " << ptrGrabResult->GetErrorDescription();
 	  return;
 	}
-	cout << "SizeX: " << ptrGrabResult->GetWidth() << endl;
-	cout << "SizeY: " << ptrGrabResult->GetHeight() << endl;
+	//cout << "SizeX: " << ptrGrabResult->GetWidth() << endl;
+	//cout << "SizeY: " << ptrGrabResult->GetHeight() << endl;
 	const uint8_t *pImageBuffer = (uint8_t *) ptrGrabResult->GetBuffer();
-	cout << "Gray value of first pixel: " << (uint32_t) pImageBuffer[0] << endl << endl;
+	//cout << "Gray value of first pixel: " << (uint32_t) pImageBuffer[0] << endl << endl;
 
 	*w = ptrGrabResult->GetWidth();
 	*h = ptrGrabResult->GetHeight();
