@@ -189,7 +189,7 @@
 	(setf (aref out j i) (let* ((iox (+ i ox)))
 			       (if (< iox w)
 				   (aref a1 (+ iox (* w (mod (+ j oy) h))))
-				   (conjugate (aref a1 (+ (- iox w) (* w (mod (+ j oy) h))))))))))
+				   (aref a1 (+ (- w iox) (* w (mod (- h 1 (+ j oy)) h)))))))))
     nil))
 
 (defun extract-cdf* (a &key

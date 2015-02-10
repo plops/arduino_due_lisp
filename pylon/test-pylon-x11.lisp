@@ -341,7 +341,7 @@
 #+nil
 (display-mosaic :start 70 :subtract-avg t :avg-start 30)
 #+nil
-(display-mosaic :start 60 :subtract-avg nil)
+(display-mosaic :start 170 :subtract-avg nil)
 
 (defun calc-avg (&key (start 0) (end (get-stored-array-length)))
  (let ((avg (loop for i below 3 collect
@@ -436,7 +436,7 @@
 		   (pylon::grab-sf *cams* *buf-s*)
 		 (push (list  (- (get-us-time) start) cam success-p w h framenr timestamp) *log*)
 		 (when do-update-p
-		   (let ((k '((84 208) (230 172) (62 68))))
+		   (let ((k '((84 208) (240 172) (62 68))))
 		    (destructuring-bind (x y) (elt k cam)
 		      (draw-frame *buf-s* w h cam (1- framenr) x y :extract-w 64 
 				  :scale (/ 40s0 4095) :offset (let ((o -12000)) (ecase cam 
