@@ -278,7 +278,7 @@
 (defparameter *store* (loop for i from 0 below 10 collect (make-array (list 64 64) :element-type '(complex single-float))))
 (defparameter *store-index* 0)
 
-(let* ((n 200)
+(let* ((n (* 40 40))
        (store (loop for i from 0 below n collect
 		   (loop for cam below 3 collect
 			(loop for pol below 2 collect
@@ -352,7 +352,7 @@
 #+nil
 (display-mosaic :start 70 :subtract-avg t :avg-start 30)
 #+nil
-(display-mosaic :pol 1 :start 70 :subtract-avg nil)
+(display-mosaic :pol 1 :start 60 :subtract-avg nil)
 
 (defun calc-avg (&key (start 0) (end (get-stored-array-length)))
  (let ((avg (loop for i below 3 collect
@@ -480,8 +480,16 @@
 #+nil
 (dotimes (i 200)
   (trigger-all-cameras-once))
+
+#+nil
+(list (- 3100 (* 15 85)) (- 3100 (* 15  70)))
 (defun acquire ()
- (let ((n (get-stored-array-length)))
+  (let* ((n (get-stored-array-length))
+	 (nx (sqrt n))
+	 (ny (sqrt n))
+	 (center-x 1825)
+	 (center-y 2050)
+	 (radius 1800))
    (unwind-protect 
 	(progn
 	  (defparameter *log* nil)
@@ -491,7 +499,11 @@
 	  (let ((th (start-acquisition-thread :pol 0 :n n)))
 	    (sleep .001)
 	    (dotimes (i n)
-	      (arduino-dac (- 3100 (* 15 85)) (- 3100 (* 15 i #+nil 70)))
+	      (let ((ix (mod i nx))
+		    (iy (floor i nx)))
+		(arduino-dac (floor (- center-x (* 2 radius (- (/ ix nx) 1/2))))
+			     (floor (- center-y (* 2 radius (- (/ iy ny) 1/2))))))
+	      (sleep .02)
 	      (trigger-all-cameras-once))
 	    (dotimes (i 30)
 	      (trigger-all-cameras-once)
@@ -511,7 +523,11 @@
 	  (let ((th (start-acquisition-thread :pol 1 :n n)))
 	    (sleep .001)
 	    (dotimes (i n)
-	      (arduino-dac (- 3100 (* 15 85)) (- 3100 (* 15 i #+nil 70)))
+	      (let ((ix (mod i nx))
+		    (iy (floor i nx)))
+		(arduino-dac (floor (- center-x (* 2 radius (- (/ ix nx) 1/2))))
+			     (floor (- center-y (* 2 radius (- (/ iy ny) 1/2))))))
+	      (sleep .02)
 	      (trigger-all-cameras-once))
 	    (sb-thread:join-thread th)))
      (pylon:stop-grabbing *cams*))))
