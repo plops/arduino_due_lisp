@@ -341,6 +341,17 @@
 				:w 64 :h 64 :dst-x (+ (* 65 ft) (* 2 65 si))
 				:dst-y (+ (* 9 65) (* 65 cam))
 				:scale scal :offset off :fun #'imagpart)))))))))
+
+
+(defun display-mosaic-onecam (&key (w 16) (h 16) (start 0) (end (+ start (* w h))) (cam 1) (pol 0))
+  (loop for i from start below (min end (get-stored-array-length)) do
+       (let ((z (get-stored-array 0 pol cam i))
+	     (si (- i start))) 
+	 (put-csf-image z
+			:w 64 :h 64 
+			:dst-x (* 65 (mod si w))
+			:dst-y (* 65 (floor si w))
+			:scale 100s0 :offset 0s0 :fun #'abs))))
 #+nil
 (progn
   (arduino-dac 1600 2030)
@@ -352,7 +363,9 @@
 #+nil
 (display-mosaic :start 70 :subtract-avg t :avg-start 30)
 #+nil
-(display-mosaic :pol 1 :start 60 :subtract-avg nil)
+(display-mosaic :pol 0 :start (+ 20 20 (* 40 20)) :subtract-avg nil)
+#+nil
+(display-mosaic-onecam :pol 1 :start (* 40 12) #+nil (+ 20 20 (* 40 20)) :w 40)
 
 (defun calc-avg (&key (start 0) (end (get-stored-array-length)))
  (let ((avg (loop for i below 3 collect
