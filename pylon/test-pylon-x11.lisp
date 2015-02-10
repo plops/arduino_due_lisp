@@ -306,7 +306,7 @@
 (defparameter *avg* nil)
 
 
-(defun display-mosaic (&key (start 0) (end (+ start 15)) (avg-start 0) (avg-end (get-stored-array-length)) 
+(defun display-mosaic (&key (start 0) (end (+ start 15)) (pol 0) (avg-start 0) (avg-end (get-stored-array-length)) 
 			 (subtract-avg nil))
   (when subtract-avg (calc-avg :start avg-start :end avg-end))
   (let ((scale 1s0)
@@ -317,8 +317,8 @@
       (dotimes (cam 3)
 	(loop for i from start below (min end (get-stored-array-length)) do
 	     (let ((z (if subtract-avg
-			  (image-processing::.-csf (get-stored-array cam i) (elt *avg* cam))
-			  (get-stored-array ft 0 cam i)))
+			  (image-processing::.-csf (get-stored-array ft pol cam i) (elt *avg* cam))
+			  (get-stored-array ft pol cam i)))
 		   (si (- i start))) 
 	       (put-csf-image z
 			      :w 64 :h 64 :dst-x (+ (* 65 ft) (* 2 65 si))
@@ -352,7 +352,7 @@
 #+nil
 (display-mosaic :start 70 :subtract-avg t :avg-start 30)
 #+nil
-(display-mosaic :start 20 :subtract-avg nil)
+(display-mosaic :pol 1 :start 70 :subtract-avg nil)
 
 (defun calc-avg (&key (start 0) (end (get-stored-array-length)))
  (let ((avg (loop for i below 3 collect
@@ -362,7 +362,7 @@
    (dotimes (cam 3)
      (let ((a (elt avg cam)))
        (loop for k from start below len do
-	    (let ((b (get-stored-array cam k)))
+	    (let ((b (get-stored-array 0 0 cam k)))
 	      (dotimes (i 64)
 		(dotimes (j 64)
 		  (incf (aref a j i) (/ (aref b j i) (- len start)))))))
@@ -493,6 +493,9 @@
 	    (dotimes (i n)
 	      (arduino-dac (- 3100 (* 15 85)) (- 3100 (* 15 i #+nil 70)))
 	      (trigger-all-cameras-once))
+	    (dotimes (i 30)
+	      (trigger-all-cameras-once)
+	      (sleep .01))
 	    (sb-thread:join-thread th)))
      (pylon:stop-grabbing *cams*))
    ;; stop and restart grabbing so that image numbers start from 1 again
