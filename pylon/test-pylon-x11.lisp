@@ -103,7 +103,7 @@
 (arduino-serial-sbcl:talk-arduino
    ( second *ard*) 
    (first *ard*)
-   "(progn (+ 1 1))")
+   "(progn (+ 1 2))")
 #+nil
 (arduino-serial-sbcl:talk-arduino
    ( second *ard*) 
@@ -276,7 +276,7 @@
 (defparameter *store* (loop for i from 0 below 10 collect (make-array (list 64 64) :element-type '(complex single-float))))
 (defparameter *store-index* 0)
 
-(let* ((n 40)
+(let* ((n 200)
        (store (loop for i from 0 below n collect
 		   (loop for cam below 3 collect
 			(loop for pol below 2 collect
@@ -456,6 +456,7 @@
 	       (setf last-presentation-time current)))))
      :name "camera-acquisition")))
 
+#+nil
 (trigger-flipmount-once)
 
 #+nil
@@ -468,12 +469,15 @@
 (arduino-trigger t)
 #+nil
 (trigger-all-cameras-once )
+#+nil
+(dotimes (i 200)
+  (trigger-all-cameras-once))
 (defun acquire ()
  (let ((n (get-stored-array-length)))
    (unwind-protect 
 	(progn
 	  (defparameter *log* nil)
-	  ;(arduino-trigger nil)
+	  (arduino-trigger t)
 	  (reset-camera-timers *cams* 3)
 	  (pylon:start-grabbing *cams*)
 	  (let ((th (start-acquisition-thread :pol 0 :n n)))
@@ -481,10 +485,19 @@
 	    (dotimes (i n)
 	      (arduino-dac (- 3100 (* 15 85)) (- 3100 (* 15 i #+nil 70)))
 	      (trigger-all-cameras-once))
-	    (sb-thread:join-thread th))
-	  #+nil (trigger-flipmount-once)
-	  #+nil (reset-camera-timers *cams* 3)
-	  #+nil (let ((th (start-acquisition-thread :pol 1 :n n)))
+	    (sb-thread:join-thread th)))
+     (pylon:stop-grabbing *cams*))
+   ;; stop and restart grabbing so that image numbers start from 1 again
+   (trigger-flipmount-once)
+   
+   (unwind-protect 
+	(progn
+	  ;;(defparameter *log* nil)
+	  (arduino-trigger t)
+	  (reset-camera-timers *cams* 3)
+	  (pylon:start-grabbing *cams*)
+	  ;;(reset-camera-timers *cams* 3)
+	  (let ((th (start-acquisition-thread :pol 1 :n n)))
 	    (sleep .001)
 	    (dotimes (i n)
 	      (arduino-dac (- 3100 (* 15 85)) (- 3100 (* 15 i #+nil 70)))
