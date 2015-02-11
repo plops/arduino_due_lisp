@@ -343,15 +343,50 @@
 				:scale scal :offset off :fun #'imagpart)))))))))
 
 
-(defun display-mosaic-onecam (&key (w 16) (h 16) (start 0) (end (+ start (* w h))) (cam 1) (pol 0))
-  (loop for i from start below (min end (get-stored-array-length)) do
-       (let ((z (get-stored-array 0 pol cam i))
-	     (si (- i start))) 
-	 (put-csf-image z
-			:w 64 :h 64 
-			:dst-x (* 65 (mod si w))
-			:dst-y (* 65 (floor si w))
-			:scale 100s0 :offset 0s0 :fun #'abs))))
+(defun display-mosaic-onecam (&key (w 16) (h 16) (x-offset 0) (y-offset 0) (cam 1) (pol 0))
+  (loop for i from 0 below w do
+       (loop for j from 0 below h do
+	    (let ((z (get-stored-array 0 pol cam (min (* w h) (+ (min w (+ i x-offset)) 
+								 (* w (min h (+ j y-offset)))))))
+		  ) 
+	  (put-csf-image z
+			 :w 64 :h 64 
+			 :dst-x (* 65 i)
+			 :dst-y (* 65 j)
+			 :scale 100s0 :offset 0s0 :fun #'abs)))))
+
+(defun display-mosaic-pronounce-reflex (&key (w 16) (h 16) (x-offset 0) (y-offset 0) (cam 1))
+  (loop for i from 0 below w do
+       (loop for j from 0 below h do
+	    (let ((z0 (get-stored-array 0 0 cam (min (* w h) (+ (min w (+ i x-offset)) 
+								 (* w (min h (+ j y-offset)))))))
+		  (z1 (get-stored-array 0 1 cam (min (* w h) (+ (min w (+ i x-offset)) 
+								 (* w (min h (+ j y-offset)))))))
+		  ) 
+	  (put-csf-image (image-processing::.-csf z0 z1)
+			 :w 64 :h 64 
+			 :dst-x (* 65 i)
+			 :dst-y (* 65 j)
+			 :scale 100s0 :offset 0s0 :fun #'abs)))))
+
+(defun display-sum-reflex (&key (w 16) (h 16) (x-offset 0) (y-offset 0) (cam 1))
+  (let ((a (make-array (list 64 64) :element-type '(complex single-float))))
+   (loop for i from 0 below w do
+	(loop for j from 0 below h do
+	     (let ((z0 (get-stored-array 0 0 cam (min (* w h) (+ (min w (+ i x-offset)) 
+								 (* w (min h (+ j y-offset)))))))
+		   (z1 (get-stored-array 0 1 cam (min (* w h) (+ (min w (+ i x-offset)) 
+								 (* w (min h (+ j y-offset)))))))
+		   )
+	       (image-processing::^.+csf a (image-processing::.abs (image-processing::.-csf z0 z1)))
+	       )))
+   (put-csf-image a  :w 64 :h 64 
+		  :dst-x 0
+		  :dst-y 0
+		  :scale .4s0 :offset -670s0 :fun #'abs)))
+#+nil
+(display-sum-reflex :w 40 :h 40 :cam 1)
+
 #+nil
 (progn
   (arduino-dac 1600 2030)
@@ -365,7 +400,9 @@
 #+nil
 (display-mosaic :pol 0 :start (+ 20 20 (* 40 20)) :subtract-avg nil)
 #+nil
-(display-mosaic-onecam :pol 1 :start (* 40 12) #+nil (+ 20 20 (* 40 20)) :w 40)
+(display-mosaic-onecam :pol 0 :x-offset 12 :y-offset 10 :w 40 :h 40)
+#+nil
+(display-mosaic-pronounce-reflex :x-offset 7 :y-offset 10 :w 40 :h 40)
 
 (defun calc-avg (&key (start 0) (end (get-stored-array-length)))
  (let ((avg (loop for i below 3 collect

@@ -291,6 +291,20 @@
 		 (setf (aref a1 i) (- (aref a1 i) b)))))
     a))
 
+(defun ^.+csf (a b)
+  "calculate a-b and return result in a"
+  (declare (type (array (complex single-float) 2) a)
+	   (type (array (complex single-float) 2) b)
+	   (values (array (complex single-float) 2) &optional))
+  (let* ((a1 (.linear a)))
+    (typecase b
+      (array (let ((b1 (.linear b)))
+	       (dotimes (i (array-total-size b))
+		 (setf (aref a1 i) (+ (aref a1 i) (aref b1 i))))))
+      (number (dotimes (i (array-total-size a))
+		 (setf (aref a1 i) (+ (aref a1 i) b)))))
+    a))
+
 (defun .-csf (a b)
   "calculate a-b and return result as a new array"
   (declare (type (array (complex single-float) 2) a)
@@ -302,6 +316,30 @@
     (let ((b1 (.linear b)))
       (dotimes (i (array-total-size b))
 	(setf (aref c1 i) (- (aref a1 i) (aref b1 i)))))
+    c))
+
+(defun .abs (a)
+  "calculate a-b and return result as a new array"
+  (declare (type (array (complex single-float) 2) a)
+	   (values (array (complex single-float) 2) &optional))
+  (let* ((a1 (.linear a))
+	 (c (make-array (array-dimensions a) :element-type '(complex single-float)))
+	 (c1 (.linear c)))
+    (dotimes (i (array-total-size a))
+      (setf (aref c1 i) (complex (abs (aref a1 i)))))
+    c))
+
+(defun .+csf (a b)
+  "calculate a-b and return result as a new array"
+  (declare (type (array (complex single-float) 2) a)
+	   (type (array (complex single-float) 2) b)
+	   (values (array (complex single-float) 2) &optional))
+  (let* ((a1 (.linear a))
+	 (c (make-array (array-dimensions a) :element-type '(complex single-float)))
+	 (c1 (.linear c)))
+    (let ((b1 (.linear b)))
+      (dotimes (i (array-total-size b))
+	(setf (aref c1 i) (+ (aref a1 i) (aref b1 i)))))
     c))
 
 
