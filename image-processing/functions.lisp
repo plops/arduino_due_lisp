@@ -318,7 +318,7 @@
 	(setf (aref c1 i) (- (aref a1 i) (aref b1 i)))))
     c))
 
-(defun .abs (a)
+(defun .abs-csf (a)
   "calculate a-b and return result as a new array"
   (declare (type (array (complex single-float) 2) a)
 	   (values (array (complex single-float) 2) &optional))

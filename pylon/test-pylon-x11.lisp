@@ -278,7 +278,7 @@
 (defparameter *store* (loop for i from 0 below 10 collect (make-array (list 64 64) :element-type '(complex single-float))))
 (defparameter *store-index* 0)
 
-(let* ((n (* 40 40))
+(let* ((n (* 20 20))
        (store (loop for i from 0 below n collect
 		   (loop for cam below 3 collect
 			(loop for pol below 2 collect
@@ -378,7 +378,7 @@
 		   (z1 (get-stored-array 0 1 cam (min (* w h) (+ (min w (+ i x-offset)) 
 								 (* w (min h (+ j y-offset)))))))
 		   )
-	       (image-processing::^.+csf a (image-processing::.abs (image-processing::.-csf z0 z1)))
+	       (image-processing::^.+csf a (image-processing::.abs-csf (image-processing::.-csf z0 z1)))
 	       )))
    (put-csf-image a  :w 64 :h 64 
 		  :dst-x 0
