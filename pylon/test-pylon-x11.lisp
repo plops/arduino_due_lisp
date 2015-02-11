@@ -394,6 +394,8 @@
 (display-sum-reflex :w 70 :h 70 :cam 2)
 ;; measure center of the circle in the 64x64 area
 ;; cam 0 5 2 54 54
+;; cam 1 3 5 58 58
+;; cam 2 5 5 54 54
 
 #+nil
 (progn
