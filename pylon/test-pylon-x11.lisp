@@ -281,7 +281,10 @@
 (defparameter *store* (loop for i from 0 below 10 collect (make-array (list 64 64) :element-type '(complex single-float))))
 (defparameter *store-index* 0)
 
-(let* ((n (* 20 20))
+#+nil
+(/ (* (expt 70 2) 64 64 3 2 2 8) (* 1024 1024s0)) 
+
+(let* ((n (* 70 70))
        (store (loop for i from 0 below n collect
 		   (loop for cam below 3 collect
 			(loop for pol below 2 collect
@@ -386,9 +389,11 @@
    (put-csf-image a  :w 64 :h 64 
 		  :dst-x 0
 		  :dst-y 0
-		  :scale .4s0 :offset -670s0 :fun #'abs)))
+		  :scale .06s0 :offset -600s0 :fun #'abs)))
 #+nil
-(display-sum-reflex :w 40 :h 40 :cam 1)
+(display-sum-reflex :w 70 :h 70 :cam 2)
+;; measure center of the circle in the 64x64 area
+;; cam 0 5 2 54 54
 
 #+nil
 (progn
