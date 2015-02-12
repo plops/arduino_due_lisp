@@ -392,10 +392,6 @@
 		  :scale .06s0 :offset -600s0 :fun #'abs)))
 #+nil
 (display-sum-reflex :w 70 :h 70 :cam 2)
-;; measure center of the circle in the 64x64 area
-;; cam 0 5 2 54 54
-;; cam 1 3 5 58 58
-;; cam 2 5 5 54 54
 
 #+nil
 (progn
@@ -491,6 +487,21 @@
   (draw-window x1 y1 x1 y2)
   (draw-window x2 y1 x2 y2))
 
+;; measure center of the circle in the 64x64 area
+;; cam 0 5 2 54 54
+;; cam 1 3 5 58 58
+;; cam 2 5 5 54 54
+
+(+ 2 (/ 54 2))
+
+2 0 1
+(list 
+ (/ (- 79801595406 8421881) 200e6)
+
+ (/ (- 79802002987 8510280) 200e6)
+
+ (/ (- 79801869366 8467775) 200e6))
+
 (let ((last-presentation-time 0)
       (start 0))
   (defun start-acquisition-thread (&key (pol 0) (n 2000) (us-between-x11-updates 200000))
@@ -532,7 +543,7 @@
   (initialize-trigger-outputs))
 
 #+nil
-(acquire)
+(time (acquire))
 #+nil
 (arduino-trigger t)
 #+nil
