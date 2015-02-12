@@ -284,7 +284,7 @@
 #+nil
 (/ (* (expt 70 2) 64 64 3 2 2 8) (* 1024 1024s0)) 
 
-(let* ((n (* 70 70))
+(let* ((n (* 20 20))
        (store (loop for i from 0 below n collect
 		   (loop for cam below 3 collect
 			(loop for pol below 2 collect
@@ -464,8 +464,8 @@
       (dotimes (j 64)
 	(setf (aref a j i) (* s (expt -1 (+ i j)) (aref *buf-cs64in* j i))))))
 
-  (fftw::%fftwf_execute *plan64*)
-  (let* ((a (get-stored-array 1 pol cam framenr)
+  #+nil (fftw::%fftwf_execute *plan64*)
+  #+nil (let* ((a (get-stored-array 1 pol cam framenr)
 	   #+nil (elt *store* *store-index*))
 	 (pixels1 (expt (cond ((or (= 0 cam) (= 2 cam)) 256)
 			      ((= 1 cam) 512)
@@ -502,6 +502,8 @@
 
  (/ (- 79801869366 8467775) 200e6))
 
+(/ 3900 398.967)
+
 (let ((last-presentation-time 0)
       (start 0))
   (defun start-acquisition-thread (&key (pol 0) (n 2000) (us-between-x11-updates 200000))
@@ -518,7 +520,7 @@
 		   (pylon::grab-sf *cams* *buf-s*)
 		 (push (list  (- (get-us-time) start) cam success-p w h imagenr blockid timestamp) *log*)
 		 (when success-p ;; do-update-p
-		   (let ((k '((84 208) (230 172) (62 68))))
+		 #+nil  (let ((k '((84 208) (230 172) (62 68))))
 		    (destructuring-bind (x y) (elt k cam)
 		      (draw-frame *buf-s* w h pol cam (1- imagenr) x y :extract-w 64 
 				  :scale (/ 40s0 4095) :offset (let ((o -12000)) (ecase cam 
@@ -533,6 +535,9 @@
 (trigger-flipmount-once)
 
 #+nil
+(/ 200 (/ (- 497273145 1333122) 200e6))
+ 
+#+nil
 (pylon:stop-grabbing *cams*)
 #+nil
 (pylon:start-grabbing *cams*)
@@ -541,6 +546,7 @@
   (setf
    *trigger-outputs-initialized* nil)
   (initialize-trigger-outputs))
+
 
 #+nil
 (time (acquire))
@@ -551,66 +557,80 @@
 #+nil
 (dotimes (i 200)
   (trigger-all-cameras-once))
+(/ 400 (/ (- 1257702841 10743457) 200e6)) ; => with 24ms delay on arduino 64fps
+(/ (- 957629656 9973955) 200e6)
+(/ 400 7.8) ;; 51fps
+(/ 400 (/ (- 957629656 9973955) 200e6)) ;; with 18ms delay 84fps
+ #+nil
+(list (- 3100 (* 15 85)) (- 3100 (* 15  70)))
+(* 1000 (/ 54.3))
+
+(/ (- 6486417746 20014) 200e6) ;; 32s seconds
+;; overall time 108s
+;; 400 frames in 32s
+(/ 400 32s0) ;; 12.5fps
 
 #+nil
-(list (- 3100 (* 15 85)) (- 3100 (* 15  70)))
-
+(arduino-dac 2000 2000)
 
 (defun acquire ()
-  (let* ((n (get-stored-array-length))
-	 (nx (sqrt n))
-	 (ny (sqrt n))
-	 (center-x 1825)
-	 (center-y 2050)
-	 (radius 1800))
-    (sb-sys:with-pinned-objects (*buf-s* *buf-cs* *buf-cs64in* *buf-cs64out*)
-      (let ((*plan64* (fftw::planf *buf-cs64in* :out *buf-cs64out* 
-				   :w 64 :h 64 :flag fftw::+measure+ 
-				   :sign fftw::+backward+))
-	    (*plan256* (fftw::rplanf *buf-s* :out *buf-cs* :w 256 :h 256 
-				     :flag fftw::+measure+))
-	    (*plan512* (fftw::rplanf *buf-s* :out *buf-cs* :w 512 :h 512 
-				     :flag fftw::+measure+)))
-	(unwind-protect 
-		   (progn
-		     (defparameter *log* nil)
-		     (arduino-trigger t)
-		     (reset-camera-timers *cams* 3)
-		     (pylon:start-grabbing *cams*)
-		     (let ((th (start-acquisition-thread :pol 0 :n n)))
-		       (sleep .001)
-		       (dotimes (i n)
-			 (let ((ix (mod i nx))
-			       (iy (floor i nx)))
-			   (arduino-dac (floor (- center-x (* 2 radius (- (/ ix nx) 1/2))))
-					(floor (- center-y (* 2 radius (- (/ iy ny) 1/2))))))
-			 (sleep .02)
-			 (trigger-all-cameras-once))
-		       (dotimes (i 30)
-			 (trigger-all-cameras-once)
-			 (sleep .01))
-		       (sb-thread:join-thread th)))
-		(pylon:stop-grabbing *cams*))
-       ;; stop and restart grabbing so that image numbers start from 1 again
-       (trigger-flipmount-once)
-       
-       (unwind-protect 
-	    (progn
-	      ;;(defparameter *log* nil)
-	      (arduino-trigger t)
-	      (reset-camera-timers *cams* 3)
-	      (pylon:start-grabbing *cams*)
-	      ;;(reset-camera-timers *cams* 3)
-	      (let ((th (start-acquisition-thread :pol 1 :n n)))
-		(sleep .001)
-		(dotimes (i n)
-		  (let ((ix (mod i nx))
-			(iy (floor i nx)))
-		    (arduino-dac (floor (- center-x (* 2 radius (- (/ ix nx) 1/2))))
-				 (floor (- center-y (* 2 radius (- (/ iy ny) 1/2))))))
-		  (sleep .02)
-		  (trigger-all-cameras-once))
-		(sb-thread:join-thread th)))
-	 (pylon:stop-grabbing *cams*))))))
+(let* ((n (get-stored-array-length))
+       (nx (sqrt n))
+       (ny (sqrt n))
+       (center-x 1825)
+       (center-y 2050)
+       (radius 1800))
+(sb-sys:with-pinned-objects (*buf-s* *buf-cs* *buf-cs64in* *buf-cs64out*)
+  (let ((*plan64* (fftw::planf *buf-cs64in* :out *buf-cs64out* 
+			       :w 64 :h 64 :flag fftw::+measure+ 
+			       :sign fftw::+backward+))
+	(*plan256* (fftw::rplanf *buf-s* :out *buf-cs* :w 256 :h 256 
+				 :flag fftw::+measure+))
+	(*plan512* (fftw::rplanf *buf-s* :out *buf-cs* :w 512 :h 512 
+				 :flag fftw::+measure+)))
+    (unwind-protect 
+	 (progn
+	   (defparameter *log* nil)
+	   (arduino-trigger t)
+	   (reset-camera-timers *cams* 3)
+	   (pylon:start-grabbing *cams*)
+	   (let ((th (start-acquisition-thread :pol 0 :n n)))
+	     (sleep .02)
+	     (trigger-all-cameras-seq n :delay-ms 18)
+	     #+nil
+	     (dotimes (i n)
+	       (let ((ix (mod i nx))
+		     (iy (floor i nx)))
+		 (arduino-dac (floor (- center-x (* 2 radius (- (/ ix nx) 1/2))))
+			      (floor (- center-y (* 2 radius (- (/ iy ny) 1/2))))))
+	       (sleep .02)
+	       (trigger-all-cameras-seq n))
+	     #+nil (dotimes (i 30)
+		     (trigger-all-cameras-once)
+		     (sleep .01))
+	     (sb-thread:join-thread th)))
+      (pylon:stop-grabbing *cams*))
+    ;; stop and restart grabbing so that image numbers start from 1 again
+    (trigger-flipmount-once)
+    #+nil
+    (unwind-protect 
+	 (progn
+	   ;;(defparameter *log* nil)
+	   (arduino-trigger t)
+	   (reset-camera-timers *cams* 3)
+	   (pylon:start-grabbing *cams*)
+	   ;;(reset-camera-timers *cams* 3)
+	   (let ((th (start-acquisition-thread :pol 1 :n n)))
+	     (sleep .02)
+	     (trigger-all-cameras-seq n)
+	     #+nil (dotimes (i n)
+		     (let ((ix (mod i nx))
+			   (iy (floor i nx)))
+		       (arduino-dac (floor (- center-x (* 2 radius (- (/ ix nx) 1/2))))
+				    (floor (- center-y (* 2 radius (- (/ iy ny) 1/2))))))
+		     (sleep .02)
+		     (trigger-all-cameras-once))
+	     (sb-thread:join-thread th)))
+      (pylon:stop-grabbing *cams*))))))
 
 
