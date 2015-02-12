@@ -435,12 +435,12 @@
 #+nil
 (draw-window 0 0 100 200)
 (defun draw-frame (buf w h pol cam framenr x y &key (extract-w 64) (extract-h extract-w) (scale #.(/ 20s0 4095)) (offset (- 12000s0)))
-  (put-sf-image buf w h :dst-x (cam-dst-x cam) )
+  #+nil (put-sf-image buf w h :dst-x (cam-dst-x cam) )
   (cond ((or (= 0 cam) (= 2 cam)) (fftw::%fftwf_execute *plan256*))
 	((= 1 cam) (fftw::%fftwf_execute *plan512*)))
   (let ((wa (floor extract-w 2))
 	(ha (floor extract-h 2)))
-   (put-csf-image *buf-cs* :w (1+ (floor w 2)) :h h 
+    #+nil (put-csf-image *buf-cs* :w (1+ (floor w 2)) :h h 
 		  :x0 (- x wa 1) 
 		  :y0 (- y ha 1)
 		  :x1 (+ x wa) 
@@ -512,23 +512,26 @@
     (sb-thread:make-thread 
      #'(lambda ()
 	 (reset-current-index)
-	 (dotimes (i n)
-	   (let* ((current (get-us-time))
-		  (do-update-p (< (- current last-presentation-time) us-between-x11-updates)))
-	     (dotimes (j 3)
-	       (multiple-value-bind (cam success-p w h imagenr blockid timestamp) 
-		   (pylon::grab-sf *cams* *buf-s*)
-		 (push (list  (- (get-us-time) start) cam success-p w h imagenr blockid timestamp) *log*)
-		 (when success-p ;; do-update-p
-		 #+nil  (let ((k '((84 208) (230 172) (62 68))))
-		    (destructuring-bind (x y) (elt k cam)
-		      (draw-frame *buf-s* w h pol cam (1- imagenr) x y :extract-w 64 
-				  :scale (/ 40s0 4095) :offset (let ((o -12000)) (ecase cam 
-										  (0 o)
-										  (1 (* 2 o))
-										  (2 o)))))))))
-	     (when do-update-p
-	       (setf last-presentation-time current)))))
+	 (sb-sprof:with-profiling (:max-samples 1000
+						:report :flat
+						:loop nil)
+	   (dotimes (i n)
+	     (let* ((current (get-us-time))
+		    (do-update-p (< (- current last-presentation-time) us-between-x11-updates)))
+	       (dotimes (j 3)
+		 (multiple-value-bind (cam success-p w h imagenr blockid timestamp) 
+		     (pylon::grab-sf *cams* *buf-s*)
+		   (push (list  (- (get-us-time) start) cam success-p w h imagenr blockid timestamp) *log*)
+		   (when success-p ;; do-update-p
+		     (let ((k '((84 208) (230 172) (62 68))))
+			      (destructuring-bind (x y) (elt k cam)
+				(draw-frame *buf-s* w h pol cam (1- imagenr) x y :extract-w 64 
+					    :scale (/ 40s0 4095) :offset (let ((o -12000)) (ecase cam 
+											     (0 o)
+											     (1 (* 2 o))
+											     (2 o)))))))))
+	       (when do-update-p
+		 (setf last-presentation-time current))))))
      :name "camera-acquisition")))
 
 #+nil
@@ -547,13 +550,20 @@
    *trigger-outputs-initialized* nil)
   (initialize-trigger-outputs))
 
-
+#+nil
+(require :sb-sprof)
+#+nil
+(sb-sprof:with-profiling (:max-samples 1000
+                               :report :flat
+                               :loop nil)
+       (acquire))
 #+nil
 (time (acquire))
 #+nil
 (arduino-trigger t)
 #+nil
-(trigger-all-cameras-once )
+(dotimes (i 100)
+ (trigger-all-cameras-once ))
 #+nil
 (dotimes (i 200)
   (trigger-all-cameras-once))
