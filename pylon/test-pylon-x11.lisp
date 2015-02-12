@@ -535,7 +535,7 @@
 (trigger-flipmount-once)
 
 #+nil
-(/ 200 (/ (- 497273145 1333122) 200e6))
+(/ 200 (/ (- 497273145 1333122) 125e6))
  
 #+nil
 (pylon:stop-grabbing *cams*)
@@ -557,18 +557,18 @@
 #+nil
 (dotimes (i 200)
   (trigger-all-cameras-once))
-(/ 400 (/ (- 1257702841 10743457) 200e6)) ; => with 24ms delay on arduino 64fps
+(/ 400 (/ (- 1257702841 10743457) 125e6)) ; => with 24ms delay on arduino 40fps
 (/ (- 957629656 9973955) 200e6)
 (/ 400 7.8) ;; 51fps
-(/ 400 (/ (- 957629656 9973955) 200e6)) ;; with 18ms delay 84fps
+(/ 400 (/ (- 957629656 9973955) 125e6)) ;; with 18ms delay 52.7fps
  #+nil
 (list (- 3100 (* 15 85)) (- 3100 (* 15  70)))
 (* 1000 (/ 54.3))
 
-(/ (- 6486417746 20014) 200e6) ;; 32s seconds
+(/ (- 6486417746 20014) 125e6) ;; 51.8s seconds
 ;; overall time 108s
-;; 400 frames in 32s
-(/ 400 32s0) ;; 12.5fps
+;; 400 frames in 51.8s
+(/ 400 51.8s0) ;; 7.7fps
 
 #+nil
 (arduino-dac 2000 2000)
