@@ -764,8 +764,9 @@
 (let* ((nx 10)
        (ci 2000)
        (stepi 10)
-       (l (loop for i from (- ci (* (floor nx 2) stepi))  below (+ ci (* (floor nx 2) stepi)) by stepi collect i)))
+       (l (loop for i from (- ci (* (floor nx 2) stepi))  below (+ ci (* (floor nx 2) stepi)) by stepi collect i))) ;; this is creating 10 values
   (list l (length l)))
+
 #+nil
 (acquire-2d)
 #+nil
