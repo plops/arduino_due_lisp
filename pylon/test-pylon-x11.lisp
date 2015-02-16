@@ -571,7 +571,8 @@
 		     (let ((k '((84 208) (230 172) (62 68))))
 		       (destructuring-bind (x y) (elt k cam)
 			 (draw-frame *buf-s* w h pol cam (1- imagenr) x y :extract-w 64 
-				     :scale (/ 10s0 4095) :update-display-p do-update-p :offset (let ((o -12000s0)) (ecase cam 
+				     :scale (/ 10s0 4095) :update-display-p do-update-p
+				     :offset (let ((o -12000s0)) (ecase cam 
 														      (0 o)
 														      (1 (* 2 o))
 														      (2 o)))))))))
@@ -782,7 +783,7 @@
 						    :stepi stepi
 						    :stepj stepj
 						    :line-delay-ms 30
-						    :delay-ms 180))
+						    :delay-ms 18))
 		 :name "arduino-trigger"
 		 
 		 (sb-thread:join-thread th)))
@@ -795,7 +796,7 @@
 
 
 #+nil
-(display-mosaic-onecam :ft 0 :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 16 :h 16)
+(display-mosaic-onecam :ft 0 :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 32 :h 32 :scale 100s0)
 #+nil
 (display-mosaic-onecam :ft 1 :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 16 :h 16 :scale 1s0)
 #+nil
