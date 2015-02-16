@@ -13,7 +13,8 @@
   (asdf:load-system "arduino-serial-sbcl")
   (asdf:load-system "pure-x11")
   (asdf:load-system "fftw")
-  (asdf:load-system "image-processing"))
+  (asdf:load-system "image-processing")
+  (require :sb-sprof))
 
 
 (defpackage :pylon-test-x11
@@ -72,6 +73,8 @@
 "	   n delay-ms)
    :time .1d0))
 
+
+
 (defun trigger-all-cameras-once ()
   (unless *trigger-outputs-initialized*
     (initialize-trigger-outputs))
@@ -106,6 +109,11 @@
    ( second *ard*) 
    (first *ard*)
    "(progn (+ 1 2))")
+#+nil
+(arduino-serial-sbcl:talk-arduino
+   ( second *ard*) 
+   (first *ard*)
+   "(room)")
 #+nil
 (arduino-serial-sbcl:talk-arduino
    ( second *ard*) 
@@ -262,8 +270,6 @@
   (dotimes (i n) ;; reset frame timers on the cameras ;
     (pylon::command-execute cams i "GevTimestampControlReset")))
 
-#+nil
-(sb-sys:with-pinned-objects )
 
 (defparameter *plan64* (fftw::planf *buf-cs64in* :out *buf-cs64out* :w 64 :h 64 :flag fftw::+measure+ :sign fftw::+backward+))
 #+nil
@@ -391,7 +397,7 @@
 		  :dst-y 0
 		  :scale .06s0 :offset -600s0 :fun #'abs)))
 #+nil
-(display-sum-reflex :w 70 :h 70 :cam 2)
+(display-sum-reflex :w 10 :h 10 :cam 1)
 
 #+nil
 (progn
@@ -488,6 +494,8 @@
 	(setf (aref a j i) (* s (expt -1 (+ i j)) (aref *buf-cs64out* j i)))))
     #+nil (put-csf-image a :w 64 :h 64 :dst-x (cam-dst-x cam) :dst-y (- 512 64) :scale 1s0 :offset 0s0)))
 
+
+
 (defun draw-rect (x1 y1 x2 y2)
   (draw-window x1 y1 x2 y1)
   (draw-window x1 y2 x2 y2)
@@ -519,9 +527,7 @@
     (sb-thread:make-thread 
      #'(lambda ()
 	 (reset-current-index)
-	 (sb-sprof:with-profiling (:max-samples 1000
-						:report :flat
-						:loop nil)
+	 (progn ;; sb-sprof:with-profiling (:max-samples 1000 :report :flat :loop nil)
 	   (dotimes (i n)
 	     (let* ((current (get-us-time))
 		    (do-update-p (< (- current last-presentation-time) us-between-x11-updates)))
@@ -531,12 +537,12 @@
 		   (push (list  (- (get-us-time) start) cam success-p w h imagenr blockid timestamp) *log*)
 		   (when success-p ;; do-update-p
 		     (let ((k '((84 208) (230 172) (62 68))))
-			      (destructuring-bind (x y) (elt k cam)
-				(draw-frame *buf-s* w h pol cam (1- imagenr) x y :extract-w 64 
-					    :scale (/ 40s0 4095) :offset (let ((o -12000s0)) (ecase cam 
-											     (0 o)
-											     (1 (* 2 o))
-											     (2 o)))))))))
+		       (destructuring-bind (x y) (elt k cam)
+			 (draw-frame *buf-s* w h pol cam (1- imagenr) x y :extract-w 64 
+				     :scale (/ 40s0 4095) :offset (let ((o -12000s0)) (ecase cam 
+											(0 o)
+											(1 (* 2 o))
+											(2 o)))))))))
 	       (when do-update-p
 		 (setf last-presentation-time current))))))
      :name "camera-acquisition")))
@@ -654,8 +660,70 @@
 	  (fftw::%fftwf_destroy_plan *plan256*)
 	  (fftw::%fftwf_destroy_plan *plan512*))))))
 
-#+nil
-(sb-sys:with-pinned-objects (*buf-s* *buf-cs* *buf-cs64in* *buf-cs64out*)
+(defun trigger-all-cameras-seq-2d-scan ( &key 
+					   (starti (- 2000 500)) (startj (- 2000 500))
+					   (maxi (+ 2000 500)) (maxj (+ 2000 500))
+					   (stepi 50)
+					   (stepj 50)
+					   (delay-ms 18)
+					   (line-delay-ms 100))
+  (unless *trigger-outputs-initialized*
+    (initialize-trigger-outputs))
+  (format t "scan ~a" (list (list starti maxi stepi)
+			  (list startj maxj stepj)
+			  'time (/ (+ (* (/ (- maxj startj) stepj) 
+					 (/ (- maxi starti) stepi)
+					 delay-ms)
+				      (* (/ (- maxj startj) stepj) line-delay-ms))
+				   1000s0))
+	  )
+  (arduino-serial-sbcl:talk-arduino
+   (second *ard*) 
+   (first *ard*)
+   (format nil 
+	   "(progn
+  (set 'i ~a)
+  (set 'j ~a)
+  (while (< j ~a)
+    (while (< i ~a)
+      (dac i j)
+      (delay ~a)
+      (digital-write 11 1)
+      (digital-write 12 1) 
+      (digital-write 10 1) 
+      (delay 1)
+      (digital-write 11 0)
+      (digital-write 12 0) 
+      (digital-write 10 0)
+      (set 'i (+ i ~a)))
+    (set 'i ~a)
+    (set 'j (+ j ~a))
+    (delay ~a)
+    (dac i j)) 3)"
+	   starti startj
+	   maxj maxi
+	   delay-ms
+	   stepi starti stepj
+	   line-delay-ms)
+   :time (/ (+ (* (/ (- maxj startj) stepj) 
+		  (/ (- maxi starti) stepi)
+		  delay-ms)
+	       (* (/ (- maxj startj) stepj) line-delay-ms))
+	    1000s0))))
+
+
+(defun acquire-2d ()
+  (let* ((n (get-stored-array-length))
+	 (nx (sqrt n))
+	 (ny (sqrt n))
+	 (center-x 1825)
+	 (center-y 2050)
+	 (radius 1800))
+    (progn 
+      (setf
+       *trigger-outputs-initialized* nil)
+      (initialize-trigger-outputs))
+    (sb-sys:with-pinned-objects (*buf-s* *buf-cs* *buf-cs64in* *buf-cs64out*)
       (let ((*plan64* (fftw::planf *buf-cs64in* :out *buf-cs64out* 
 				   :w 64 :h 64 :flag fftw::+measure+ 
 				   :sign fftw::+backward+))
@@ -663,13 +731,59 @@
 				     :flag fftw::+measure+))
 	    (*plan512* (fftw::rplanf *buf-s* :out *buf-cs* :w 512 :h 512 
 				     :flag fftw::+measure+)))
-	(time
-	 (dotimes (i 1000) (fftw::%fftwf_execute *plan256*))) ;; 0.18s
-	(time 
-	 (dotimes (i 1000) (fftw::%fftwf_execute *plan512*))) ;; 0.7s
-	(time
-	 (dotimes (i 1000) (fftw::%fftwf_execute *plan64*))) ;; 0.053s 
+	(unwind-protect 
+	     (progn
+	       (defparameter *log* nil)
+	       (arduino-trigger t)
+	       
+	       (reset-camera-timers *cams* 3)
+	       (pylon:start-grabbing *cams*)
+	       (let ((th (start-acquisition-thread :pol 0 :n n)))
+		 (sleep .02)
+		 (let* ((ci 2000)
+			(cj 2000)
+			(stepi 10)
+			(stepj stepi))
+		   (trigger-all-cameras-seq-2d-scan :starti (- ci (* (floor nx 2) stepi))
+						    :startj (- cj (* (floor ny 2) stepj))
+						    :maxi (+ ci (* (floor nx 2) stepi))
+						    :maxj (+ cj (* (floor ny 2) stepj))
+						    :stepi stepi
+						    :stepj stepj
+						    :delay-ms 18))
+		 :name "arduino-trigger"
+		 
+		 (sb-thread:join-thread th)))
+	  (pylon:stop-grabbing *cams*))
+
 	(progn 
 	  (fftw::%fftwf_destroy_plan *plan64*)
 	  (fftw::%fftwf_destroy_plan *plan256*)
-	  (fftw::%fftwf_destroy_plan *plan512*))))
+	  (fftw::%fftwf_destroy_plan *plan512*))))))
+
+(let* ((nx 10)
+       (ci 2000)
+       (stepi 10)
+       (l (loop for i from (- ci (* (floor nx 2) stepi))  below (+ ci (* (floor nx 2) stepi)) by stepi collect i)))
+  (list l (length l)))
+#+nil
+(acquire-2d)
+#+nil
+(trigger-all-cameras-seq-2d-scan)
+#+nil
+(trigger-all-cameras-seq 200)
+#+nil
+(let* ((n (get-stored-array-length))
+       (nx (sqrt n))
+       (ny (sqrt n))
+       (ci 2000)
+       (cj 2000)
+       (stepi 10)
+       (stepj stepi))
+  (trigger-all-cameras-seq-2d-scan :starti (- ci (* (floor nx 2) stepi))
+				   :startj (- cj (* (floor ny 2) stepj))
+				   :maxi (+ ci (* (floor nx 2) stepi))
+				   :maxj (+ cj (* (floor ny 2) stepj))
+						    :stepi stepi
+						    :stepj stepj
+						    :delay-ms 18))
