@@ -370,6 +370,31 @@
 			 :dst-y (* 65 j)
 			 :scale 100s0 :offset 0s0 :fun #'abs)))))
 
+(defun display-mosaic-onecam-swap (&key (w 16) (h 16) (x-offset 0) (y-offset 0) (cam 1) (pol 0))
+  (let ((a (make-array (list 64 64) 
+		       :element-type '(simple-array (complex single-float) 2)
+		       :initial-contents
+		       (loop for i below 64 collect
+			    (loop for j below 64 collect
+				 (make-array (list h w) :element-type '(complex single-float)))))))
+    (declare (type (simple-array (simple-array (complex single-float) 2) 2) a))
+    (loop for i from 0 below w do
+	(loop for j from 0 below h do
+	     (let ((z (get-stored-array 0 pol cam 
+					(min (* w h) 
+					     (+ (min w (+ i 0)) 
+						(* w (min h (+ j 0)))))))) 
+	       (dotimes (u 64)
+		 (dotimes (v 64)
+		   (setf (aref (aref a v u) j i) (aref z j i)))))))
+    (loop for u from x-offset below 64 do ;dotimes (u 64)
+      (loop for v from y-offset below 64 do ; dotimes (v 64)
+       (put-csf-image (aref a v u)
+		      :w w :h h 
+		      :dst-x (* (1+ w) (- u x-offset))
+		      :dst-y (* (1+ h) (- v y-offset))
+		      :scale 100s0 :offset 0s0 :fun #'abs)))))
+
 (defun display-mosaic-pronounce-reflex (&key (w 16) (h 16) (x-offset 0) (y-offset 0) (cam 1))
   (loop for i from 0 below w do
        (loop for j from 0 below h do
@@ -753,7 +778,7 @@
 						    :maxj (+ cj (* (floor ny 2) stepj))
 						    :stepi stepi
 						    :stepj stepj
-						    :line-delay-ms 100
+						    :line-delay-ms 30
 						    :delay-ms 18))
 		 :name "arduino-trigger"
 		 
@@ -766,7 +791,9 @@
 	  (fftw::%fftwf_destroy_plan *plan512*))))))
 
 #+nil
-(display-mosaic-onecam :pol 0 :cam 0 :x-offset 0 :y-offset 0 :w 30 :h 30)
+(display-mosaic-onecam :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 30 :h 30)
+#+nil
+(display-mosaic-onecam-swap :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 30 :h 30)
 #+nil
 (acquire-2d)
 #+nil
