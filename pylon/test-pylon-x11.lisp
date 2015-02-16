@@ -743,8 +743,8 @@
 	       (pylon:start-grabbing *cams*)
 	       (let ((th (start-acquisition-thread :pol 0 :n n)))
 		 (sleep .02)
-		 (let* ((ci 2050)
-			(cj 2000)
+		 (let* ((ci 1750)
+			(cj 2200)
 			(stepi 250)
 			(stepj stepi))
 		   (trigger-all-cameras-seq-2d-scan :starti (- ci (* (floor nx 2) stepi))
@@ -765,6 +765,8 @@
 	  (fftw::%fftwf_destroy_plan *plan256*)
 	  (fftw::%fftwf_destroy_plan *plan512*))))))
 
+#+nil
+(display-mosaic-onecam :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 14 :h 14)
 #+nil
 (acquire-2d)
 #+nil
