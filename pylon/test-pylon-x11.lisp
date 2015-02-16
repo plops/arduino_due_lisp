@@ -159,7 +159,10 @@
          :rate (pylon:get-value-f *cams* j "ResultingFrameRateAbs")
          ;; :temp (pylon:get-value-f *cams* j "TemperatureAbs")
 	 )))
-
+#+nil
+(pylon:set-value-i *cams* 1 "OffsetX" 789)
+#+nil
+(pylon:set-value-i *cams* 1 "OffsetY" 112)
 ;; => ((21433565 1 1 256 256 783 342   70 0 125000000 1500 :TRIGGER-MODE 0 :LAST-ERROR 0 :RATE-P 0 :REVERSE-X 0 :RATE 105.82011)
 ;;     (21433566 1 1 512 512 789 112 2975 0 125000000 1500 :TRIGGER-MODE 0 :LAST-ERROR 0 :RATE-P 0 :REVERSE-X 0 :RATE 54.318306)
 ;;     (21433540 1 1 256 256 996 439   35 0 125000000 1500 :TRIGGER-MODE 0 :LAST-ERROR 0 :RATE-P 0 :REVERSE-X 1 :RATE 105.82011))
@@ -553,7 +556,7 @@
 
 (let ((last-presentation-time 0)
       (start 0))
-  (defun start-acquisition-thread (&key (pol 0) (n 2000) (us-between-x11-updates 200000))
+  (defun start-acquisition-thread (&key (pol 0) (n 2000) (us-between-x11-updates 200000) (x11-display-p nil))
     (setf last-presentation-time (get-us-time)
 	  start last-presentation-time)
     (sb-thread:make-thread 
@@ -571,7 +574,7 @@
 		     (let ((k '((84 208) (230 172) (62 68))))
 		       (destructuring-bind (x y) (elt k cam)
 			 (draw-frame *buf-s* w h pol cam (1- imagenr) x y :extract-w 64 
-				     :scale (/ 10s0 4095) :update-display-p do-update-p
+				     :scale (/ 10s0 4095) :update-display-p (and do-update-p x11-display-p)
 				     :offset (let ((o -12000s0)) (ecase cam 
 														      (0 o)
 														      (1 (* 2 o))
@@ -650,7 +653,7 @@
 	       (arduino-trigger t)
 	       (reset-camera-timers *cams* 3)
 	       (pylon:start-grabbing *cams*)
-	       (let ((th (start-acquisition-thread :pol 0 :n n)))
+	       (let ((th (start-acquisition-thread :pol 0 :n n :x11-display-p nil)))
 		 (sleep .02)
 		 (trigger-all-cameras-seq n :delay-ms 18)
 		 #+nil
@@ -770,7 +773,7 @@
 	       
 	       (reset-camera-timers *cams* 3)
 	       (pylon:start-grabbing *cams*)
-	       (let ((th (start-acquisition-thread :pol 0 :n n)))
+	       (let ((th (start-acquisition-thread :pol 0 :n n :x11-display-p nil)))
 		 (sleep .02)
 		 (let* ((ci 1700)
 			(cj 2200)
