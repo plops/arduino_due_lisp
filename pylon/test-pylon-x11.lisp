@@ -47,7 +47,10 @@
  (pin-mode 6 1)
  (pin-mode 10 1)
  (pin-mode 11 1)
- (pin-mode 12 1))")
+ (pin-mode 12 1)
+ (digital-write 11 0)
+ (digital-write 12 0)  
+ (digital-write 10 0))")
   (setf *trigger-outputs-initialized* t))
 
 (initialize-trigger-outputs)
@@ -705,11 +708,11 @@
 	   delay-ms
 	   stepi starti stepj
 	   line-delay-ms)
-   :time (/ (+ (* (/ (- maxj startj) stepj) 
-		  (/ (- maxi starti) stepi)
-		  delay-ms)
-	       (* (/ (- maxj startj) stepj) line-delay-ms))
-	    1000s0))))
+   :time (+ .4s0 (/ (+ (* (/ (- maxj startj) stepj) 
+		   (/ (- maxi starti) stepi)
+		   delay-ms)
+		(* (/ (- maxj startj) stepj) line-delay-ms))
+	     1000s0)))))
 
 
 (defun acquire-2d ()
