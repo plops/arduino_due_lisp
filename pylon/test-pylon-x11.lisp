@@ -292,7 +292,7 @@
 
 #+nil
 (/ (* (expt 70 2) 64 64 3 2 2 8) (* 1024 1024s0)) 
-(let* ((n (* 15 15))
+(let* ((n (* 32 32))
        (store (loop for i from 0 below n collect
 		   (loop for cam below 3 collect
 			(loop for pol below 2 collect
@@ -357,17 +357,17 @@
 				:scale scal :offset off :fun #'imagpart)))))))))
 
 
-(defun display-mosaic-onecam (&key (w 16) (h 16) (x-offset 0) (y-offset 0) (cam 1) (pol 0))
+(defun display-mosaic-onecam (&key (ft 0) (w 16) (h 16) (x-offset 0) (y-offset 0) (cam 1) (pol 0) (scale 100s0) (offset 0s0))
   (loop for i from 0 below w do
        (loop for j from 0 below h do
-	    (let ((z (get-stored-array 0 pol cam (min (* w h) (+ (min w (+ i x-offset)) 
+	    (let ((z (get-stored-array ft pol cam (min (* w h) (+ (min w (+ i x-offset)) 
 								 (* w (min h (+ j y-offset)))))))
 		  ) 
 	  (put-csf-image z
 			 :w 64 :h 64 
 			 :dst-x (* 65 i)
 			 :dst-y (* 65 j)
-			 :scale 100s0 :offset 0s0 :fun #'abs)))))
+			 :scale scale :offset offset :fun #'abs)))))
 #+nil
 (display-mosaic-onecam-swap :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 14 :h 14)
 (defun display-mosaic-onecam-swap (&key (w 16) (h 16) (x-offset 0) (y-offset 0) (cam 1) (pol 0))
@@ -468,22 +468,23 @@
 
 #+nil
 (draw-window 0 0 100 200)
-(defun draw-frame (buf w h pol cam framenr x y &key (extract-w 64) (extract-h extract-w) (scale #.(/ 20s0 4095)) (offset (- 12000s0)))
+(defun draw-frame (buf w h pol cam framenr x y &key (extract-w 64) (extract-h extract-w) (scale #.(/ 20s0 4095)) (offset (- 12000s0)) (update-display-p nil))
   (declare (optimize (speed 3))
 	   (type fixnum w h pol cam framenr x y extract-w extract-h)
 	   (type single-float scale offset))
-  #+nil (put-sf-image buf w h :dst-x (cam-dst-x cam) )
+  (when update-display-p (put-sf-image buf w h :dst-x (cam-dst-x cam) ))
   (cond ((or (= 0 cam) (= 2 cam)) (fftw::%fftwf_execute *plan256*))
 	((= 1 cam) (fftw::%fftwf_execute *plan512*)))
   (let ((wa (floor extract-w 2))
 	(ha (floor extract-h 2)))
-    #+nil (put-csf-image *buf-cs* :w (1+ (floor w 2)) :h h 
-		  :x0 (- x wa 1) 
-		  :y0 (- y ha 1)
-		  :x1 (+ x wa) 
-		  :y1 (+ y ha)
-		  :dst-x (cam-dst-x cam) :dst-y 512 
-		  :scale scale :offset offset)
+    (when update-display-p
+      (put-csf-image *buf-cs* :w (1+ (floor w 2)) :h h 
+		     :x0 (- x wa 1) 
+		     :y0 (- y ha 1)
+		     :x1 (+ x wa) 
+		     :y1 (+ y ha)
+		     :dst-x (cam-dst-x cam) :dst-y 512 
+		     :scale scale :offset offset))
    (extract-csf* *buf-cs* *buf-cs64in* 
 		 :w (1+ (floor w 2)) :h h
 		 :x  (- x wa 1) :y (- y ha 1)
@@ -520,7 +521,8 @@
     (dotimes (i 64)
       (dotimes (j 64)
 	(setf (aref a j i) (* s (expt -1 (+ i j)) (aref *buf-cs64out* j i)))))
-    #+nil (put-csf-image a :w 64 :h 64 :dst-x (cam-dst-x cam) :dst-y (- 512 64) :scale 1s0 :offset 0s0)))
+    (when update-display-p 
+      (put-csf-image a :w 64 :h 64 :dst-x (cam-dst-x cam) :dst-y (- 512 64) :scale 1s0 :offset 0s0))))
 
 
 
@@ -558,7 +560,7 @@
 	 (progn ;; sb-sprof:with-profiling (:max-samples 1000 :report :flat :loop nil)
 	   (dotimes (i n)
 	     (let* ((current (get-us-time))
-		    (do-update-p (< (- current last-presentation-time) us-between-x11-updates)))
+		    (do-update-p (< us-between-x11-updates (abs (- current last-presentation-time)) )))
 	       (dotimes (j 3)
 		 (multiple-value-bind (cam success-p w h imagenr blockid timestamp) 
 		     (pylon::grab-sf *cams* *buf-s*)
@@ -567,10 +569,10 @@
 		     (let ((k '((84 208) (230 172) (62 68))))
 		       (destructuring-bind (x y) (elt k cam)
 			 (draw-frame *buf-s* w h pol cam (1- imagenr) x y :extract-w 64 
-				     :scale (/ 40s0 4095) :offset (let ((o -12000s0)) (ecase cam 
-											(0 o)
-											(1 (* 2 o))
-											(2 o)))))))))
+				     :scale (/ 10s0 4095) :update-display-p do-update-p :offset (let ((o -12000s0)) (ecase cam 
+														      (0 o)
+														      (1 (* 2 o))
+														      (2 o)))))))))
 	       (when do-update-p
 		 (setf last-presentation-time current))))))
      :name "camera-acquisition")))
@@ -769,7 +771,7 @@
 		 (sleep .02)
 		 (let* ((ci 1700)
 			(cj 2200)
-			(stepi 180 #+nil 110)
+			(stepi 100)
 			(stepj stepi))
 		   (trigger-all-cameras-seq-2d-scan :starti (- ci (* (floor nx 2) stepi))
 						    :startj (- cj (* (floor ny 2) stepj))
@@ -778,7 +780,7 @@
 						    :stepi stepi
 						    :stepj stepj
 						    :line-delay-ms 30
-						    :delay-ms 18))
+						    :delay-ms 180))
 		 :name "arduino-trigger"
 		 
 		 (sb-thread:join-thread th)))
@@ -789,10 +791,13 @@
 	  (fftw::%fftwf_destroy_plan *plan256*)
 	  (fftw::%fftwf_destroy_plan *plan512*))))))
 
+
 #+nil
-(display-mosaic-onecam :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 14 :h 14)
+(display-mosaic-onecam :ft 0 :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 16 :h 16)
 #+nil
-(display-mosaic-onecam-swap :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 14 :h 14)
+(display-mosaic-onecam :ft 1 :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 16 :h 16 :scale 1s0)
+#+nil
+(display-mosaic-onecam-swap :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 16 :h 16)
 #+nil
 (acquire-2d)
 #+nil
