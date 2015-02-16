@@ -29,7 +29,8 @@
 
 #+nil
 (pylon:terminate *cams*)
-
+#+nil
+(pylon:cams-close *cams*)
 (defparameter *ard* 
   (multiple-value-list
    (arduino-serial-sbcl:open-serial 
@@ -163,6 +164,7 @@
 ;;     (21433566 1 1 512 512 789 112 2975 0 125000000 1500 :TRIGGER-MODE 0 :LAST-ERROR 0 :RATE-P 0 :REVERSE-X 0 :RATE 54.318306)
 ;;     (21433540 1 1 256 256 996 439   35 0 125000000 1500 :TRIGGER-MODE 0 :LAST-ERROR 0 :RATE-P 0 :REVERSE-X 1 :RATE 105.82011))
 
+;; cam1 66 roi settings to be outside of fiber core 332 383
 
 (progn ;; open a window and draw a line
   (connect)
