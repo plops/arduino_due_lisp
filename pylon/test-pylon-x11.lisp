@@ -292,8 +292,7 @@
 
 #+nil
 (/ (* (expt 70 2) 64 64 3 2 2 8) (* 1024 1024s0)) 
-
-(let* ((n (* 30 30))
+(let* ((n (* 15 15))
        (store (loop for i from 0 below n collect
 		   (loop for cam below 3 collect
 			(loop for pol below 2 collect
@@ -369,7 +368,8 @@
 			 :dst-x (* 65 i)
 			 :dst-y (* 65 j)
 			 :scale 100s0 :offset 0s0 :fun #'abs)))))
-
+#+nil
+(display-mosaic-onecam-swap :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 30 :h 30)
 (defun display-mosaic-onecam-swap (&key (w 16) (h 16) (x-offset 0) (y-offset 0) (cam 1) (pol 0))
   (let ((a (make-array (list 64 64) 
 		       :element-type '(simple-array (complex single-float) 2)
@@ -387,6 +387,9 @@
 	       (dotimes (u 64)
 		 (dotimes (v 64)
 		   (setf (aref (aref a v u) j i) (aref z j i)))))))
+   #+nil (dotimes (u 64)
+      (dotimes (v 64)
+	(setf (aref (aref a v u) 0 0) (* .1s0 (complex (* 1s0 v) u)))))
     (loop for u from x-offset below 64 do ;dotimes (u 64)
       (loop for v from y-offset below 64 do ; dotimes (v 64)
        (put-csf-image (aref a v u)
@@ -737,13 +740,12 @@
 		   (/ (- maxi starti) stepi)
 		   delay-ms)
 		(* (/ (- maxj startj) stepj) line-delay-ms))
-	     1000s0)))))
-
+	     1000s0))))
 
 (defun acquire-2d ()
   (let* ((n (get-stored-array-length))
-	 (nx (sqrt n))
-	 (ny (sqrt n))
+	 (nx (floor (sqrt n)))
+	 (ny (floor (sqrt n)))
 	 (center-x 1825)
 	 (center-y 2050)
 	 (radius 1800))
@@ -770,7 +772,7 @@
 		 (sleep .02)
 		 (let* ((ci 1700)
 			(cj 2200)
-			(stepi 110)
+			(stepi 180 #+nil 110)
 			(stepj stepi))
 		   (trigger-all-cameras-seq-2d-scan :starti (- ci (* (floor nx 2) stepi))
 						    :startj (- cj (* (floor ny 2) stepj))
@@ -791,9 +793,9 @@
 	  (fftw::%fftwf_destroy_plan *plan512*))))))
 
 #+nil
-(display-mosaic-onecam :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 30 :h 30)
+(display-mosaic-onecam :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 14 :h 14)
 #+nil
-(display-mosaic-onecam-swap :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 30 :h 30)
+(display-mosaic-onecam-swap :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 14 :h 14)
 #+nil
 (acquire-2d)
 #+nil
