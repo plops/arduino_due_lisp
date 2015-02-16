@@ -369,7 +369,7 @@
 			 :dst-y (* 65 j)
 			 :scale 100s0 :offset 0s0 :fun #'abs)))))
 #+nil
-(display-mosaic-onecam-swap :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 30 :h 30)
+(display-mosaic-onecam-swap :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 14 :h 14)
 (defun display-mosaic-onecam-swap (&key (w 16) (h 16) (x-offset 0) (y-offset 0) (cam 1) (pol 0))
   (let ((a (make-array (list 64 64) 
 		       :element-type '(simple-array (complex single-float) 2)
@@ -380,13 +380,10 @@
     (declare (type (simple-array (simple-array (complex single-float) 2) 2) a))
     (loop for i from 0 below w do
 	(loop for j from 0 below h do
-	     (let ((z (get-stored-array 0 pol cam 
-					(min (* w h) 
-					     (+ (min w (+ i 0)) 
-						(* w (min h (+ j 0)))))))) 
+	     (let ((z (get-stored-array 0 pol cam (+ i (* w j))))) 
 	       (dotimes (u 64)
 		 (dotimes (v 64)
-		   (setf (aref (aref a v u) j i) (aref z j i)))))))
+		   (setf (aref (aref a v u) j i) (aref z v u)))))))
    #+nil (dotimes (u 64)
       (dotimes (v 64)
 	(setf (aref (aref a v u) 0 0) (* .1s0 (complex (* 1s0 v) u)))))
