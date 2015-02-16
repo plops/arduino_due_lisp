@@ -293,7 +293,7 @@
 #+nil
 (/ (* (expt 70 2) 64 64 3 2 2 8) (* 1024 1024s0)) 
 
-(let* ((n (* 14 14))
+(let* ((n (* 30 30))
        (store (loop for i from 0 below n collect
 		   (loop for cam below 3 collect
 			(loop for pol below 2 collect
@@ -743,9 +743,9 @@
 	       (pylon:start-grabbing *cams*)
 	       (let ((th (start-acquisition-thread :pol 0 :n n)))
 		 (sleep .02)
-		 (let* ((ci 1750)
+		 (let* ((ci 1700)
 			(cj 2200)
-			(stepi 250)
+			(stepi 110)
 			(stepj stepi))
 		   (trigger-all-cameras-seq-2d-scan :starti (- ci (* (floor nx 2) stepi))
 						    :startj (- cj (* (floor ny 2) stepj))
@@ -766,7 +766,7 @@
 	  (fftw::%fftwf_destroy_plan *plan512*))))))
 
 #+nil
-(display-mosaic-onecam :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 14 :h 14)
+(display-mosaic-onecam :pol 0 :cam 0 :x-offset 0 :y-offset 0 :w 30 :h 30)
 #+nil
 (acquire-2d)
 #+nil
