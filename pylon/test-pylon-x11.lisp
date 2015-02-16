@@ -293,7 +293,7 @@
 #+nil
 (/ (* (expt 70 2) 64 64 3 2 2 8) (* 1024 1024s0)) 
 
-(let* ((n (* 20 20))
+(let* ((n (* 14 14))
        (store (loop for i from 0 below n collect
 		   (loop for cam below 3 collect
 			(loop for pol below 2 collect
@@ -400,7 +400,7 @@
 		  :dst-y 0
 		  :scale .06s0 :offset -600s0 :fun #'abs)))
 #+nil
-(display-sum-reflex :w 10 :h 10 :cam 1)
+(display-sum-reflex :w 20 :h 20 :cam 1)
 
 #+nil
 (progn
@@ -415,7 +415,7 @@
 #+nil
 (display-mosaic :pol 0 :start (+ 20 20 (* 40 20)) :subtract-avg nil)
 #+nil
-(display-mosaic-onecam :pol 0 :x-offset 12 :y-offset 10 :w 40 :h 40)
+(display-mosaic-onecam :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 14 :h 14)
 #+nil
 (display-mosaic-pronounce-reflex :x-offset 7 :y-offset 10 :w 40 :h 40)
 
@@ -701,8 +701,8 @@
       (set 'i (+ i ~a)))
     (set 'i ~a)
     (set 'j (+ j ~a))
-    (delay ~a)
-    (dac i j)) 3)"
+    (dac i j)
+    (delay ~a)))"
 	   starti startj
 	   maxj maxi
 	   delay-ms
@@ -743,9 +743,9 @@
 	       (pylon:start-grabbing *cams*)
 	       (let ((th (start-acquisition-thread :pol 0 :n n)))
 		 (sleep .02)
-		 (let* ((ci 2000)
+		 (let* ((ci 2050)
 			(cj 2000)
-			(stepi 10)
+			(stepi 250)
 			(stepj stepi))
 		   (trigger-all-cameras-seq-2d-scan :starti (- ci (* (floor nx 2) stepi))
 						    :startj (- cj (* (floor ny 2) stepj))
@@ -753,6 +753,7 @@
 						    :maxj (+ cj (* (floor ny 2) stepj))
 						    :stepi stepi
 						    :stepj stepj
+						    :line-delay-ms 100
 						    :delay-ms 18))
 		 :name "arduino-trigger"
 		 
@@ -763,12 +764,6 @@
 	  (fftw::%fftwf_destroy_plan *plan64*)
 	  (fftw::%fftwf_destroy_plan *plan256*)
 	  (fftw::%fftwf_destroy_plan *plan512*))))))
-
-(let* ((nx 10)
-       (ci 2000)
-       (stepi 10)
-       (l (loop for i from (- ci (* (floor nx 2) stepi))  below (+ ci (* (floor nx 2) stepi)) by stepi collect i))) ;; this is creating 10 values
-  (list l (length l)))
 
 #+nil
 (acquire-2d)
