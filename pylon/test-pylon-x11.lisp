@@ -375,7 +375,7 @@
 							(* w (min h (+ y y-offset))))))))
     (destructuring-bind (hh ww) (array-dimensions z)
       (let ((ma (abs2 (aref z 0 0)))
-	    (pos nil))
+	    (pos (list 0 0)))
        (loop for i below ww do
 	    (loop for j below hh do
 		 (let ((v (abs2 (aref z j i))))
@@ -915,9 +915,9 @@
 #+nil
 (progn
   (pure-x11::clear-area)
-  (loop for i below 32 collect
-       (loop for j below 32 by 4 collect
-	    (destructuring-bind (y x) (get-global-maximum-position :x i :y j :cam 1 :ft 0 :pol 0 :x-offset 0
+  (loop for i below 32 by 1 collect
+       (loop for j below 32 by 2 collect
+	    (destructuring-bind (y x) (get-global-maximum-position :x i :y j :cam 1 :ft 0 :pol 1 :x-offset 0
 								   :y-offset 0)
 	      (setf x (+ 20 (* 10 x)))
 	      (setf y (+ 20 (* 10 y)))
