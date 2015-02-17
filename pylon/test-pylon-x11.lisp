@@ -766,32 +766,41 @@
 				     :flag fftw::+measure+))
 	    (*plan512* (fftw::rplanf *buf-s* :out *buf-cs* :w 512 :h 512 
 				     :flag fftw::+measure+)))
-	(unwind-protect 
-	     (progn
-	       (defparameter *log* nil)
-	       (arduino-trigger t)
+	(macrolet ((do-trigger ()
+		     `(let* ((ci 1700)
+			     (cj 2200)
+			     (stepi 100)
+			     (stepj stepi))
+			(trigger-all-cameras-seq-2d-scan :starti (- ci (* (floor nx 2) stepi))
+							 :startj (- cj (* (floor ny 2) stepj))
+							 :maxi (+ ci (* (floor nx 2) stepi))
+							 :maxj (+ cj (* (floor ny 2) stepj))
+							 :stepi stepi
+							 :stepj stepj
+							 :line-delay-ms 30
+							 :delay-ms 18))))
+	 (unwind-protect 
+	      (progn
+		(defparameter *log* nil)
+		(arduino-trigger t)
 	       
-	       (reset-camera-timers *cams* 3)
-	       (pylon:start-grabbing *cams*)
-	       (let ((th (start-acquisition-thread :pol 0 :n n :x11-display-p nil)))
-		 (sleep .02)
-		 (let* ((ci 1700)
-			(cj 2200)
-			(stepi 100)
-			(stepj stepi))
-		   (trigger-all-cameras-seq-2d-scan :starti (- ci (* (floor nx 2) stepi))
-						    :startj (- cj (* (floor ny 2) stepj))
-						    :maxi (+ ci (* (floor nx 2) stepi))
-						    :maxj (+ cj (* (floor ny 2) stepj))
-						    :stepi stepi
-						    :stepj stepj
-						    :line-delay-ms 30
-						    :delay-ms 18))
-		 :name "arduino-trigger"
-		 
-		 (sb-thread:join-thread th)))
-	  (pylon:stop-grabbing *cams*))
-
+		(reset-camera-timers *cams* 3)
+		(pylon:start-grabbing *cams*)
+		(let ((th (start-acquisition-thread :pol 0 :n n :x11-display-p nil)))
+		  (sleep .02)
+		  (do-trigger)
+		  (sb-thread:join-thread th)))
+	   (pylon:stop-grabbing *cams*))
+	 (trigger-flipmount-once)
+	 (unwind-protect 
+	      (progn
+		(reset-camera-timers *cams* 3)
+		(pylon:start-grabbing *cams*)
+		(let ((th (start-acquisition-thread :pol 1 :n n :x11-display-p nil)))
+		  (sleep .02)
+		  (do-trigger)
+		  (sb-thread:join-thread th)))
+	   (pylon:stop-grabbing *cams*)))
 	(progn 
 	  (fftw::%fftwf_destroy_plan *plan64*)
 	  (fftw::%fftwf_destroy_plan *plan256*)
@@ -799,29 +808,553 @@
 
 
 #+nil
-(display-mosaic-onecam :ft 0 :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 32 :h 32 :scale 100s0)
+(display-mosaic-onecam :ft 0 :pol 1 :cam 1
+		       :x-offset 0 :y-offset 0 :w 32 :h 32
+		       :scale 80s0 :offset (* 1 -7.0s0))
 #+nil
-(display-mosaic-onecam :ft 1 :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 16 :h 16 :scale 1s0)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(display-mosaic-onecam :ft 1 :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 32 :h 32 :scale 100s0)
 #+nil
 (display-mosaic-onecam-swap :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 16 :h 16)
 #+nil
 (acquire-2d)
-#+nil
-(trigger-all-cameras-seq-2d-scan)
-#+nil
-(trigger-all-cameras-seq 200)
-#+nil
-(let* ((n (get-stored-array-length))
-       (nx (sqrt n))
-       (ny (sqrt n))
-       (ci 2000)
-       (cj 2000)
-       (stepi 10)
-       (stepj stepi))
-  (trigger-all-cameras-seq-2d-scan :starti (- ci (* (floor nx 2) stepi))
-				   :startj (- cj (* (floor ny 2) stepj))
-				   :maxi (+ ci (* (floor nx 2) stepi))
-				   :maxj (+ cj (* (floor ny 2) stepj))
-						    :stepi stepi
-						    :stepj stepj
-						    :delay-ms 18))
+
