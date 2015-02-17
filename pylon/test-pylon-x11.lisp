@@ -384,6 +384,50 @@
 			   pos (list j i))))))
        pos))))
 
+(defun get-local-maximum-positions
+    (&key (x 0) (y 0) (ft 0) (pol 0) (cam 1)
+       (w (floor (sqrt (get-stored-array-length)))) (h w)
+       (x-offset 0) (y-offset 0))
+  (let ((z (get-stored-array ft pol cam (min (* w h) (+ (min w (+ x x-offset)) 
+							(* w (min h (+ y y-offset))))))))
+    (destructuring-bind (hh ww) (array-dimensions z)
+      (let ((pos nil))
+	(loop for i from 1 below (1- ww) do
+	     (loop for j from 1 below (1- hh) do
+		  (let ((v (abs2 (aref z j i))))
+		    (when (and (< (abs2 (aref z (1+ j) (1+ i))) v)
+			       (< (abs2 (aref z (1+ j) 0)) v)
+			       (< (abs2 (aref z (1+ j) (1- i))) v)
+			       (< (abs2 (aref z (1- j) (1+ i))) v)
+			       (< (abs2 (aref z (1- j) i)) v)
+			       (< (abs2 (aref z (1- j) (1- i))) v)
+			       (< (abs2 (aref z j (1+ i))) v)
+			       (< (abs2 (aref z j (1- i))) v))
+		      (push (list v j i) pos)))))
+	(sort pos #'> :key #'first)))))
+
+
+#+nil
+(first (get-local-maximum-positions :x 5 :y 5))
+#+nil
+(defun get-reflex-position (&key (x 0) (y 0) (ft 0)  (cam 1)
+			      (w (floor (sqrt (get-stored-array-length)))) (h w)
+			      (x-offset 0) (y-offset 0))
+  (let ((z0 (get-stored-array ft 0 cam (min (* w h) (+ (min w (+ x x-offset)) 
+						       (* w (min h (+ y y-offset)))))))
+	(z1 (get-stored-array ft 1 cam (min (* w h) (+ (min w (+ x x-offset)) 
+							(* w (min h (+ y y-offset))))))))
+    (destructuring-bind (hh ww) (array-dimensions z)
+      (let ((ma (abs2 (aref z 0 0)))
+	    (pos nil))
+       (loop for i below ww do
+	    (loop for j below hh do
+		 (let ((v (abs2 (aref z j i))))
+		   (when (< ma v)
+		     (setf ma v
+			   pos (list j i))))))
+       pos))))
+
 #+nil
 (loop for i below 32 collect
      (loop for j below 32 collect
@@ -404,13 +448,15 @@
   (when mark-global-maxima-p
    (loop for i below w do
 	(loop for j below h do
-	     (destructuring-bind (y x) (get-global-maximum-position :x i :y j)
-	       (incf x (* 65 i))
-	       (incf y (* 65 j))
-	       (draw-window (max 0 x) (max 0 (- y 10)) x (max 0 (- y 3)))
-	       (draw-window (max 0 x) (+ y 10) x (+ y 3))
-	       (draw-window (max 0 (- x 10)) y (max 0 (- x 3)) y)
-	       (draw-window (max 0 (+ x 10)) y (+ x 3) y))))))
+	     (let ((ma (get-local-maximum-positions :pol pol :ft ft :x i :y j :cam cam)))
+	      (dolist (pos (subseq ma  0 (min 8 (length ma))))
+		(destructuring-bind (val y x) pos ;(get-global-maximum-position :x i :y j)
+		  (incf x (* 65 i))
+		  (incf y (* 65 j))
+		  (draw-window (max 0 x) (max 0 (- y 10)) x (max 0 (- y 3)))
+		  (draw-window (max 0 x) (+ y 10) x (+ y 3))
+		  (draw-window (max 0 (- x 10)) y (max 0 (- x 3)) y)
+		  (draw-window (max 0 (+ x 10)) y (+ x 3) y))))))))
 #+nil
 (display-mosaic-onecam-swap :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 14 :h 14)
 (defun display-mosaic-onecam-swap (&key (w 16) (h 16) (x-offset 0) (y-offset 0) (cam 1) (pol 0))
@@ -847,7 +893,7 @@
 #+nil
 (progn
   (pure-x11::clear-area)
- (display-mosaic-onecam :ft 0 :pol 0 :cam 1
+ (display-mosaic-onecam :ft 0 :pol 1 :cam 1
 			:x-offset 0 :y-offset 0 :w 32 :h 32
 			:scale 10s0 :offset (* 0 -6.0s0)
 			:mark-global-maxima-p t))
