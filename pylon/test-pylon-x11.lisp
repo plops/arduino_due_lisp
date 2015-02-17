@@ -915,6 +915,22 @@
 #+nil
 (progn
   (pure-x11::clear-area)
+  (loop for i below 32 collect
+       (loop for j below 32 by 4 collect
+	    (destructuring-bind (y x) (get-global-maximum-position :x i :y j :cam 1 :ft 0 :pol 0 :x-offset 0
+								   :y-offset 0)
+	      (setf x (+ 20 (* 10 x)))
+	      (setf y (+ 20 (* 10 y)))
+	      (let ((q 2)
+		    (p 0))
+		(draw-window (max 0 x) (max 0 (- y q)) x (max 0 (- y p)))
+		(draw-window (max 0 x) (+ y q) x (+ y p))
+		(draw-window (max 0 (- x q)) y (max 0 (- x p)) y)
+		(draw-window (max 0 (+ x q)) y (+ x p) y))))))
+
+#+nil
+(progn
+  (pure-x11::clear-area)
  (display-mosaic-onecam :ft 0 :pol 0 :cam 1
 			:x-offset 0 :y-offset 12 :w 32 :h 32
 			:scale 10s0 :offset (* 0 -6.0s0)
