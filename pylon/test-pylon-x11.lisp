@@ -375,13 +375,13 @@
 							(* w (min h (+ y y-offset))))))))
     (destructuring-bind (hh ww) (array-dimensions z)
       (let ((ma (abs2 (aref z 0 0)))
-	    (pos (list 0 0)))
+	    (pos (list 0s0 0 0)))
        (loop for i below ww do
 	    (loop for j below hh do
 		 (let ((v (abs2 (aref z j i))))
 		   (when (< ma v)
 		     (setf ma v
-			   pos (list j i))))))
+			   pos (list v j i))))))
        pos))))
 
 (defun get-local-maximum-positions
@@ -471,7 +471,7 @@
 	(loop for j below h do
 	     (progn ;let ((ma (get-local-maximum-positions :pol pol :ft ft :x i :y j :cam cam)))
 	      (progn ;dolist (pos (subseq ma  0 (min 2 (length ma))))
-		(destructuring-bind (y x) (get-global-maximum-position :x i :y j :cam cam :ft ft :pol pol :x-offset x-offset
+		(destructuring-bind (v y x) (get-global-maximum-position :x i :y j :cam cam :ft ft :pol pol :x-offset x-offset
 								       :y-offset y-offset :w w :h h)
 		  (incf x (* 65 i))
 		  (incf y (* 65 j))
@@ -915,25 +915,36 @@
 #+nil
 (progn
   (pure-x11::clear-area)
-  (loop for i below 32 by 1 collect
-       (loop for j below 32 by 2 collect
-	    (destructuring-bind (y x) (get-global-maximum-position :x i :y j :cam 1 :ft 0 :pol 1 :x-offset 0
+  (loop for i below 32 by 1 do 
+       (loop for j below 32 by 1 do
+	    (destructuring-bind (v y x) (get-global-maximum-position :x i :y j :cam 1 :ft 0 :pol 0 :x-offset 0
 								   :y-offset 0)
 	      (setf x (+ 20 (* 10 x)))
 	      (setf y (+ 20 (* 10 y)))
-	      (let ((q 2)
-		    (p 0))
-		(draw-window (max 0 x) (max 0 (- y q)) x (max 0 (- y p)))
-		(draw-window (max 0 x) (+ y q) x (+ y p))
-		(draw-window (max 0 (- x q)) y (max 0 (- x p)) y)
-		(draw-window (max 0 (+ x q)) y (+ x p) y))))))
+	      (when (< (expt 7.2 2) v)
+	       (let ((q 2)
+		     (p 0))
+		 (draw-window (max 0 x) (max 0 (- y q)) x (max 0 (- y p)))
+		 (draw-window (max 0 x) (+ y q) x (+ y p))
+		 (draw-window (max 0 (- x q)) y (max 0 (- x p)) y)
+		 (draw-window (max 0 (+ x q)) y (+ x p) y)))))))
+
+#+nil
+(let ((res nil))
+ (loop for i below 32 collect
+      (loop for j below 32 collect
+	   (push (first (get-global-maximum-position :x i :y j :cam 1 :ft 0 :pol 0 :x-offset 0
+								   :y-offset 0))
+		 res)))
+ (loop for e in (sort res #'>) and i from 0 do
+      (format t "~a ~a~%" i e))) ;; values from 5000 to 7
 
 #+nil
 (progn
   (pure-x11::clear-area)
  (display-mosaic-onecam :ft 0 :pol 0 :cam 1
-			:x-offset 0 :y-offset 12 :w 32 :h 32
-			:scale 10s0 :offset (* 0 -6.0s0)
+			:x-offset 0 :y-offset 20 :w 32 :h 32
+			:scale 100s0 :offset (* 0 -6.0s0)
 			:mark-global-maxima-p t))
 #+nil
 (display-mosaic-onecam :ft 1 :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 32 :h 32 :scale 100s0)
