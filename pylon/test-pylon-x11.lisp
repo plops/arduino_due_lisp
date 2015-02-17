@@ -469,9 +469,10 @@
   (when mark-global-maxima-p
    (loop for i below w do
 	(loop for j below h do
-	     (let ((ma (get-local-maximum-positions :pol pol :ft ft :x i :y j :cam cam)))
-	      (dolist (pos (subseq ma  0 (min 8 (length ma))))
-		(destructuring-bind (val y x) pos ;(get-global-maximum-position :x i :y j)
+	     (progn ;let ((ma (get-local-maximum-positions :pol pol :ft ft :x i :y j :cam cam)))
+	      (progn ;dolist (pos (subseq ma  0 (min 2 (length ma))))
+		(destructuring-bind (y x) (get-global-maximum-position :x i :y j :cam cam :ft ft :pol pol :x-offset x-offset
+								       :y-offset y-offset :w w :h h)
 		  (incf x (* 65 i))
 		  (incf y (* 65 j))
 		  (draw-window (max 0 x) (max 0 (- y 10)) x (max 0 (- y 3)))
@@ -914,8 +915,8 @@
 #+nil
 (progn
   (pure-x11::clear-area)
- (display-mosaic-onecam :ft 0 :pol 1 :cam 1
-			:x-offset 0 :y-offset 0 :w 32 :h 32
+ (display-mosaic-onecam :ft 0 :pol 0 :cam 1
+			:x-offset 0 :y-offset 12 :w 32 :h 32
 			:scale 10s0 :offset (* 0 -6.0s0)
 			:mark-global-maxima-p t))
 #+nil
