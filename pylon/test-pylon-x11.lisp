@@ -369,8 +369,8 @@
   (realpart (* z (conjugate z))))
 
 (defun get-global-maximum-position (&key (x 0) (y 0) (ft 0) (pol 0) (cam 1)
-			     (w (floor (sqrt (get-stored-array-length)))) (h w)
-			     (x-offset 0) (y-offset 0))
+				      (w (floor (sqrt (get-stored-array-length)))) (h w)
+				      (x-offset 0) (y-offset 0))
   (let ((z (get-stored-array ft pol cam (min (* w h) (+ (min w (+ x x-offset)) 
 							(* w (min h (+ y y-offset))))))))
     (destructuring-bind (hh ww) (array-dimensions z)
@@ -390,7 +390,7 @@
 	  (get-global-maximum-position :x i :y j)))
 
 
-(defun display-mosaic-onecam (&key (ft 0) (w 16) (h 16) (x-offset 0) (y-offset 0) (cam 1) (pol 0) (scale 100s0) (offset 0s0))
+(defun display-mosaic-onecam (&key (ft 0) (w (floor (sqrt (get-stored-array-length)))) (h w) (x-offset 0) (y-offset 0) (cam 1) (pol 0) (scale 100s0) (offset 0s0) (mark-global-maxima-p t))
   (loop for i from 0 below w do
        (loop for j from 0 below h do
 	    (let ((z (get-stored-array ft pol cam (min (* w h) (+ (min w (+ i x-offset)) 
@@ -400,7 +400,15 @@
 			 :w 64 :h 64 
 			 :dst-x (* 65 i)
 			 :dst-y (* 65 j)
-			 :scale scale :offset offset :fun #'abs)))))
+			 :scale scale :offset offset :fun #'abs))))
+  (when mark-global-maxima-p
+   (loop for i below w do
+	(loop for j below h do
+	     (destructuring-bind (y x) (get-global-maximum-position :x i :y j)
+	       (incf x (* 65 i))
+	       (incf y (* 65 j))
+	       (draw-window (max 0 x) (max 0 (- y 10)) x (+ y 10))
+	       (draw-window (max 0 (- x 10)) y (+ x 10) y))))))
 #+nil
 (display-mosaic-onecam-swap :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 14 :h 14)
 (defun display-mosaic-onecam-swap (&key (w 16) (h 16) (x-offset 0) (y-offset 0) (cam 1) (pol 0))
@@ -835,9 +843,12 @@
 	  (fftw::%fftwf_destroy_plan *plan512*))))))
 
 #+nil
-(display-mosaic-onecam :ft 1 :pol 1 :cam 1
-		       :x-offset 0 :y-offset 0 :w 32 :h 32
-		       :scale 1800s0 :offset (* 0 -2.0s0))
+(progn
+  (pure-x11::clear-area)
+ (display-mosaic-onecam :ft 0 :pol 1 :cam 1
+			:x-offset 0 :y-offset 0 :w 32 :h 32
+			:scale 10s0 :offset (* 0 -6.0s0)
+			:mark-global-maxima-p t))
 #+nil
 (display-mosaic-onecam :ft 1 :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 32 :h 32 :scale 100s0)
 #+nil
