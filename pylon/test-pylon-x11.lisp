@@ -388,23 +388,44 @@
     (&key (x 0) (y 0) (ft 0) (pol 0) (cam 1)
        (w (floor (sqrt (get-stored-array-length)))) (h w)
        (x-offset 0) (y-offset 0))
-  (let ((z (get-stored-array ft pol cam (min (* w h) (+ (min w (+ x x-offset)) 
-							(* w (min h (+ y y-offset))))))))
-    (destructuring-bind (hh ww) (array-dimensions z)
-      (let ((pos nil))
-	(loop for i from 1 below (1- ww) do
-	     (loop for j from 1 below (1- hh) do
-		  (let ((v (abs2 (aref z j i))))
-		    (when (and (< (abs2 (aref z (1+ j) (1+ i))) v)
-			       (< (abs2 (aref z (1+ j) 0)) v)
-			       (< (abs2 (aref z (1+ j) (1- i))) v)
-			       (< (abs2 (aref z (1- j) (1+ i))) v)
-			       (< (abs2 (aref z (1- j) i)) v)
-			       (< (abs2 (aref z (1- j) (1- i))) v)
-			       (< (abs2 (aref z j (1+ i))) v)
-			       (< (abs2 (aref z j (1- i))) v))
-		      (push (list v j i) pos)))))
-	(sort pos #'> :key #'first)))))
+  ;; neighbors
+  ;; a b c
+  ;; d e f
+  ;; g h i
+  (macrolet ((z (yo xo)
+	       `(get-stored-array ft pol cam (min (* w h) (+ (min w (+ x ,xo x-offset)) 
+							  (* w (min h (+ y ,yo y-offset))))))))
+   (let ((ze (z 0 0))
+	 (za (z -1 -1))
+	 (zb (z -1 0))
+	 (zc (z -1 1))
+	 (zd (z 0 -1))
+	 (zf (z 0 1))
+	 (zg (z 1 -1))
+	 (zh (z 1 0))
+	 (zi (z 1 1)))
+     (destructuring-bind (hh ww) (array-dimensions ze)
+       (let ((pos nil))
+	 (loop for i from 1 below (1- ww) do
+	      (loop for j from 1 below (1- hh) do
+		   (let ((v (abs2 (aref ze j i))))
+		     (macrolet ((local-max-p (z)
+				  `(and (< (abs2 (aref ,z (1+ j) (1+ i))) v) ;; i
+					(< (abs2 (aref ,z (1+ j) 0)) v) ;; h
+					(< (abs2 (aref ,z (1+ j) (1- i))) v) ;; g
+					(< (abs2 (aref ,z (1- j) (1+ i))) v) ;; c 
+					(< (abs2 (aref ,z (1- j) i)) v) ;; b 
+					(< (abs2 (aref ,z (1- j) (1- i))) v) ;; a
+					(< (abs2 (aref ,z j (1+ i))) v) ;; f
+					(< (abs2 (aref ,z j (1- i))) v) ;; d
+					)))
+		       (when (and (local-max-p ze)
+				  (local-max-p zb)
+				  (local-max-p zh)
+				  (local-max-p zf)
+				  (local-max-p zd))
+			(push (list v j i) pos))))))
+	 (sort pos #'> :key #'first))))))
 
 
 #+nil
