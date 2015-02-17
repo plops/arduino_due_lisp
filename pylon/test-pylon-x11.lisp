@@ -930,14 +930,18 @@
 		 (draw-window (max 0 (+ x q)) y (+ x p) y)))))))
 
 #+nil
-(let ((res nil))
- (loop for i below 32 collect
-      (loop for j below 32 collect
-	   (push (first (get-global-maximum-position :x i :y j :cam 1 :ft 0 :pol 0 :x-offset 0
-								   :y-offset 0))
-		 res)))
- (loop for e in (sort res #'>) and i from 0 do
-      (format t "~a ~a~%" i e))) ;; values from 5000 to 7
+(with-open-file (s "/dev/shm/o.dat" :direction :output :if-does-not-exist :create
+		   :if-exists :supersede)
+  (let ((res nil))
+    (loop for i below 32 collect
+	 (loop for j below 32 collect
+	      (push (first (get-global-maximum-position :x i :y j :cam 1 :ft 0 :pol 0 :x-offset 0
+							:y-offset 0))
+		    res)))
+    ;; values from 5000 to 7
+    ;; threshold seems to be at element 600 at around 20 or 30
+    (loop for e in (sort res #'>) and i from 0 do
+	 (format s "~a ~a~%" i e)))) 
 
 #+nil
 (progn
