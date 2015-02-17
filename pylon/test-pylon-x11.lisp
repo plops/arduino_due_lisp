@@ -407,8 +407,10 @@
 	     (destructuring-bind (y x) (get-global-maximum-position :x i :y j)
 	       (incf x (* 65 i))
 	       (incf y (* 65 j))
-	       (draw-window (max 0 x) (max 0 (- y 10)) x (+ y 10))
-	       (draw-window (max 0 (- x 10)) y (+ x 10) y))))))
+	       (draw-window (max 0 x) (max 0 (- y 10)) x (max 0 (- y 3)))
+	       (draw-window (max 0 x) (+ y 10) x (+ y 3))
+	       (draw-window (max 0 (- x 10)) y (max 0 (- x 3)) y)
+	       (draw-window (max 0 (+ x 10)) y (+ x 3) y))))))
 #+nil
 (display-mosaic-onecam-swap :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 14 :h 14)
 (defun display-mosaic-onecam-swap (&key (w 16) (h 16) (x-offset 0) (y-offset 0) (cam 1) (pol 0))
@@ -845,7 +847,7 @@
 #+nil
 (progn
   (pure-x11::clear-area)
- (display-mosaic-onecam :ft 0 :pol 1 :cam 1
+ (display-mosaic-onecam :ft 0 :pol 0 :cam 1
 			:x-offset 0 :y-offset 0 :w 32 :h 32
 			:scale 10s0 :offset (* 0 -6.0s0)
 			:mark-global-maxima-p t))
