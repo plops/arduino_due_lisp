@@ -7,12 +7,14 @@
 	  #p"/home/martin/arduino_due_lisp/pylon/"
 	  #p"/home/martin/arduino_due_lisp/image-processing/"
 	  #p"/home/martin/stage/cl-pure-x11/"
+	  #p"/home/martin/stage/cl-ics/"
 	  #p"/home/martin/stage/cl-cffi-fftw3/"
 	  #p"/home/martin/arduino_due_lisp/image-processing/"))
   (asdf:load-system "pylon")
   (asdf:load-system "arduino-serial-sbcl")
   (asdf:load-system "pure-x11")
   (asdf:load-system "fftw")
+  (asdf:load-system "ics")
   (asdf:load-system "image-processing")
   (require :sb-sprof))
 
@@ -361,7 +363,7 @@
 				:dst-y (+ (* 9 65) (* 65 cam))
 				:scale scal :offset off :fun #'imagpart)))))))))
 
-(defun abs2-sf (z)
+(defun abs2 (z)
   (declare (type (complex single-float) z)
 	   (inline )
 	   (optimize (speed 3) (safety 3) (debug 1))
@@ -455,7 +457,7 @@
 	  (get-global-maximum-position :x i :y j)))
 
 
-(defun display-mosaic-onecam (&key (ft 0) (w (floor (sqrt (get-stored-array-length)))) (h w) (x-offset 0) (y-offset 0) (cam 1) (pol 0) (scale 100s0) (offset 0s0) (mark-global-maxima-p t))
+(defun display-mosaic-onecam (&key (ft 0) (w (floor (sqrt (get-stored-array-length)))) (h w) (x-offset 0) (y-offset 0) (cam 1) (pol 0) (scale 100s0) (offset 0s0) (mark-global-maxima-p t) (global-threshold 0s0))
   (loop for i from 0 below w do
        (loop for j from 0 below h do
 	    (let ((z (get-stored-array ft pol cam (min (* w h) (+ (min w (+ i x-offset)) 
@@ -475,10 +477,10 @@
 								       :y-offset y-offset :w w :h h)
 		  (incf x (* 65 i))
 		  (incf y (* 65 j))
-		  (draw-window (max 0 x) (max 0 (- y 10)) x (max 0 (- y 3)))
-		  (draw-window (max 0 x) (+ y 10) x (+ y 3))
-		  (draw-window (max 0 (- x 10)) y (max 0 (- x 3)) y)
-		  (draw-window (max 0 (+ x 10)) y (+ x 3) y))))))))
+		  (when (< global-threshold v) (draw-window (max 0 x) (max 0 (- y 10)) x (max 0 (- y 3)))
+		   (draw-window (max 0 x) (+ y 10) x (+ y 3))
+		   (draw-window (max 0 (- x 10)) y (max 0 (- x 3)) y)
+		   (draw-window (max 0 (+ x 10)) y (+ x 3) y)))))))))
 #+nil
 (display-mosaic-onecam-swap :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 14 :h 14)
 (defun display-mosaic-onecam-swap (&key (w 16) (h 16) (x-offset 0) (y-offset 0) (cam 1) (pol 0))
@@ -915,19 +917,22 @@
 #+nil
 (progn
   (pure-x11::clear-area)
-  (loop for i below 32 by 1 do 
-       (loop for j below 32 by 1 do
-	    (destructuring-bind (v y x) (get-global-maximum-position :x i :y j :cam 1 :ft 0 :pol 0 :x-offset 0
-								   :y-offset 0)
-	      (setf x (+ 20 (* 10 x)))
-	      (setf y (+ 20 (* 10 y)))
-	      (when (< (expt 7.2 2) v)
-	       (let ((q 2)
-		     (p 0))
-		 (draw-window (max 0 x) (max 0 (- y q)) x (max 0 (- y p)))
-		 (draw-window (max 0 x) (+ y q) x (+ y p))
-		 (draw-window (max 0 (- x q)) y (max 0 (- x p)) y)
-		 (draw-window (max 0 (+ x q)) y (+ x p) y)))))))
+  (dotimes (pol 2)
+   (loop for i from  0 below 32 by 1 do 
+	(loop for j from 0 below 32 by 1 do
+	     (destructuring-bind (v y x) (get-global-maximum-position :x i :y j :cam 1 :ft 0 :pol pol :x-offset 0
+								      :y-offset 0)
+	       (setf x (+ 20 (* 10 x)))
+	       (setf y (+ 20 (* 10 y)))
+	       (when (< 140 v)
+		 (let ((q 2)
+		       (p 0))
+		   (draw-window (max 0 x) (max 0 (- y q)) x (max 0 (- y p)))
+		   (draw-window (max 0 x) (+ y q) x (+ y p))
+		   (draw-window (max 0 (- x q)) y (max 0 (- x p)) y)
+		   (draw-window (max 0 (+ x q)) y (+ x p) y))))))))
+
+
 
 #+nil
 (with-open-file (s "/dev/shm/o.dat" :direction :output :if-does-not-exist :create
@@ -946,14 +951,34 @@
 #+nil
 (progn
   (pure-x11::clear-area)
- (display-mosaic-onecam :ft 0 :pol 0 :cam 1
-			:x-offset 0 :y-offset 20 :w 32 :h 32
+ (display-mosaic-onecam :ft 0 :pol 1 :cam 1
+			:x-offset 0 :y-offset 0 :w 32 :h 32
 			:scale 100s0 :offset (* 0 -6.0s0)
-			:mark-global-maxima-p t))
+			:mark-global-maxima-p NIL :global-threshold 100s0))
 #+nil
 (display-mosaic-onecam :ft 1 :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 32 :h 32 :scale 100s0)
 #+nil
 (display-mosaic-onecam-swap :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 16 :h 16)
 #+nil
 (acquire-2d)
+#+nil
+(let ((a (make-array (list 64 64 2 3 64 64) :element-type '(complex single-float)
+		     )))
+  (ics:write-ics2 (format nil "/dev/shm/o.ics") a))
 
+#+nil
+(dotimes (pol 2)
+  (let ((a (make-array (list 32 32 3 64 64) :element-type '(complex single-float))))
+    (dotimes (j 32)
+      (dotimes (i 32)
+	(dotimes (cam 3)
+	  (let ((b (get-stored-array 0 pol cam (+ i (* 32 j)))))
+	    (dotimes (y 64)
+	      (dotimes (x 64)
+		(setf (aref a j i cam y x) (aref b y x))))))))
+    (ics:write-ics2 (format nil "/dev/shm/o-pol~1d.ics" pol) a)))
+
+
+
+#+nil
+(/ (* 64 64 64 64 2 3 2 4) (* 1024 1024s0))
