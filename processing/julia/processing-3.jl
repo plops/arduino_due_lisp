@@ -19,13 +19,22 @@ function read_ics(fn)
     pos = find_ics_raw_start(fn)
     f=open(fn)
     seek(f,pos)
-    a=read(f,Complex64,32,32,3,64,64)
+    a=read(f,Complex64,64,64,3,32,32)
     close(f)
     a
 end
 
 ics_file = "/home/martin/arduino_due_lisp/processing/julia/20150223/o-pol0.ics"
+ics_file2 = "/home/martin/arduino_due_lisp/processing/julia/20150223/o-pol0.ics"
 @time a = read_ics(ics_file);
+@time b = read_ics(ics_file2);
+
+size(a)
+
+c=cat(6,a,b);
+
+size(c)
+
 #ics_file = "/media/sdc1/dat/0805/orot9.ics"
 #ar = read_ics(ics_file)
 #ics_file = "/media/sdc1/dat/0805/o8.ics"
@@ -44,7 +53,10 @@ size(squeeze(abs2(a[16,16,1,:,:]),(1,2,3)))
 
 view5d(abs2(a[:,:,1,20,16]))
 
-view5d(squeeze(abs2(a[16,16,1,:,:]),(1,2,3)))
+squeeze(abs2(a[16,:,2:,:]),(1,3))
+
+
+view5d(squeeze(abs2(a[:,:,2,:,:]),(3)))
 
 view5d(squeeze(abs2(a[:,:,2,:,:]),[3]))
 
@@ -56,6 +68,10 @@ view5d(abs2(ifft(extract_martin(b,[512,512],[45,45],complex(0.0)))))
 
 
 extract_martin(squeeze(a[:,:,1,:,:],[3]),[128 128 47 37],[45 45 23 18],0.0im)
+
+ac=mean(map((x)->abs2(x),squeeze(c[:,:,2,:,:,:],3)),(3,4,5))
+
+view5d(ac)
 
 begin
 #    ap = squeeze(a[:,:,1,20,16],[3,4,5]);
