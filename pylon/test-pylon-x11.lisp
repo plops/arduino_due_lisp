@@ -300,7 +300,7 @@
 
 #+nil
 (/ (* (expt 70 2) 64 64 3 2 2 8) (* 1024 1024s0)) 
-(let* ((n (* 32 32))
+(let* ((n (* 54 54))
        (store (loop for i from 0 below n collect
 		   (loop for cam below 3 collect
 			(loop for pol below 2 collect
@@ -939,7 +939,7 @@ rectangular, for alpha=1 Hann window."
 	(macrolet ((do-trigger ()
 		     `(let* ((ci 1700)
 			     (cj 2200)
-			     (stepi 100)
+			     (stepi 10)
 			     (stepj stepi))
 			(trigger-all-cameras-seq-2d-scan :starti (- ci (* (floor nx 2) stepi))
 							 :startj (- cj (* (floor ny 2) stepj))
@@ -1034,13 +1034,14 @@ rectangular, for alpha=1 Hann window."
 (progn
   (pure-x11::clear-area)
  (display-mosaic-onecam :ft 0 :pol 1 :cam 1
-			:x-offset 0 :y-offset 0 :w 32 :h 32
+			:x-offset 20 :y-offset 20 :w 54 :h 54
 			:scale 100s0 :offset (* 0 -6.0s0)
 			:mark-global-maxima-p NIL :global-threshold 100s0))
 #+nil
 (display-mosaic-onecam :ft 1 :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 32 :h 32 :scale 100s0)
 #+nil
 (display-mosaic-onecam-swap :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 16 :h 16)
+
 #+nil
 (acquire-2d)
 #+nil
