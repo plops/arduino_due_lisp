@@ -300,11 +300,11 @@
 
 #+nil
 (/ (* (expt 70 2) 64 64 3 2 2 8) (* 1024 1024s0)) 
-(let* ((n (* 54 54))
+(let* ((n (* 120 120))
        (store (loop for i from 0 below n collect
 		   (loop for cam below 3 collect
 			(loop for pol below 2 collect
-			     (loop for ft below 2 collect 
+			     (loop for ft below 1 collect 
 				  (make-array (list 64 64) :element-type '(complex single-float)))))))
        (current-index 0))
   (defun get-stored-array (ft pol cam &optional (index current-index index-p))
@@ -633,7 +633,7 @@ rectangular, for alpha=1 Hann window."
 	(tukey-window2 :w w :h h :alpha-x alpha-x :alpha-y alpha-y))
   nil)
 
-#+nil
+
 (create-windows)
 
 (defun draw-frame (buf w h pol cam framenr x y &key (extract-w 64) (extract-h extract-w) (scale #.(/ 20s0 4095)) (offset (- 12000s0)) (update-display-p nil))
@@ -678,26 +678,25 @@ rectangular, for alpha=1 Hann window."
     (dotimes (i 64)
       (dotimes (j 64)
 	(setf (aref a j i) (* s (expt -1 (+ i j)) (aref *buf-cs64in* j i))))))
-
-  (fftw::%fftwf_execute *plan64*)
-  (let* ((a (get-stored-array 1 pol cam framenr)
-	   #+nil (elt *store* *store-index*))
-	 (pixels1 (expt (cond ((or (= 0 cam) (= 2 cam)) 256)
-			      ((= 1 cam) 512)
-			      (t (error "unexpected value for camera index: ~a." cam)))
-			1))
-	 (pixels2 (* 64))
-	 (s (/ 1s0 (* pixels1 pixels2))))
-    (declare (type (simple-array (complex single-float) 2) a *buf-cs64out*  *buf-cs64in*)
-	     (type fixnum pixels1 pixels2)
-	     (type single-float s))
-    #+nil (setf *store-index* (mod (1+ *store-index*)
-				   (length *store*)))
-    (dotimes (i 64)
-      (dotimes (j 64)
-	(setf (aref a j i) (* s (expt -1 (+ i j)) (aref *buf-cs64out* j i)))))
-    (when update-display-p 
-      (put-csf-image a :w 64 :h 64 :dst-x (cam-dst-x cam) :dst-y (- 512 64) :scale 1s0 :offset 0s0))))
+  #+nil
+  (progn
+    (fftw::%fftwf_execute *plan64*)
+    (let* ((a (get-stored-array 1 pol cam framenr)
+	     #+nil (elt *store* *store-index*))
+	   (pixels1 (expt (cond ((or (= 0 cam) (= 2 cam)) 256)
+				((= 1 cam) 512)
+				(t (error "unexpected value for camera index: ~a." cam)))
+			  1))
+	   (pixels2 (* 64))
+	   (s (/ 1s0 (* pixels1 pixels2))))
+      (declare (type (simple-array (complex single-float) 2) a *buf-cs64out*  *buf-cs64in*)
+	       (type fixnum pixels1 pixels2)
+	       (type single-float s))
+      (dotimes (i 64)
+	(dotimes (j 64)
+	  (setf (aref a j i) (* s (expt -1 (+ i j)) (aref *buf-cs64out* j i)))))
+      (when update-display-p 
+	(put-csf-image a :w 64 :h 64 :dst-x (cam-dst-x cam) :dst-y (- 512 64) :scale 1s0 :offset 0s0)))))
 
 
 
@@ -939,7 +938,7 @@ rectangular, for alpha=1 Hann window."
 	(macrolet ((do-trigger ()
 		     `(let* ((ci 1700)
 			     (cj 2200)
-			     (stepi 10)
+			     (stepi 18)
 			     (stepj stepi))
 			(trigger-all-cameras-seq-2d-scan :starti (- ci (* (floor nx 2) stepi))
 							 :startj (- cj (* (floor ny 2) stepj))
@@ -1033,8 +1032,8 @@ rectangular, for alpha=1 Hann window."
 #+nil
 (progn
   (pure-x11::clear-area)
- (display-mosaic-onecam :ft 0 :pol 1 :cam 0
-			:x-offset 20 :y-offset 20 :w 54 :h 54
+ (display-mosaic-onecam :ft 0 :pol 0 :cam 1
+			:x-offset 0 :y-offset 0 :w 80 :h 80
 			:scale 100s0 :offset (* 0 -6.0s0)
 			:mark-global-maxima-p NIL :global-threshold 100s0))
 #+nil
@@ -1050,16 +1049,18 @@ rectangular, for alpha=1 Hann window."
   (ics:write-ics2 (format nil "/dev/shm/o.ics") a))
 
 #+nil
-(dotimes (pol 2)
-  (let ((a (make-array (list 54 54 3 64 64) :element-type '(complex single-float))))
-    (dotimes (j 54)
-      (dotimes (i 54)
-	(dotimes (cam 3)
-	  (let ((b (get-stored-array 0 pol cam (+ i (* 54 j)))))
-	    (dotimes (y 64)
-	      (dotimes (x 64)
-		(setf (aref a j i cam y x) (aref b y x))))))))
-    (ics:write-ics2 (format nil "/dev/shm/o-pol~1d.ics" pol) a)))
+(let ((mw 120)
+      (mh 120))
+ (dotimes (pol 2)
+   (let ((a (make-array (list mh mw 3 64 64) :element-type '(complex single-float))))
+     (dotimes (j mh)
+       (dotimes (i mw)
+	 (dotimes (cam 3)
+	   (let ((b (get-stored-array 0 pol cam (+ i (* mw j)))))
+	     (dotimes (y 64)
+	       (dotimes (x 64)
+		 (setf (aref a j i cam y x) (aref b y x))))))))
+     (ics:write-ics2 (format nil "/dev/shm/o-pol~1d.ics" pol) a))))
 
 
 
