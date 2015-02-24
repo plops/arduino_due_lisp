@@ -1033,7 +1033,7 @@ rectangular, for alpha=1 Hann window."
 #+nil
 (progn
   (pure-x11::clear-area)
- (display-mosaic-onecam :ft 0 :pol 1 :cam 1
+ (display-mosaic-onecam :ft 0 :pol 1 :cam 0
 			:x-offset 20 :y-offset 20 :w 54 :h 54
 			:scale 100s0 :offset (* 0 -6.0s0)
 			:mark-global-maxima-p NIL :global-threshold 100s0))
@@ -1051,11 +1051,11 @@ rectangular, for alpha=1 Hann window."
 
 #+nil
 (dotimes (pol 2)
-  (let ((a (make-array (list 32 32 3 64 64) :element-type '(complex single-float))))
-    (dotimes (j 32)
-      (dotimes (i 32)
+  (let ((a (make-array (list 54 54 3 64 64) :element-type '(complex single-float))))
+    (dotimes (j 54)
+      (dotimes (i 54)
 	(dotimes (cam 3)
-	  (let ((b (get-stored-array 0 pol cam (+ i (* 32 j)))))
+	  (let ((b (get-stored-array 0 pol cam (+ i (* 54 j)))))
 	    (dotimes (y 64)
 	      (dotimes (x 64)
 		(setf (aref a j i cam y x) (aref b y x))))))))
