@@ -124,7 +124,7 @@
 (arduino-serial-sbcl:talk-arduino
    ( second *ard*) 
    (first *ard*)
-   "(dac 1600 2120)")
+   "(dac 1500 2120)")
 #+nil
 (trigger-all-cameras-once)
 (defun arduino-dac (x y)
@@ -581,11 +581,72 @@
 
 #+nil
 (draw-window 0 0 100 200)
+
+
+(defun tukey-window (nn &key (alpha .9s0))
+  "The Tukey window,[8][39] also known as the tapered cosine window,
+can be regarded as a cosine lobe of width alpha N/2 that is convolved
+with a rectangular window of width (1 - alpha/2)N. For alpha=0
+rectangular, for alpha=1 Hann window."
+  (declare (type (unsigned-byte 32) nn)
+	   (type single-float alpha)
+	   (values (simple-array single-float 1) &optional))
+  (let ((w (make-array nn :element-type 'single-float :initial-element 0s0))
+	(n-1 (- nn 1)))
+    (dotimes (n nn)
+      (setf (aref w n)
+	    (cond ((<= 0s0 n (* alpha .5s0 n-1))
+		   (* .5s0 (+ 1s0 (cos (* (coerce pi 'single-float) (- (/ (* 2s0 n)
+						     (* alpha n-1)) 1s0))))))
+		  ((<= (* alpha .5s0 n-1) n (* n-1 (- 1s0 (* .5s0 alpha))))
+		   1.0s0)
+		  ((<= (* n-1 (- 1 (* .5s0 alpha))) n n-1)
+		   (* .5s0 (+ 1s0 (cos (* (coerce pi 'single-float) (+ (/ (* 2s0 n)
+						     (* alpha n-1))
+						  (/ -2.0s0 alpha)
+						  1s0))))))
+		  (t 0s0))))
+    w))
+#+nil
+(tukey-window 64)
+
+
+
+
+(defun tukey-window2 (&key (w 100) (h w) (alpha-x .2s0) (alpha-y alpha-x))
+  (declare (type (unsigned-byte 32) w h)
+	   (values (simple-array single-float 2) &optional))
+  (let ((b (make-array (list h w) :element-type 'single-float))
+	(wh (tukey-window h :alpha alpha-y))
+	(ww (tukey-window w :alpha alpha-x)))
+    (dotimes (j h)
+      (dotimes (i w)
+	(setf (aref b j i) (* (aref wh j)
+			      (aref ww i)))))
+    b))
+
+
+(defparameter *win* nil)
+(defun create-windows (&key (w 512) (h w) (alpha-x .2) (alpha-y alpha-x))
+  (setf *win*
+	(tukey-window2 :w w :h h :alpha-x alpha-x :alpha-y alpha-y))
+  nil)
+
+#+nil
+(create-windows)
+
 (defun draw-frame (buf w h pol cam framenr x y &key (extract-w 64) (extract-h extract-w) (scale #.(/ 20s0 4095)) (offset (- 12000s0)) (update-display-p nil))
   (declare (optimize (speed 3))
 	   (type fixnum w h pol cam framenr x y extract-w extract-h)
 	   (type single-float scale offset))
   (when update-display-p (put-sf-image buf w h :dst-x (cam-dst-x cam) ))
+  (when (= cam 1)
+    (let ()
+      (declare (type (simple-array single-float 2) *win* *buf-s*))
+      (dotimes (j 512)
+	(dotimes (i 512)
+	  (setf (aref *buf-s* j i) (* (aref *win* j i) (aref *buf-s* j i)))))))
+  
   (cond ((or (= 0 cam) (= 2 cam)) (fftw::%fftwf_execute *plan256*))
 	((= 1 cam) (fftw::%fftwf_execute *plan512*)))
   (let ((wa (floor extract-w 2))
@@ -598,10 +659,10 @@
 		     :y1 (+ y ha)
 		     :dst-x (cam-dst-x cam) :dst-y 512 
 		     :scale scale :offset offset))
-   (extract-csf* *buf-cs* *buf-cs64in* 
-		 :w (1+ (floor w 2)) :h h
-		 :x  (- x wa 1) :y (- y ha 1)
-		 :w-extract extract-w :h-extract extract-h))
+    (extract-csf* *buf-cs* *buf-cs64in* 
+		  :w (1+ (floor w 2)) :h h
+		  :x  (- x wa 1) :y (- y ha 1)
+		  :w-extract extract-w :h-extract extract-h))
 
   (let* ((a (get-stored-array 0 pol cam framenr))
 	 (pixels1 (expt (cond ((or (= 0 cam) (= 2 cam)) 256)
@@ -630,7 +691,7 @@
 	     (type fixnum pixels1 pixels2)
 	     (type single-float s))
     #+nil (setf *store-index* (mod (1+ *store-index*)
-			     (length *store*)))
+				   (length *store*)))
     (dotimes (i 64)
       (dotimes (j 64)
 	(setf (aref a j i) (* s (expt -1 (+ i j)) (aref *buf-cs64out* j i)))))
@@ -913,6 +974,26 @@
 	  (fftw::%fftwf_destroy_plan *plan64*)
 	  (fftw::%fftwf_destroy_plan *plan256*)
 	  (fftw::%fftwf_destroy_plan *plan512*))))))
+
+#+nil
+(let* ((n (get-stored-array-length))
+       (nx (floor (sqrt n) 4))
+       (ny (floor (sqrt n) 4))
+       (center-x 1825)
+       (center-y 2050)
+       (radius 1800)
+       (ci 1700)
+       (cj 2200)
+       (stepi 10)
+       (stepj stepi))
+  (trigger-all-cameras-seq-2d-scan :starti (- ci (* (floor nx 2) stepi))
+				   :startj (- cj (* (floor ny 2) stepj))
+				   :maxi (+ ci (* (floor nx 2) stepi))
+				   :maxj (+ cj (* (floor ny 2) stepj))
+				   :stepi stepi
+				   :stepj stepj
+				   :line-delay-ms 10
+				   :delay-ms 18))
 
 #+nil
 (progn
