@@ -110,11 +110,15 @@ bin13 = bin_1 .* bin_3
 
 binm13 = binm_1 .* binm_3
 
-reshape(bin13,64*64)
+reshape(c[:,:,1,:,:,1],64*64,120*120)[reshape(bin13,64*64),reshape(binm13,120,120)]
+
+c0=reshape(c[:,:,1,:,:,1],64*64,120*120)[reshape(bin13,64*64),reshape(binm13,120*120)]
 
 view5d((binm13)*1.0)
 
-# sum((bin_1 .* bin_3)*1.0) # 1921
+sum((bin13)*1.0) # 1921
+
+sum((binm13)*1.0) # 11498
 
 view5d(cat(3,bin_1,bin_3)*1.0)
 
