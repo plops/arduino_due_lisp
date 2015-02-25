@@ -19,7 +19,7 @@ function read_ics(fn)
     pos = find_ics_raw_start(fn)
     f=open(fn)
     seek(f,pos)
-    a=read(f,Complex64,64,64,3,80,80)
+    a=read(f,Complex64,64,64,3,120,120)
     close(f)
     a
 end
@@ -47,7 +47,9 @@ size(c)
 
 q= convert(Array{Int32,5},map((x)->div(abs2(x),1),a));
 
+d = Array(Complex{Float32},64*64*4,120*120)
 
+@time tinv=pinv(reshape(c[:,:,2,:,:,:],64*64,120*120*2))
 
 using View5D
 
@@ -60,7 +62,7 @@ squeeze(abs2(a[16,:,2:,:]),(1,3))
 
 view5d(squeeze(abs2(a[:,:,1,:,:]),(3)))
 
-view5d(squeeze(abs2(a[:,:,2,:,:]),[3]))
+view5d(squeeze(abs2(a[:,:,1,:,:]),[3]))
 
 view5d(abs2(fft(squeeze(a[:,:,1,20,16],[3,4,5]))))
 
@@ -71,15 +73,41 @@ view5d(abs2(ifft(extract_martin(b,[512,512],[45,45],complex(0.0)))))
 
 extract_martin(squeeze(a[:,:,1,:,:],[3]),[128 128 47 37],[45 45 23 18],0.0im)
 
-ac=mean(map((x)->abs2(x),squeeze(c[:,:,1,:,:,:],3)),(3,4,5))
+ac=mean(map((x)->abs2(x),squeeze(a[:,:,3,:,:],3)),(3,4,5))
 
+b=0
 
+delete(a)
 
 view5d(ac)
 
-view5d(squeeze(mean(map((x)->abs2(x),squeeze(c[:,:,2,:,:,:],3)),(1,2)),(1,2)))
+size(squeeze(a[:,:,2,:,:],3))
 
-view5d(squeeze(mean(map((x)->abs2(x),squeeze(c[:,:,2,:,:,:],3)),(1,6)),(1)))
+view5d(squeeze(mean(map((x)->abs2(x),squeeze(a[:,:,2,:,:],3)),(1,2)),(1,2)))
+
+view5d(squeeze(mean(map((x)->abs2(x),squeeze(a[:,:,2,:,:],3)),(3,4)),(3,4)))
+
+view5d(squeeze(mean(map((x)->abs2(x),squeeze(c[:,:,1,:,:,:],3)),(3,4,5))))
+
+view5d((mean(map((x)->abs2(x),squeeze(c[:,:,1,:,:,:],3)),(3,4,5))))
+
+avg_1=squeeze(mean(map((x)->abs2(x),squeeze(c[:,:,1,:,:,:],3)),(3,4,5)),(3,4,5));
+avg_3=squeeze(mean(map((x)->abs2(x),squeeze(c[:,:,3,:,:,:],3)),(3,4,5)),(3,4,5));
+
+view5d(hcat(avg_1,avg_3))
+
+bin_1 = (avg_1 .> quantile(reshape(avg_1,64*64),.5))
+bin_3 = (avg_3 .> quantile(reshape(avg_3,64*64),.5))
+
+
+
+view5d((bin_1 .* bin_3)*1.0)
+
+# sum((bin_1 .* bin_3)*1.0) # 1921
+
+view5d(cat(3,bin_1,bin_3)*1.0)
+
+view5d((avg_3 .> quantile(reshape(avg_3,64*64),.5))*1.0)
 
 begin
 #    ap = squeeze(a[:,:,1,20,16],[3,4,5]);
