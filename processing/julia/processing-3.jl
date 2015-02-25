@@ -94,14 +94,25 @@ view5d((mean(map((x)->abs2(x),squeeze(c[:,:,1,:,:,:],3)),(3,4,5))))
 avg_1=squeeze(mean(map((x)->abs2(x),squeeze(c[:,:,1,:,:,:],3)),(3,4,5)),(3,4,5));
 avg_3=squeeze(mean(map((x)->abs2(x),squeeze(c[:,:,3,:,:,:],3)),(3,4,5)),(3,4,5));
 
+avgm_1=squeeze(mean(map((x)->abs2(x),squeeze(c[:,:,1,:,:,:],3)),(1,2,5)),(1,2,5));
+avgm_3=squeeze(mean(map((x)->abs2(x),squeeze(c[:,:,3,:,:,:],3)),(1,2,5)),(1,2,5));
+
 view5d(hcat(avg_1,avg_3))
 
 bin_1 = (avg_1 .> quantile(reshape(avg_1,64*64),.5))
 bin_3 = (avg_3 .> quantile(reshape(avg_3,64*64),.5))
 
+binm_1 = (avgm_1 .> quantile(reshape(avgm_1,120*120),.2))
+binm_3 = (avgm_3 .> quantile(reshape(avgm_3,120*120),.2))
 
 
-view5d((bin_1 .* bin_3)*1.0)
+bin13 = bin_1 .* bin_3
+
+binm13 = binm_1 .* binm_3
+
+reshape(bin13,64*64)
+
+view5d((binm13)*1.0)
 
 # sum((bin_1 .* bin_3)*1.0) # 1921
 
