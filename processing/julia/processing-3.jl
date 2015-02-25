@@ -112,7 +112,10 @@ binm13 = binm_1 .* binm_3
 
 reshape(c[:,:,1,:,:,1],64*64,120*120)[reshape(bin13,64*64),reshape(binm13,120,120)]
 
-c0=reshape(c[:,:,1,:,:,1],64*64,120*120)[reshape(bin13,64*64),reshape(binm13,120*120)]
+c0=vcat(reshape(c[:,:,1,:,:,1],64*64,120*120)[reshape(bin13,64*64),reshape(binm13,120*120)],
+        reshape(c[:,:,1,:,:,2],64*64,120*120)[reshape(bin13,64*64),reshape(binm13,120*120)],
+        reshape(c[:,:,3,:,:,1],64*64,120*120)[reshape(bin13,64*64),reshape(binm13,120*120)],
+        reshape(c[:,:,3,:,:,2],64*64,120*120)[reshape(bin13,64*64),reshape(binm13,120*120)])
 
 view5d((binm13)*1.0)
 
