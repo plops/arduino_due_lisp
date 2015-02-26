@@ -112,10 +112,29 @@ binm13 = binm_1 .* binm_3
 
 reshape(c[:,:,1,:,:,1],64*64,120*120)[reshape(bin13,64*64),reshape(binm13,120,120)]
 
+hcat([1,2,3],[2,4,4])
+
+c1=vcat(reshape(a[:,:,1,:,:],64*64,120*120),
+        reshape(b[:,:,1,:,:],64*64,120*120),
+        reshape(a[:,:,3,:,:],64*64,120*120),
+        reshape(b[:,:,3,:,:],64*64,120*120))
+
+c2 = c1' * c1[:,12000]
+
+@time ic1=pinv(c1,70) # accroding to previous plot 70 should be a good minimal singular value bound
+
+@time c0=pinv(c1)' * c1
+
+view5d(squeeze(reshape(c0,120,120,120,120)[50,:,:,:],(1)))
+
 c0=vcat(reshape(c[:,:,1,:,:,1],64*64,120*120)[reshape(bin13,64*64),reshape(binm13,120*120)],
         reshape(c[:,:,1,:,:,2],64*64,120*120)[reshape(bin13,64*64),reshape(binm13,120*120)],
         reshape(c[:,:,3,:,:,1],64*64,120*120)[reshape(bin13,64*64),reshape(binm13,120*120)],
         reshape(c[:,:,3,:,:,2],64*64,120*120)[reshape(bin13,64*64),reshape(binm13,120*120)])
+
+@time tinv = pinv(c0)
+
+@time svdobj = svdfact(c0)
 
 view5d((binm13)*1.0)
 
