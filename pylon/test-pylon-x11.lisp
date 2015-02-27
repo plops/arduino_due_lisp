@@ -300,7 +300,7 @@
 
 #+nil
 (/ (* (expt 70 2) 64 64 3 2 2 8) (* 1024 1024s0)) 
-(let* ((n (* 120 120))
+(let* ((n (* 54 54))
        (store (loop for i from 0 below n collect
 		   (loop for cam below 3 collect
 			(loop for pol below 2 collect
@@ -868,17 +868,17 @@ rectangular, for alpha=1 Hann window."
 (defun trigger-all-cameras-seq-2d-scan ( &key 
 					   (starti (- 2000 500)) (startj (- 2000 500))
 					   (maxi (+ 2000 500)) (maxj (+ 2000 500))
-					   (stepi 50)
-					   (stepj 50)
-					   (delay-ms 18)
+					   (stepi/4 10)
+					   (stepj 10)
+					   (delay/4-ms 5)
 					   (line-delay-ms 100))
   (unless *trigger-outputs-initialized*
     (initialize-trigger-outputs))
-  (format t "scan ~a" (list (list starti maxi stepi)
+  (format t "scan ~a" (list (list starti maxi stepi/4)
 			  (list startj maxj stepj)
 			  'time (/ (+ (* (/ (- maxj startj) stepj) 
-					 (/ (- maxi starti) stepi)
-					 delay-ms)
+					 (/ (- maxi starti) (* 4 stepi/4))
+					 (* delay/4-ms))
 				      (* (/ (- maxj startj) stepj) line-delay-ms))
 				   1000s0))
 	  )
@@ -892,6 +892,9 @@ rectangular, for alpha=1 Hann window."
   (while (< j ~a)
     (while (< i ~a)
       (dac i j)
+      (set 'i (+ i ~a)) (delay ~a) (dac i j)
+      (set 'i (+ i ~a)) (delay ~a) (dac i j)
+      (set 'i (+ i ~a)) (delay ~a) (dac i j)
       (delay ~a)
       (digital-write 11 1)
       (digital-write 12 1) 
@@ -907,14 +910,19 @@ rectangular, for alpha=1 Hann window."
     (delay ~a)))"
 	   starti startj
 	   maxj maxi
-	   delay-ms
-	   stepi starti stepj
+	   stepi/4 delay/4-ms
+           stepi/4 delay/4-ms
+	   stepi/4 delay/4-ms
+	   delay/4-ms
+	   stepi/4
+	   starti
+	   stepj
 	   line-delay-ms)
    :time (+ .4s0 (/ (+ (* (/ (- maxj startj) stepj) 
-		   (/ (- maxi starti) stepi)
-		   delay-ms)
-		(* (/ (- maxj startj) stepj) line-delay-ms))
-	     1000s0))))
+					 (/ (- maxi starti) (* 4 stepi/4))
+					 (* delay/4-ms))
+				      (* (/ (- maxj startj) stepj) line-delay-ms))
+				   1000s0))))
 
 (defun acquire-2d ()
   (let* ((n (get-stored-array-length))
@@ -938,16 +946,16 @@ rectangular, for alpha=1 Hann window."
 	(macrolet ((do-trigger ()
 		     `(let* ((ci 1700)
 			     (cj 2200)
-			     (stepi 18)
-			     (stepj stepi))
-			(trigger-all-cameras-seq-2d-scan :starti (- ci (* (floor nx 2) stepi))
+			     (stepi/4 15)
+			     (stepj (* 4 stepi/4)))
+			(trigger-all-cameras-seq-2d-scan :starti (- ci (* (floor nx 2) (* 4 stepi/4)))
 							 :startj (- cj (* (floor ny 2) stepj))
-							 :maxi (+ ci (* (floor nx 2) stepi))
+							 :maxi (+ ci (* (floor nx 2) (* 4 stepi/4)))
 							 :maxj (+ cj (* (floor ny 2) stepj))
-							 :stepi stepi
+							 :stepi/4 stepi/4
 							 :stepj stepj
 							 :line-delay-ms 30
-							 :delay-ms 18))))
+							 :delay/4-ms 5))))
 	 (unwind-protect 
 	      (progn
 		(defparameter *log* nil)
@@ -1032,15 +1040,14 @@ rectangular, for alpha=1 Hann window."
 #+nil
 (progn
   (pure-x11::clear-area)
- (display-mosaic-onecam :ft 0 :pol 0 :cam 1
-			:x-offset 0 :y-offset 0 :w 80 :h 80
+ (display-mosaic-onecam :ft 0 :pol 0 :cam 2
+			:x-offset 0 :y-offset 34 :w 54 :h 54
 			:scale 100s0 :offset (* 0 -6.0s0)
 			:mark-global-maxima-p NIL :global-threshold 100s0))
 #+nil
 (display-mosaic-onecam :ft 1 :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 32 :h 32 :scale 100s0)
 #+nil
 (display-mosaic-onecam-swap :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 16 :h 16)
-
 #+nil
 (acquire-2d)
 #+nil
@@ -1049,8 +1056,9 @@ rectangular, for alpha=1 Hann window."
   (ics:write-ics2 (format nil "/dev/shm/o.ics") a))
 
 #+nil
-(let ((mw 120)
-      (mh 120))
+(let* ((n (get-stored-array-length))
+      (mw (floor (sqrt n)))
+      (mh (floor (sqrt n))))
  (dotimes (pol 2)
    (let ((a (make-array (list mh mw 3 64 64) :element-type '(complex single-float))))
      (dotimes (j mh)
