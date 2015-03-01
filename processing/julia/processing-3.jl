@@ -19,7 +19,7 @@ function read_ics(fn)
     pos = find_ics_raw_start(fn)
     f=open(fn)
     seek(f,pos)
-    a=read(f,Complex64,64,64,3,120,120)
+    a=read(f,Complex64,64,64,3,54,54)
     close(f)
     a
 end
@@ -83,9 +83,9 @@ view5d(ac)
 
 size(squeeze(a[:,:,2,:,:],3))
 
-view5d(squeeze(mean(map((x)->abs2(x),squeeze(a[:,:,2,:,:],3)),(1,2)),(1,2)))
+view5d(squeeze(mean(map((x)->abs2(x),squeeze(a[:,:,3,:,:],3)),(1,2)),(1,2)))
 
-view5d(squeeze(mean(map((x)->abs2(x),squeeze(a[:,:,2,:,:],3)),(3,4)),(3,4)))
+view5d(squeeze(mean(map((x)->abs2(x),squeeze(a[:,:,3,:,:],3)),(3,4)),(3,4)))
 
 view5d(squeeze(mean(map((x)->abs2(x),squeeze(c[:,:,1,:,:,:],3)),(3,4,5))))
 
@@ -97,18 +97,24 @@ avg_3=squeeze(mean(map((x)->abs2(x),squeeze(c[:,:,3,:,:,:],3)),(3,4,5)),(3,4,5))
 avgm_1=squeeze(mean(map((x)->abs2(x),squeeze(c[:,:,1,:,:,:],3)),(1,2,5)),(1,2,5));
 avgm_3=squeeze(mean(map((x)->abs2(x),squeeze(c[:,:,3,:,:,:],3)),(1,2,5)),(1,2,5));
 
+
 view5d(hcat(avg_1,avg_3))
+view5d(hcat(avgm_1,avgm_3))
 
 bin_1 = (avg_1 .> quantile(reshape(avg_1,64*64),.5))
 bin_3 = (avg_3 .> quantile(reshape(avg_3,64*64),.5))
 
-binm_1 = (avgm_1 .> quantile(reshape(avgm_1,120*120),.2))
-binm_3 = (avgm_3 .> quantile(reshape(avgm_3,120*120),.2))
+binm_1 = (avgm_1 .> quantile(reshape(avgm_1,54*54),.5))
+binm_3 = (avgm_3 .> quantile(reshape(avgm_3,54*54),.5))
 
 
 bin13 = bin_1 .* bin_3
 
 binm13 = binm_1 .* binm_3
+
+view5d(bin13*1.0)
+
+view5d(binm13*1.0)
 
 reshape(c[:,:,1,:,:,1],64*64,120*120)[reshape(bin13,64*64),reshape(binm13,120,120)]
 
