@@ -125,21 +125,29 @@ view5d(abs2(conv2(pat,imag)))
 
 
 pat = squeeze(reshape(squeeze(c[:,:,2,:,:,:],3),64,64,54*54*2)[:,:,4262],3)
-con = Array(Complex64,127,127,300);
-for i=1:300
-    con[:,:,i]=conv2(pat,squeeze(reshape(squeeze(c[:,:,2,:,:,:],3),64,64,54*54*2)[:,:,4264+i-150],3))
+con = Array(Complex64,127,127,30);
+for i=1:30
+    con[:,:,i]=conv2(pat,squeeze(reshape(squeeze(c[:,:,2,:,:,:],3),64,64,54*54*2)[:,:,4268-i],3))
 end
 
-view5d(abs2(con[:,:,200]))
 
-{x for x=1:10}'
 
-n=indmax(abs2(con[:,:,200]))
+view5d(abs(con))
 
-Complex64[x+y for x=1:3,y=1:3]
+findmax(reshape(abs(con),127*127*30))
 
-q=div(n,64)/64*repmat({x for x=1:64}',64,1).+mod(n,64)/64*repmat({x for x=1:64}',64,1)'
-shif=reshape(map(exp,im*2*pi*reshape(q,64*64)),64,64)
+con2 = Array(Complex64,127,127,30);
+val = Array(Float32,64,64,30);
+for i=1:30
+    n=indmax(abs2(con[:,:,i]))
+    con2[div(n,128),mod(n,127),i]=95;
+    shif=Complex64[exp(im*pi*(div(n,127)*x/127+mod(n,127)*y/127)) for x=1:64,y=1:64]
+    val[:,:,i]=abs(ifft(ifftshift(shif.*fftshift(fft(pat)))))
+end
+
+view5d(abs(cat(1,con,con2)))
+
+abs(cat(3,con,con2))
 
 view5d(abs(fft(shif)))
 
