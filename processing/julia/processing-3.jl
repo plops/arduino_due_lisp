@@ -102,16 +102,54 @@ view5d(abs2(reshape(squeeze(c[:,:,2,:,:,:],3),64,64,54*54*2)))
 
 pat = squeeze(abs2(reshape(squeeze(c[:,:,2,:,:,:],3),64,64,54*54*2)[:,:,4262]),3);
 
-im = squeeze(abs2(reshape(squeeze(c[:,:,2,:,:,:],3),64,64,54*54*2)[:,:,4264]),3;)
+imag = squeeze(abs2(reshape(squeeze(c[:,:,2,:,:,:],3),64,64,54*54*2)[:,:,4264]),3;)
 
 # 4264:4300
 
-con = Array(Float32,127,127,1000);
-for i=1:100
+con = Array(Float32,127,127,300);
+for i=1:300
     con[:,:,i]=conv2(pat,squeeze(abs2(reshape(squeeze(c[:,:,2,:,:,:],3),64,64,54*54*2)[:,:,4264+i]),3))
 end
 
-view5d(con)
+
+pat = squeeze(reshape(squeeze(c[:,:,2,:,:,:],3),64,64,54*54*2)[:,:,4262],3)
+
+imag = squeeze(reshape(squeeze(c[:,:,2,:,:,:],3),64,64,54*54*2)[:,:,4264],3)
+
+view5d(abs2(conv2(pat,imag)))
+
+
+
+# 4264:4300
+
+
+
+pat = squeeze(reshape(squeeze(c[:,:,2,:,:,:],3),64,64,54*54*2)[:,:,4262],3)
+con = Array(Complex64,127,127,300);
+for i=1:300
+    con[:,:,i]=conv2(pat,squeeze(reshape(squeeze(c[:,:,2,:,:,:],3),64,64,54*54*2)[:,:,4264+i-150],3))
+end
+
+view5d(abs2(con[:,:,200]))
+
+{x for x=1:10}'
+
+n=indmax(abs2(con[:,:,200]))
+
+Complex64[x+y for x=1:3,y=1:3]
+
+q=div(n,64)/64*repmat({x for x=1:64}',64,1).+mod(n,64)/64*repmat({x for x=1:64}',64,1)'
+shif=reshape(map(exp,im*2*pi*reshape(q,64*64)),64,64)
+
+view5d(abs(fft(shif)))
+
+repmat({x for x=1:3}',3,1)
+
+repmat({x for x=1:3}',3,1)'
+
+{y for y=1:3}
+
+repmat({y for y=1:3},1,2)
 
 fft(pat)
 
