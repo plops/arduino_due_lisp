@@ -26,8 +26,8 @@ end
 
 #ics_file = "/home/martin/arduino_due_lisp/processing/julia/20150224/o-pol0.ics"
 #ics_file2 = "/home/martin/arduino_due_lisp/processing/julia/20150224/o-pol1.ics"
-ics_file = "/dev/shm/o-pol0.ics"
-ics_file2 = "/dev/shm/o-pol1.ics"
+ics_file = "/home/martin/im/o-pol0.ics"
+ics_file2 = "/home/martin/im/o-pol1.ics"
 @time a = read_ics(ics_file);
 @time b = read_ics(ics_file2);
 
@@ -89,7 +89,43 @@ view5d(squeeze(mean(map((x)->abs2(x),squeeze(a[:,:,3,:,:],3)),(3,4)),(3,4)))
 
 view5d(squeeze(mean(map((x)->abs2(x),squeeze(c[:,:,1,:,:,:],3)),(3,4,5))))
 
+view5d(squeeze(mean(map((x)->abs2(x),squeeze(c[:,:,2,:,:,:],3)),(3,4,5))))
+
+view5d(squeeze(mean(map((x)->abs2(x),squeeze(c[:,:,2,:,:,:],3)),(3,4,5)),(3,4,5)))
+
+view5d(squeeze(mean(map((x)->abs2(x),squeeze(c[:,:,2,:,:,:],3)),(1,2,5)),(1,2,5)))
+
+view5d(abs2(reshape(squeeze(c[:,:,2,:,:,:],3),64,64,54*54*2)))
+
+# image 4262 has a nice peak on the boarder (without intensity in the fiber core)
+# the peak is approximately at 51 6
+
+pat = squeeze(abs2(reshape(squeeze(c[:,:,2,:,:,:],3),64,64,54*54*2)[:,:,4262]),3);
+
+im = squeeze(abs2(reshape(squeeze(c[:,:,2,:,:,:],3),64,64,54*54*2)[:,:,4264]),3;)
+
+# 4264:4300
+
+con = Array(Float32,127,127,1000);
+for i=1:100
+    con[:,:,i]=conv2(pat,squeeze(abs2(reshape(squeeze(c[:,:,2,:,:,:],3),64,64,54*54*2)[:,:,4264+i]),3))
+end
+
+view5d(con)
+
+fft(pat)
+
+view5d(abs(fftshift(fft(pat))))
+
+view5d(abs2(reshape(squeeze(c[:,:,2,:,:,:],3),64,64,54*54*2)[:,:,4262]))
+
+view5d(squeeze(abs2(c[:,:,2,25,25,1]),(3,4,5,6)))
+
+reshape(squeeze(c[:,:,2,:,:,:],3),64,64,54*54*2)
+
 view5d((mean(map((x)->abs2(x),squeeze(c[:,:,1,:,:,:],3)),(3,4,5))))
+
+
 
 avg_1=squeeze(mean(map((x)->abs2(x),squeeze(c[:,:,1,:,:,:],3)),(3,4,5)),(3,4,5));
 avg_3=squeeze(mean(map((x)->abs2(x),squeeze(c[:,:,3,:,:,:],3)),(3,4,5)),(3,4,5));
@@ -104,8 +140,8 @@ view5d(hcat(avgm_1,avgm_3))
 bin_1 = (avg_1 .> quantile(reshape(avg_1,64*64),.5))
 bin_3 = (avg_3 .> quantile(reshape(avg_3,64*64),.5))
 
-binm_1 = (avgm_1 .> quantile(reshape(avgm_1,54*54),.5))
-binm_3 = (avgm_3 .> quantile(reshape(avgm_3,54*54),.5))
+binm_1 = (avgm_1 .> quantile(reshape(avgm_1,54*54),.57))
+binm_3 = (avgm_3 .> quantile(reshape(avgm_3,54*54),.57))
 
 
 bin13 = bin_1 .* bin_3
