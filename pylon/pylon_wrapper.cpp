@@ -1,4 +1,6 @@
 #include <pylon/PylonIncludes.h>
+#include <pylon/gige/BaslerGigEInstantCamera.h>
+
 #include <unistd.h>
 #include <errno.h>
 #include <complex>
@@ -6,6 +8,14 @@
 using namespace Pylon;
 using namespace GenApi;
 using namespace std;
+
+
+typedef Pylon::CBaslerGigEInstantCamera Camera_t;
+//typedef Pylon::CBaslerGigEInstantCameraArray CameraArray_t;
+typedef Pylon::CInstantCameraArray CameraArray_t;
+typedef Pylon::CBaslerGigEGrabResultPtr GrabResultPtr_t;
+
+using namespace Basler_GigECameraParams;
 
 extern "C" {
   void pylon_wrapper_initialize()
@@ -20,7 +30,7 @@ extern "C" {
   void pylon_wrapper_terminate(void*cams)
   {
     try{
-      CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
+      CameraArray_t *cameras = (CameraArray_t*)cams;
       delete cameras;
       PylonTerminate();
     }
@@ -52,8 +62,8 @@ extern "C" {
 	printf("%s finds no cameras: %d\n",__func__,(int)devices.size());       
 
       cout << "preparing camera array" << endl;
-      CInstantCameraArray *cameras =
-	new CInstantCameraArray(min(size_t(maxCamerasToUse),devices.size()));
+      CameraArray_t *cameras =
+	new CameraArray_t(min(size_t(maxCamerasToUse),devices.size()));
       cout << "attaching cameras" << endl;
       // Create and attach all Pylon Devices.
       for ( size_t i = 0; i < cameras->GetSize(); ++i) {
@@ -74,7 +84,7 @@ extern "C" {
   const char* pylon_wrapper_cam_get_serial_number(void*cams,int cam)
   {
     try{
-      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      CameraArray_t *cameras = (CameraArray_t*)cams; 
       if(cam>=cameras->GetSize()) {
       	cout << "there are not as many cameras available as requested: "
 	     << cam << ">=" << cameras->GetSize() << endl;
@@ -90,7 +100,7 @@ extern "C" {
   const char* pylon_wrapper_cam_get_full_name(void*cams,int cam)
   {
     try{
-      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      CameraArray_t *cameras = (CameraArray_t*)cams; 
       if(cam>=cameras->GetSize()) {
       	cout << "there are not as many cameras available as requested: "
 	     << cam << ">=" << cameras->GetSize() << endl;
@@ -107,7 +117,7 @@ extern "C" {
   int pylon_wrapper_get_max_i(void*cams,int cam,const char*node)
   {
     try{
-      CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
+      CameraArray_t *cameras = (CameraArray_t*)cams;
       if(cam>=cameras->GetSize()) {
       	cout << "there are not as many cameras available as requested: "
 	     << cam << ">=" << cameras->GetSize() << endl;
@@ -127,7 +137,7 @@ extern "C" {
   int pylon_wrapper_get_min_i(void*cams,int cam,const char*node)
   {
     try{
-      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      CameraArray_t *cameras = (CameraArray_t*)cams; 
       if(cam>=cameras->GetSize()) {
       	cout << "there are not as many cameras available as requested: "
 	     << cam << ">=" << cameras->GetSize() << endl;
@@ -146,7 +156,7 @@ extern "C" {
   int pylon_wrapper_get_inc_i(void*cams,int cam,const char*node)
   {
     try{
-      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      CameraArray_t *cameras = (CameraArray_t*)cams; 
       if(cam>=cameras->GetSize()) {
       	cout << "there are not as many cameras available as requested: "
 	     << cam << ">=" << cameras->GetSize() << endl;
@@ -166,7 +176,7 @@ extern "C" {
   float pylon_wrapper_get_value_f(void*cams,int cam,const char*node,int verify, int ignore_cache)
   {
     try{
-      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      CameraArray_t *cameras = (CameraArray_t*)cams; 
       if(cam>=cameras->GetSize()) {
       	cout << "there are not as many cameras available as requested: "
 	     << cam << ">=" << cameras->GetSize() << endl;
@@ -185,7 +195,7 @@ extern "C" {
   int pylon_wrapper_get_value_b(void*cams,int cam,const char*node,int verify, int ignore_cache)
   {
     try{
-      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      CameraArray_t *cameras = (CameraArray_t*)cams; 
       if(cam>=cameras->GetSize()) {
       	cout << "there are not as many cameras available as requested: "
 	     << cam << ">=" << cameras->GetSize() << endl;
@@ -204,7 +214,7 @@ extern "C" {
   int pylon_wrapper_get_value_i(void*cams,int cam,const char*node,int verify, int ignore_cache)
   {
     try{
-      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      CameraArray_t *cameras = (CameraArray_t*)cams; 
       if(cam>=cameras->GetSize()) {
       	cout << "there are not as many cameras available as requested: "
 	     << cam << ">=" << cameras->GetSize() << endl;
@@ -223,7 +233,7 @@ extern "C" {
   void pylon_wrapper_set_value_i(void*cams,int cam,const char*node,int value)
   {
     try{
-      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      CameraArray_t *cameras = (CameraArray_t*)cams; 
       if(cam>=cameras->GetSize()) {
       	cout << "there are not as many cameras available as requested: "
 	     << cam << ">=" << cameras->GetSize() << endl;
@@ -241,7 +251,7 @@ extern "C" {
   void pylon_wrapper_get_symbolics_e(void*cams,int cam,const char*node)
   {
     try{
-      CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
+      CameraArray_t *cameras = (CameraArray_t*)cams;
       if(cam>=cameras->GetSize()) {
       	cout << "there are not as many cameras available as requested: "
 	     << cam << ">=" << cameras->GetSize() << endl;
@@ -265,7 +275,7 @@ extern "C" {
   void pylon_wrapper_set_value_e(void*cams,int cam,const char*node,int value)
   {
     try{
-      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      CameraArray_t *cameras = (CameraArray_t*)cams; 
       if(cam>=cameras->GetSize()) {
       	cout << "there are not as many cameras available as requested: "
 	     << cam << ">=" << cameras->GetSize() << endl;
@@ -284,7 +294,7 @@ extern "C" {
   int pylon_wrapper_get_value_e(void*cams,int cam,const char*node)
   {
     try{
-      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      CameraArray_t *cameras = (CameraArray_t*)cams; 
       if(cam>=cameras->GetSize()) {
       	cout << "there are not as many cameras available as requested: "
 	     << cam << ">=" << cameras->GetSize() << endl;
@@ -303,7 +313,7 @@ extern "C" {
   int pylon_wrapper_command_execute(void*cams,int cam,const char*node)
   {
     try{
-      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      CameraArray_t *cameras = (CameraArray_t*)cams; 
       if(cam>=cameras->GetSize()) {
       	cout << "there are not as many cameras available as requested: "
 	     << cam << ">=" << cameras->GetSize() << endl;
@@ -323,7 +333,7 @@ extern "C" {
   int pylon_wrapper_command_isdone(void*cams,int cam,const char*node)
   {
     try{
-      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      CameraArray_t *cameras = (CameraArray_t*)cams; 
       if(cam>=cameras->GetSize()) {
       	cout << "there are not as many cameras available as requested: "
 	     << cam << ">=" << cameras->GetSize() << endl;
@@ -342,7 +352,7 @@ extern "C" {
   void pylon_wrapper_to_string_e(void*cams,int cam,const char*node)
   {
     try{
-      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      CameraArray_t *cameras = (CameraArray_t*)cams; 
       if(cam>=cameras->GetSize()) {
       	cout << "there are not as many cameras available as requested: "
 	     << cam << ">=" << cameras->GetSize() << endl;
@@ -360,7 +370,7 @@ extern "C" {
   void pylon_wrapper_from_string_e(void*cams,int cam,const char*node,char*value)
   {
     try{
-      CInstantCameraArray *cameras = (CInstantCameraArray*)cams; 
+      CameraArray_t *cameras = (CameraArray_t*)cams; 
       if(cam>=cameras->GetSize()) {
       	cout << "there are not as many cameras available as requested: "
 	     << cam << ">=" << cameras->GetSize() << endl;
@@ -378,7 +388,7 @@ extern "C" {
   void pylon_wrapper_start_grabbing(void*cams)
   {
     try{
-      CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
+      CameraArray_t *cameras = (CameraArray_t*)cams;
       cameras->StartGrabbing();
     }
     catch (GenICam::GenericException& e) {
@@ -388,7 +398,7 @@ extern "C" {
   void pylon_wrapper_stop_grabbing(void*cams)
   {
     try{
-      CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
+      CameraArray_t *cameras = (CameraArray_t*)cams;
       cameras->StopGrabbing();
     }
     catch (GenICam::GenericException& e) {
@@ -398,7 +408,7 @@ extern "C" {
   void pylon_wrapper_cams_open(void*cams)
   {
     try{
-      CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
+      CameraArray_t *cameras = (CameraArray_t*)cams;
       cameras->Open();
     }
     catch (GenICam::GenericException& e) {
@@ -408,7 +418,7 @@ extern "C" {
   void pylon_wrapper_cams_close(void*cams)
   {
     try{
-      CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
+      CameraArray_t *cameras = (CameraArray_t*)cams;
       cameras->Close();
     }
     catch (GenICam::GenericException& e) {
@@ -418,7 +428,7 @@ extern "C" {
   void pylon_wrapper_cam_open(void*cams,int cam)
   {
     try{
-      CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
+      CameraArray_t *cameras = (CameraArray_t*)cams;
       if(cam>=cameras->GetSize()){
 	cout << "there are not as many cameras available as requested: "
 	     << cam << ">=" << cameras->GetSize() << endl;
@@ -427,25 +437,25 @@ extern "C" {
       cameras[cam].Open();
 
       // prevent parsing of xml during each StartGrabbing()
-      cameras[cam].StaticChunkNodeMapPoolSize = camera.MaxNumBuffer.GetValue();
+      //cameras[cam].StaticChunkNodeMapPoolSize = camera.MaxNumBuffer.GetValue();
 
-      if (GenApi::IsWritable(cameras[cam].ChunkModeActive))
-	cameras[cam].ChunkModeActive.SetValue(true);
-      else
-	cout << "Camera doesn't support chunk features" << endl;
+      // if (GenApi::IsWritable(cameras[cam].ChunkModeActive))
+      // 	cameras[cam].ChunkModeActive.SetValue(true);
+      // else
+      // 	cout << "Camera doesn't support chunk features" << endl;
 	
-      // Enable time stamp chunks.
-      cameras[cam].ChunkSelector.SetValue(ChunkSelector_Timestamp);
-      cameras[cam].ChunkEnable.SetValue(true);
+      // // Enable time stamp chunks.
+      // cameras[cam].ChunkSelector.SetValue(ChunkSelector_Timestamp);
+      // cameras[cam].ChunkEnable.SetValue(true);
       
-      cameras[cam].ChunkSelector.SetValue(ChunkSelector_Framecounter);
-      cameras[cam].ChunkEnable.SetValue(true);
+      // cameras[cam].ChunkSelector.SetValue(ChunkSelector_Framecounter);
+      // cameras[cam].ChunkEnable.SetValue(true);
       
-      cameras[cam].ChunkSelector.SetValue(ChunkSelector_DynamicRangeMin);
-      cameras[cam].ChunkEnable.SetValue(true);
+      // cameras[cam].ChunkSelector.SetValue(ChunkSelector_DynamicRangeMin);
+      // cameras[cam].ChunkEnable.SetValue(true);
       
-      cameras[cam].ChunkSelector.SetValue(ChunkSelector_DynamicRangeMax);
-      cameras[cam].ChunkEnable.SetValue(true);
+      // cameras[cam].ChunkSelector.SetValue(ChunkSelector_DynamicRangeMax);
+      // cameras[cam].ChunkEnable.SetValue(true);
     }
     catch (GenICam::GenericException& e) {
       printf( "Exception caught in %s msg=%s\n",__func__, e.what());
@@ -454,7 +464,7 @@ extern "C" {
   void pylon_wrapper_cam_close(void*cams,int cam)
   {
     try{
-      CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
+      CameraArray_t *cameras = (CameraArray_t*)cams;
       if(cam>=cameras->GetSize()){
 	cout << "there are not as many cameras available as requested: "
 	     << cam << ">=" << cameras->GetSize() << endl;
@@ -475,9 +485,9 @@ extern "C" {
   void pylon_wrapper_grab(void*cams,int ww,int hh,unsigned char * buf,int*camera,int*success_p,int*w,int*h)
   {
     try{
-      CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
+      CameraArray_t *cameras = (CameraArray_t*)cams;
       if(cameras->IsGrabbing()){
-	CGrabResultPtr ptrGrabResult;
+	GrabResultPtr_t ptrGrabResult;
 	cameras->RetrieveResult( 5000, ptrGrabResult, TimeoutHandling_ThrowException);
 	// context allows to determine which camera produced the grab result
 	intptr_t cameraContextValue = ptrGrabResult->GetCameraContext();
@@ -531,9 +541,9 @@ extern "C" {
     *framenr = -1;
 
     try{
-      CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
+      CameraArray_t *cameras = (CameraArray_t*)cams;
       if(cameras->IsGrabbing()){
-	CGrabResultPtr ptrGrabResult;
+	GrabResultPtr_t ptrGrabResult;
 	cameras->RetrieveResult( 5000, ptrGrabResult, TimeoutHandling_ThrowException);
 	// context allows to determine which camera produced the grab result
 	intptr_t cameraContextValue = ptrGrabResult->GetCameraContext();
@@ -579,9 +589,9 @@ extern "C" {
   void pylon_wrapper_grab_cdf(void*cams,int ww,int hh,double * buf,int*camera,int*success_p,int*w,int*h,int*framenr)
   {
     try{
-      CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
+      CameraArray_t *cameras = (CameraArray_t*)cams;
       if(cameras->IsGrabbing()){
-	CGrabResultPtr ptrGrabResult;
+	GrabResultPtr_t ptrGrabResult;
 	cameras->RetrieveResult( 5000, ptrGrabResult, TimeoutHandling_ThrowException);
 	// context allows to determine which camera produced the grab result
 	intptr_t cameraContextValue = ptrGrabResult->GetCameraContext();
@@ -666,9 +676,9 @@ extern "C" {
     *value_min = -1;
     *value_max = -1;
     try{
-      CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
+      CameraArray_t *cameras = (CameraArray_t*)cams;
       if(cameras->IsGrabbing()){
-	CGrabResultPtr ptrGrabResult;
+	GrabResultPtr_t ptrGrabResult;
 	cameras->RetrieveResult( 5000, ptrGrabResult, TimeoutHandling_ThrowException);
 	// context allows to determine which camera produced the grab result
 	intptr_t cameraContextValue = ptrGrabResult->GetCameraContext();
