@@ -633,7 +633,7 @@ extern "C" {
       *success_p = -1;
     }
   }
-  void pylon_wrapper_grab_sf(void*cams,int ww,int hh,float * buf,int*camera,int*success_p,int*w,int*h,int64_t*imagenr,int64_t*blockid,int64_t*timestamp)
+  void pylon_wrapper_grab_sf(void*cams,int ww,int hh,float * buf,int*camera,int*success_p,int*w,int*h,int64_t*imagenr,int64_t*blockid,int64_t*timestamp,int64*value_min,int64*value_max)
   {
     *camera = -1;
     *w = -1;
@@ -642,6 +642,8 @@ extern "C" {
     *imagenr = -1;
     *blockid = -1;
     *timestamp = -1;
+    *value_min = -1;
+    *value_max = -1;
     try{
       CInstantCameraArray *cameras = (CInstantCameraArray*)cams;
       if(cameras->IsGrabbing()){
@@ -658,8 +660,21 @@ extern "C" {
 	     << " ts=" << ptrGrabResult->GetTimeStamp()  
 	     << " id=" << ptrGrabResult->GetID()  
 	     << " inr=" << ptrGrabResult->GetImageNumber()  
-	     << " skip=" << ptrGrabResult->GetNumberOfSkippedImages()  << endl;
-	
+	     << " skip=" << ptrGrabResult->GetNumberOfSkippedImages();
+	 if (IsReadable(ptrGrabResult->ChunkTimestamp))
+	   cout << " chunkts=" << ptrGrabResult->ChunkTimestamp.GetValue();
+	 if (IsReadable(ptrGrabResult->ChunkFramecounter))
+	   cout << " chunkfc=" << ptrGrabResult->ChunkFramecounter.GetValue();
+	 if (IsReadable(ptrGrabResult->ChunkDynamicRangeMin)){
+	   *value_min = ptrGrabResult->ChunkDynamicRangeMin.GetValue();
+	   cout << " min=" << *value_min;
+	 }
+	 if (IsReadable(ptrGrabResult->ChunkDynamicRangeMax)){
+	   *value_max = ptrGrabResult->ChunkDynamicRangeMax.GetValue();
+	   cout << " max=" << *value_max;
+	 }
+	 cout << endl;
+	 
 	*imagenr = ptrGrabResult->GetImageNumber();
 	*timestamp = ptrGrabResult->GetTimeStamp();
 
