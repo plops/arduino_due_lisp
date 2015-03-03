@@ -736,9 +736,10 @@ rectangular, for alpha=1 Hann window."
 	     (let* ((current (get-us-time))
 		    (do-update-p (< us-between-x11-updates (abs (- current last-presentation-time)) )))
 	       (dotimes (j 3)
-		 (multiple-value-bind (cam success-p w h imagenr blockid timestamp) 
+		 (multiple-value-bind (cam success-p w h imagenr blockid timestamp value-min value-max) 
 		     (pylon::grab-sf *cams* *buf-s*)
-		   (push (list  (- (get-us-time) start) cam success-p w h imagenr blockid timestamp) *log*)
+		   (push (list  (- (get-us-time) start) cam success-p w h imagenr blockid timestamp value-min value-max
+				) *log*)
 		   (when success-p ;; do-update-p
 		     (let ((k '((84 208) (230 172) (62 68))))
 		       (destructuring-bind (x y) (elt k cam)

@@ -425,6 +425,27 @@ extern "C" {
 	return;
       }
       cameras[cam].Open();
+
+      // prevent parsing of xml during each StartGrabbing()
+      cameras[cam].StaticChunkNodeMapPoolSize = camera.MaxNumBuffer.GetValue();
+
+      if (GenApi::IsWritable(cameras[cam].ChunkModeActive))
+	cameras[cam].ChunkModeActive.SetValue(true);
+      else
+	cout << "Camera doesn't support chunk features" << endl;
+	
+      // Enable time stamp chunks.
+      cameras[cam].ChunkSelector.SetValue(ChunkSelector_Timestamp);
+      cameras[cam].ChunkEnable.SetValue(true);
+      
+      cameras[cam].ChunkSelector.SetValue(ChunkSelector_Framecounter);
+      cameras[cam].ChunkEnable.SetValue(true);
+      
+      cameras[cam].ChunkSelector.SetValue(ChunkSelector_DynamicRangeMin);
+      cameras[cam].ChunkEnable.SetValue(true);
+      
+      cameras[cam].ChunkSelector.SetValue(ChunkSelector_DynamicRangeMax);
+      cameras[cam].ChunkEnable.SetValue(true);
     }
     catch (GenICam::GenericException& e) {
       printf( "Exception caught in %s msg=%s\n",__func__, e.what());
@@ -633,7 +654,7 @@ extern "C" {
       *success_p = -1;
     }
   }
-  void pylon_wrapper_grab_sf(void*cams,int ww,int hh,float * buf,int*camera,int*success_p,int*w,int*h,int64_t*imagenr,int64_t*blockid,int64_t*timestamp,int64*value_min,int64*value_max)
+  void pylon_wrapper_grab_sf(void*cams,int ww,int hh,float * buf,int*camera,int*success_p,int*w,int*h,int64_t*imagenr,int64_t*blockid,int64_t*timestamp,int64_t*value_min,int64_t*value_max)
   {
     *camera = -1;
     *w = -1;
@@ -661,20 +682,33 @@ extern "C" {
 	     << " id=" << ptrGrabResult->GetID()  
 	     << " inr=" << ptrGrabResult->GetImageNumber()  
 	     << " skip=" << ptrGrabResult->GetNumberOfSkippedImages();
-	 if (IsReadable(ptrGrabResult->ChunkTimestamp))
-	   cout << " chunkts=" << ptrGrabResult->ChunkTimestamp.GetValue();
-	 if (IsReadable(ptrGrabResult->ChunkFramecounter))
-	   cout << " chunkfc=" << ptrGrabResult->ChunkFramecounter.GetValue();
-	 if (IsReadable(ptrGrabResult->ChunkDynamicRangeMin)){
-	   *value_min = ptrGrabResult->ChunkDynamicRangeMin.GetValue();
-	   cout << " min=" << *value_min;
-	 }
-	 if (IsReadable(ptrGrabResult->ChunkDynamicRangeMax)){
-	   *value_max = ptrGrabResult->ChunkDynamicRangeMax.GetValue();
-	   cout << " max=" << *value_max;
-	 }
-	 cout << endl;
-	 
+
+	{
+	  GenApi::CIntegerPtr  p = ptrGrabResult->GetChunkDataNodeMap().GetNode( "ChunkTimestamp");
+	  if (IsReadable(p))
+	    cout << " chunkts=" <<  p->GetValue();
+	}
+	{
+	  GenApi::CIntegerPtr  p = ptrGrabResult->GetChunkDataNodeMap().GetNode( "ChunkFramecounter");
+	  if (IsReadable(p))
+	    cout << " framecnt=" <<  p->GetValue();
+	}
+	{
+	  GenApi::CIntegerPtr  p = ptrGrabResult->GetChunkDataNodeMap().GetNode( "ChunkDynamicRangeMin");
+	  if (IsReadable(p)){
+	    cout << " min=" <<  p->GetValue();
+	    *value_min = p->GetValue();
+	  }
+	}
+	{
+	  GenApi::CIntegerPtr  p = ptrGrabResult->GetChunkDataNodeMap().GetNode( "ChunkDynamicRangeMax");
+	  if (IsReadable(p)){
+	    cout << " max=" <<  p->GetValue();
+	    *value_max = p->GetValue();
+	  }
+	}
+	cout << endl;
+	
 	*imagenr = ptrGrabResult->GetImageNumber();
 	*timestamp = ptrGrabResult->GetTimeStamp();
 
