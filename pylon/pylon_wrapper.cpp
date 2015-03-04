@@ -1,5 +1,5 @@
 #include <pylon/PylonIncludes.h>
-#include <pylon/gige/BaslerGigEInstantCamera.h>
+#include <pylon/gige/PylonGigEIncludes.h>
 
 #include <unistd.h>
 #include <errno.h>
@@ -10,8 +10,10 @@ using namespace GenApi;
 using namespace std;
 
 
-typedef Pylon::CBaslerGigEInstantCamera Camera_t;
-//typedef Pylon::CBaslerGigEInstantCameraArray CameraArray_t;
+// typedef Pylon::CBaslerGigEInstantCamera Camera_t;
+// typedef Pylon::CBaslerGigEInstantCameraArray CameraArray_t;
+// typedef Pylon::CBaslerGigEGrabResultPtr GrabResultPtr_t;
+typedef Pylon::nstantCamera Camera_t;
 typedef Pylon::CInstantCameraArray CameraArray_t;
 typedef Pylon::CBaslerGigEGrabResultPtr GrabResultPtr_t;
 
