@@ -1,5 +1,5 @@
 #include <pylon/PylonIncludes.h>
-#include <pylon/gige/PylonGigEIncludes.h>
+//#include <pylon/gige/PylonGigEIncludes.h>
 
 #include <unistd.h>
 #include <errno.h>
@@ -13,11 +13,11 @@ using namespace std;
 // typedef Pylon::CBaslerGigEInstantCamera Camera_t;
 // typedef Pylon::CBaslerGigEInstantCameraArray CameraArray_t;
 // typedef Pylon::CBaslerGigEGrabResultPtr GrabResultPtr_t;
-typedef Pylon::nstantCamera Camera_t;
+typedef Pylon::CInstantCamera Camera_t;
 typedef Pylon::CInstantCameraArray CameraArray_t;
-typedef Pylon::CBaslerGigEGrabResultPtr GrabResultPtr_t;
+typedef Pylon::CGrabResultPtr GrabResultPtr_t;
 
-using namespace Basler_GigECameraParams;
+//using namespace Basler_GigECameraParams;
 
 extern "C" {
   void pylon_wrapper_initialize()
