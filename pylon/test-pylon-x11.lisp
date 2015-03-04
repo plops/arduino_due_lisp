@@ -1057,6 +1057,22 @@ rectangular, for alpha=1 Hann window."
   (ics:write-ics2 (format nil "/dev/shm/o.ics") a))
 
 #+nil
+(block-laser)
+#+nil
+(unblock-laser)
+
+(defun block-laser ()
+  (arduino-serial-sbcl:talk-arduino
+   (second *ard*) (first *ard*)
+   "(progn (pin-mode 8 1) (digital-write 8 0))"))
+
+(defun unblock-laser ()
+  (arduino-serial-sbcl:talk-arduino
+   (second *ard*) (first *ard*)
+   "(digital-write 8 1)"))
+
+
+#+nil
 (let* ((n (get-stored-array-length))
       (mw (floor (sqrt n)))
       (mh (floor (sqrt n))))
