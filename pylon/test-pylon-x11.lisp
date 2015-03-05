@@ -643,7 +643,23 @@ rectangular, for alpha=1 Hann window."
 						 (extract-w 64) (extract-h extract-w) (scale #.(/ 20s0 4095)) (offset (- 12000s0)) (update-display-p nil))
   (declare (optimize (speed 3))
 	   (type fixnum w h pol cam framenr x y extract-w extract-h)
+	   (type (simple-array single-float 2) buf)
 	   (type single-float scale offset))
+  (let ((accum (elt *buf-s* cam)))
+    (declare (type (simple-array single-float 2) accum))
+    (cond
+      ((or (= cam 2) (= cam 0))
+       (dotimes (i 256)
+	 (dotimes (j 256)
+	   (setf (aref accum j i) (+ (aref accum j i)
+				     (aref buf j i))))))
+      ((= cam 1)
+       (dotimes (i 512)
+	 (dotimes (j 512)
+	   (setf (aref accum j i) (+ (aref accum j i)
+				     (aref buf j i))))))))
+  (when (< repetition (1- repetitions))
+    (return-from draw-frame))
   (when update-display-p (put-sf-image buf w h :dst-x (cam-dst-x cam) ))
   (when (= cam 1)
     (let ((current-buf-s (elt *buf-s* cam)))
@@ -670,7 +686,7 @@ rectangular, for alpha=1 Hann window."
 		  :x  (- x wa 1) :y (- y ha 1)
 		  :w-extract extract-w :h-extract extract-h))
 
-  (let* ((a (get-stored-array 0 pol cam framenr))
+  (let* ((a (get-stored-array 0 pol cam (floor framenr repetitions)))
 	 (pixels1 (expt (cond ((or (= 0 cam) (= 2 cam)) 256)
 			      ((= 1 cam) 512)
 			      (t (error "unexpected value for camera index: ~a." cam)))
@@ -731,7 +747,7 @@ rectangular, for alpha=1 Hann window."
 (let ((last-presentation-time 0)
       (start 0))
   (defun start-acquisition-thread (&key (pol 0) (n 2000) (us-between-x11-updates 200000) (x11-display-p nil)
-				     (repetition 1))
+				     (repetitions 1))
     (setf last-presentation-time (get-us-time)
 	  start last-presentation-time)
     (sb-thread:make-thread 
@@ -739,7 +755,7 @@ rectangular, for alpha=1 Hann window."
 	 (reset-current-index)
 	 (progn ;; sb-sprof:with-profiling (:max-samples 1000 :report :flat :loop nil)
 	   (dotimes (i n)
-	     (dotimes (j repetition)
+	     (dotimes (j repetitions)
 	      (let* ((current (get-us-time))
 		     (do-update-p (< us-between-x11-updates (abs (- current last-presentation-time)) )))
 		(dotimes (j 3)
@@ -750,8 +766,8 @@ rectangular, for alpha=1 Hann window."
 		    (when success-p ;; do-update-p
 		      (let ((k '((84 208) (230 172) (62 68))))
 			(destructuring-bind (x y) (elt k cam)
-			  (draw-frame (elt *buf-s* cam) w h pol cam (1- imagenr) x y :extract-w 64
-				      :repetitions repetition
+			  (draw-frame *buf-s-capture* w h pol cam (1- imagenr) x y :extract-w 64
+				      :repetitions repetitions
 				      :repetition j
 				      :scale (/ 10s0 4095) :update-display-p (and do-update-p x11-display-p)
 				      :offset (let ((o -12000s0)) (ecase cam 
@@ -949,7 +965,7 @@ rectangular, for alpha=1 Hann window."
 					   (maxi (+ 2000 500)) (maxj (+ 2000 500))
 					   (stepi/4 10)
 					   (stepj 10)
-					   (repetition 1)
+					   (repetitions 1)
 					   (delay/4-ms 5)
 					   (line-delay-ms 100))
   (unless *trigger-outputs-initialized*
@@ -998,7 +1014,7 @@ rectangular, for alpha=1 Hann window."
            stepi/4 delay/4-ms
 	   stepi/4 delay/4-ms
 	   delay/4-ms
-	   repetition
+	   repetitions
 	   (* 4 delay/4-ms)
 	   stepi/4
 	   starti
@@ -1006,15 +1022,15 @@ rectangular, for alpha=1 Hann window."
 	   line-delay-ms)
    :time (+ .4s0 (/ (+ (* (/ (- maxj startj) stepj) 
 			  (/ (- maxi starti) (* 4 stepi/4))
-			  (* delay/4-ms repetition))
+			  (* delay/4-ms repetitions))
 		       (* (/ (- maxj startj) stepj) line-delay-ms))
 		    1000s0))))
 
-(defun acquire-2d (&key (x11-display-p nil))
+(defun acquire-2d (&key (x11-display-p nil) (repetitions 1))
   (let* ((n (get-stored-array-length))
 	 (nx (floor (sqrt n)))
 	 (ny (floor (sqrt n)))
-	 (reps 10)
+	 (reps repetitions)
 	 (center-x 1825)
 	 (center-y 2050)
 	 (radius 1800)
@@ -1044,7 +1060,7 @@ rectangular, for alpha=1 Hann window."
 			 :maxj (+ cj (* (floor ny 2) stepj))
 			 :stepi/4 stepi/4
 			 :stepj stepj
-			 :repetition reps
+			 :repetitions reps
 			 :line-delay-ms 30
 			 :delay/4-ms 5))))
 	 (unwind-protect 
@@ -1054,7 +1070,7 @@ rectangular, for alpha=1 Hann window."
 	       
 		(reset-camera-timers *cams* 3)
 		(pylon:start-grabbing *cams*)
-		(let ((th (start-acquisition-thread :pol 0 :n n :x11-display-p x11-display-p  :repetition reps)))
+		(let ((th (start-acquisition-thread :pol 0 :n n :x11-display-p x11-display-p  :repetitions reps)))
 		  (sleep .02)
 		  (do-trigger)
 		  (sb-thread:join-thread th)))
@@ -1064,7 +1080,7 @@ rectangular, for alpha=1 Hann window."
 	      (progn
 		(reset-camera-timers *cams* 3)
 		(pylon:start-grabbing *cams*)
-		(let ((th (start-acquisition-thread :pol 1 :n n :x11-display-p x11-display-p :repetition reps)))
+		(let ((th (start-acquisition-thread :pol 1 :n n :x11-display-p x11-display-p :repetitions reps)))
 		  (sleep .02)
 		  (do-trigger)
 		  (sb-thread:join-thread th)))
@@ -1087,7 +1103,7 @@ rectangular, for alpha=1 Hann window."
        (stepi/4 10)
        (stepj (* 4 stepi/4)))
   (trigger-all-cameras-seq-2d-scan-with-repetition
-   :repetition 200
+   :repetitions 200
    :starti (- ci (* (floor nx 2) stepi/4 4))
    :startj (- cj (* (floor ny 2) stepj))
    :maxi (+ ci (* (floor nx 2) 4 stepi/4))
@@ -1143,7 +1159,7 @@ rectangular, for alpha=1 Hann window."
 #+nil
 (display-mosaic-onecam-swap :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 16 :h 16)
 #+nil
-(acquire-2d :x11-display-p t)
+(acquire-2d :x11-display-p nil :repetitions 10)
 #+nil
 (let ((a (make-array (list 64 64 2 3 64 64) :element-type '(complex single-float)
 		     )))
@@ -1163,7 +1179,6 @@ rectangular, for alpha=1 Hann window."
   (arduino-serial-sbcl:talk-arduino
    (second *ard*) (first *ard*)
    "(digital-write 8 1)"))
-
 
 #+nil
 (let* ((n (get-stored-array-length))
