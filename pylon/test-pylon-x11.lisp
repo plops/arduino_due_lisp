@@ -79,7 +79,7 @@
 "	   n delay-ms)
    :time .1d0))
 
-
+(format nil "nalfdn s ~d" 3)
 
 (defun trigger-all-cameras-once ()
   (unless *trigger-outputs-initialized*
@@ -302,7 +302,7 @@
 
 #+nil
 (/ (* (expt 70 2) 64 64 3 2 2 8) (* 1024 1024s0)) 
-(let* ((n (* 32 32))
+(let* ((n (* 16 16))
        (store (loop for i from 0 below n collect
 		   (loop for cam below 3 collect
 			(loop for pol below 2 collect
@@ -642,7 +642,12 @@ rectangular, for alpha=1 Hann window."
 						 (repetition 0)
 						 (extract-w 64) (extract-h extract-w) (scale #.(/ 20s0 4095)) (offset (- 12000s0)) (update-display-p nil))
   (declare (optimize (speed 3))
-	   (type fixnum w h pol cam framenr x y extract-w extract-h)
+	   (type fixnum w h pol x y)
+	   (type (integer 1 100000) extract-w extract-h)
+	   (type (integer 0 1000000) framenr)
+	   (type (integer 0 3) cam)
+	   (type (integer 0 10000) repetition)
+	   (type (integer 1 10000) repetitions)
 	   (type (simple-array single-float 2) buf)
 	   (type single-float scale offset))
   (let ((accum (elt *buf-s* cam)))
@@ -651,26 +656,25 @@ rectangular, for alpha=1 Hann window."
       ((or (= cam 2) (= cam 0))
        (dotimes (i 256)
 	 (dotimes (j 256)
-	   (setf (aref accum j i) (+ (aref accum j i)
-				     (aref buf j i))))))
+	   (incf (aref accum j i) (aref buf j i)))))
       ((= cam 1)
        (dotimes (i 512)
 	 (dotimes (j 512)
-	   (setf (aref accum j i) (+ (aref accum j i)
-				     (aref buf j i))))))))
-  (when (< repetition (1- repetitions))
+	   (incf (aref accum j i) (aref buf j i)))))))
+  (when (< repetition (- repetitions 1))
     (return-from draw-frame))
   (when update-display-p (put-sf-image buf w h :dst-x (cam-dst-x cam) ))
-  (when (= cam 1)
+  (when (= cam 1) ;; premultiply only the camera with the reflected light with a tukey window
     (let ((current-buf-s (elt *buf-s* cam)))
       (declare (type (simple-array single-float 2) *win* current-buf-s))
       (dotimes (j 512)
 	(dotimes (i 512)
 	  (setf (aref current-buf-s j i) (* (aref *win* j i) (aref current-buf-s j i)))))))
   
-  (cond ((= 0 cam) (fftw::%fftwf_execute *plan256-0*))
-	((= 2 cam) (fftw::%fftwf_execute *plan256-2*))
-	((= 1 cam) (fftw::%fftwf_execute *plan512-1*)))
+  (cond ;; the following transform from (elt *buf-s* cam) to buf-cs
+    ((= 0 cam) (fftw::%fftwf_execute *plan256-0*))
+    ((= 2 cam) (fftw::%fftwf_execute *plan256-2*))
+    ((= 1 cam) (fftw::%fftwf_execute *plan512-1*)))
   (let ((wa (floor extract-w 2))
 	(ha (floor extract-h 2)))
     (when update-display-p
@@ -719,7 +723,8 @@ rectangular, for alpha=1 Hann window."
       (when update-display-p 
 	(put-csf-image a :w 64 :h 64 :dst-x (cam-dst-x cam) :dst-y (- 512 64) :scale 1s0 :offset 0s0)))))
 
-
+#+nil
+(get-stored-array 0 0 0 0)
 
 (defun draw-rect (x1 y1 x2 y2)
   (draw-window x1 y1 x2 y1)
@@ -755,7 +760,7 @@ rectangular, for alpha=1 Hann window."
 	 (reset-current-index)
 	 (progn ;; sb-sprof:with-profiling (:max-samples 1000 :report :flat :loop nil)
 	   (dotimes (i n)
-	     (dotimes (j repetitions)
+	     (dotimes (rep repetitions)
 	      (let* ((current (get-us-time))
 		     (do-update-p (< us-between-x11-updates (abs (- current last-presentation-time)) )))
 		(dotimes (j 3)
@@ -766,9 +771,10 @@ rectangular, for alpha=1 Hann window."
 		    (when success-p ;; do-update-p
 		      (let ((k '((84 208) (230 172) (62 68))))
 			(destructuring-bind (x y) (elt k cam)
+			  (format t "rep ~a/~a~%" rep repetitions)
 			  (draw-frame *buf-s-capture* w h pol cam (1- imagenr) x y :extract-w 64
 				      :repetitions repetitions
-				      :repetition j
+				      :repetition rep
 				      :scale (/ 10s0 4095) :update-display-p (and do-update-p x11-display-p)
 				      :offset (let ((o -12000s0)) (ecase cam 
 								    (0 o)
@@ -1092,7 +1098,7 @@ rectangular, for alpha=1 Hann window."
 	  (fftw::%fftwf_destroy_plan *plan512-1*))))))
 
 #+nil
-(let* ((n (get-stored-array-length))
+(let* ((n (* 32 32)  #+nil (get-stored-array-length))
        (nx (floor (sqrt n) 4))
        (ny (floor (sqrt n) 4))
        (center-x 1825)
@@ -1103,7 +1109,7 @@ rectangular, for alpha=1 Hann window."
        (stepi/4 10)
        (stepj (* 4 stepi/4)))
   (trigger-all-cameras-seq-2d-scan-with-repetition
-   :repetitions 200
+   :repetitions 40
    :starti (- ci (* (floor nx 2) stepi/4 4))
    :startj (- cj (* (floor ny 2) stepj))
    :maxi (+ ci (* (floor nx 2) 4 stepi/4))
@@ -1160,6 +1166,8 @@ rectangular, for alpha=1 Hann window."
 (display-mosaic-onecam-swap :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 16 :h 16)
 #+nil
 (acquire-2d :x11-display-p nil :repetitions 10)
+#+nil
+(acquire-2d :x11-display-p t :repetitions 10)
 #+nil
 (let ((a (make-array (list 64 64 2 3 64 64) :element-type '(complex single-float)
 		     )))
