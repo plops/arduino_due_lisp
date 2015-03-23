@@ -709,7 +709,7 @@ rectangular, for alpha=1 Hann window."
 		     :x1 (+ x wa) 
 		     :y1 (+ y ha)
 		     :dst-x (cam-dst-x cam) :dst-y 512 
-		     :scale (/ scale 30s0) :offset (* offset)
+		     :scale (/ scale 10s0) :offset (* 1 offset)
 		     ))
     (extract-csf* *buf-cs* *buf-cs64in* 
 		  :w (1+ (floor w 2)) :h h
