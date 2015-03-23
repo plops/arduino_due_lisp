@@ -674,15 +674,17 @@ rectangular, for alpha=1 Hann window."
 	(dotimes (i 512)
 	  (setf (aref current-buf-s j i) (* (aref *win* j i) (aref current-buf-s j i)))))))
 
+  
   (put-sf-image (elt *buf-s* cam) w h :dst-x (cam-dst-x cam) :scale-max (* .3 repetitions 4095s0) )
 
-  (let ((a (make-array (list h w) :element-type 'single-float))
-	(b (elt *buf-s* cam))
-	(wa (floor extract-w 2))
-	(ha (floor extract-h 2)))
-    (dotimes (j h)
-      (dotimes (i w)
-	(setf (aref a j i) (aref b j i))))
+  (let* ((a (make-array (list h w) :element-type 'single-float))
+	 (b (elt *buf-s* cam))
+	 (b1 (sb-ext:array-storage-vector b))
+	 (a1 (sb-ext:array-storage-vector a))
+	 (wa (floor extract-w 2))
+	 (ha (floor extract-h 2)))
+    (dotimes (i (* h w))
+      (setf (aref a1 i) (aref b1 i)))
     (sb-sys:with-pinned-objects (a *buf-cs*)
       (let ((plan (fftw::rplanf a :out *buf-cs* :w w :h h :flag fftw::+measure+)))
 	(fftw::%fftwf_execute plan)
@@ -693,7 +695,7 @@ rectangular, for alpha=1 Hann window."
 		     :x1 (+ x wa) 
 		     :y1 (+ y ha)
 		     :dst-x (cam-dst-x cam) :dst-y 512 
-		     :scale (/ scale 1s0) :offset 0s0 ;(* offset)
+		     :scale (/ scale 30s0) :offset (* offset)
 		     )
 	(fftw::%fftwf_destroy_plan plan))))
   
@@ -1200,7 +1202,7 @@ rectangular, for alpha=1 Hann window."
 #+nil
 (display-mosaic-onecam-swap :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 16 :h 16)
 #+nil
-(acquire-2d :x11-display-p nil :repetitions 5)
+(acquire-2d :x11-display-p nil :repetitions 30)
 #+nil
 (acquire-2d :x11-display-p t :repetitions 10)
 #+nil
