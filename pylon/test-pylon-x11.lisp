@@ -664,7 +664,7 @@ rectangular, for alpha=1 Hann window."
 	   (incf (aref accum j i) (aref buf j i)))))))
   (when (< repetition (- repetitions 1))
     (return-from draw-frame))
-  #+nil (put-sf-image buf w h :dst-x (cam-dst-x cam) )
+
 
   #+nil (when update-display-p (put-sf-image (elt *buf-s* cam) w h :dst-x (cam-dst-x cam) ))
   (when (= cam 1) ;; premultiply only the camera with the reflected light with a tukey window
@@ -674,7 +674,28 @@ rectangular, for alpha=1 Hann window."
 	(dotimes (i 512)
 	  (setf (aref current-buf-s j i) (* (aref *win* j i) (aref current-buf-s j i)))))))
 
-  (put-sf-image (elt *buf-s* cam) w h :dst-x (cam-dst-x cam) :scale-max (* 14 4095s0) )
+  (put-sf-image (elt *buf-s* cam) w h :dst-x (cam-dst-x cam) :scale-max (* .3 repetitions 4095s0) )
+
+  (let ((a (make-array (list h w) :element-type 'single-float))
+	(b (elt *buf-s* cam))
+	(wa (floor extract-w 2))
+	(ha (floor extract-h 2)))
+    (dotimes (j h)
+      (dotimes (i w)
+	(setf (aref a j i) (aref b j i))))
+    (sb-sys:with-pinned-objects (a *buf-cs*)
+      (let ((plan (fftw::rplanf a :out *buf-cs* :w w :h h :flag fftw::+measure+)))
+	(fftw::%fftwf_execute plan)
+	(put-csf-image *buf-cs*
+		     :w (1+ (floor w 2)) :h h 
+		     :x0 (- x wa 1) 
+		     :y0 (- y ha 1)
+		     :x1 (+ x wa) 
+		     :y1 (+ y ha)
+		     :dst-x (cam-dst-x cam) :dst-y 512 
+		     :scale (/ scale 1s0) :offset 0s0 ;(* offset)
+		     )
+	(fftw::%fftwf_destroy_plan plan))))
   
   (cond ;; the following transform from (elt *buf-s* cam) to buf-cs
     ((= 0 cam) (fftw::%fftwf_execute *plan256-0*))
@@ -686,7 +707,7 @@ rectangular, for alpha=1 Hann window."
     (dotimes (i 512)
       (dotimes (j 512)
 	(setf (aref accum j i) 0s0))))
-
+  #+nil
   (let ((wa (floor extract-w 2))
 	(ha (floor extract-h 2)))
     (when t ;;update-display-p
@@ -697,7 +718,8 @@ rectangular, for alpha=1 Hann window."
 		     :x1 (+ x wa) 
 		     :y1 (+ y ha)
 		     :dst-x (cam-dst-x cam) :dst-y 512 
-		     :scale (/ scale 1000s0) :offset (* 1000 offset)))
+		     :scale (/ scale 1s0) :offset 0s0 ;(* offset)
+		     ))
     (extract-csf* *buf-cs* *buf-cs64in* 
 		  :w (1+ (floor w 2)) :h h
 		  :x  (- x wa 1) :y (- y ha 1)
@@ -855,15 +877,15 @@ rectangular, for alpha=1 Hann window."
 	 (s0 (elt *buf-s* 0))
 	 (s1 (elt *buf-s* 1))
 	 (s2 (elt *buf-s* 2)))
-    (sb-sys:with-pinned-objects (s0 s1 s2 *buf-cs* *buf-cs64in* *buf-cs64out*)
+    (sb-sys:with-pinned-objects (s0 s1 s2 *buf-s* *buf-cs* *buf-cs64in* *buf-cs64out*)
       (let ((*plan64* (fftw::planf *buf-cs64in* :out *buf-cs64out* 
 				   :w 64 :h 64 :flag fftw::+measure+ 
 				   :sign fftw::+backward+))
-	    (*plan256-0* (fftw::rplanf s0 :out *buf-cs* :w 256 :h 256 
+	    (*plan256-0* (fftw::rplanf (elt *buf-s* 0) :out *buf-cs* :w 256 :h 256 
 				       :flag fftw::+measure+))
-	    (*plan256-2* (fftw::rplanf s1 :out *buf-cs* :w 256 :h 256 
+	    (*plan256-2* (fftw::rplanf (elt *buf-s* 1) :out *buf-cs* :w 256 :h 256 
 				       :flag fftw::+measure+))
-	    (*plan512-1* (fftw::rplanf s2 :out *buf-cs* :w 512 :h 512 
+	    (*plan512-1* (fftw::rplanf (elt *buf-s* 2) :out *buf-cs* :w 512 :h 512 
 				     :flag fftw::+measure+)))
 	(unwind-protect 
 	     (progn
@@ -1109,6 +1131,7 @@ rectangular, for alpha=1 Hann window."
 	  (fftw::%fftwf_destroy_plan *plan256-2*)
 	  (fftw::%fftwf_destroy_plan *plan512-1*))))))
 
+
 #+nil
 (let* ((n (* 32 32)  #+nil (get-stored-array-length))
        (nx (floor (sqrt n) 4))
@@ -1177,7 +1200,7 @@ rectangular, for alpha=1 Hann window."
 #+nil
 (display-mosaic-onecam-swap :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 16 :h 16)
 #+nil
-(acquire-2d :x11-display-p nil :repetitions 30)
+(acquire-2d :x11-display-p nil :repetitions 5)
 #+nil
 (acquire-2d :x11-display-p t :repetitions 10)
 #+nil
