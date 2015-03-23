@@ -302,7 +302,7 @@
 
 #+nil
 (/ (* (expt 70 2) 64 64 3 2 2 8) (* 1024 1024s0)) 
-(let* ((n (* 16 16))
+(let* ((n (* 56 56))
        (store (loop for i from 0 below n collect
 		   (loop for cam below 3 collect
 			(loop for pol below 2 collect
@@ -665,8 +665,6 @@ rectangular, for alpha=1 Hann window."
   (when (< repetition (- repetitions 1))
     (return-from draw-frame))
 
-
-  #+nil (when update-display-p (put-sf-image (elt *buf-s* cam) w h :dst-x (cam-dst-x cam) ))
   (when (= cam 1) ;; premultiply only the camera with the reflected light with a tukey window
     (let ((current-buf-s (elt *buf-s* cam)))
       (declare (type (simple-array single-float 2) *win* current-buf-s))
@@ -674,31 +672,22 @@ rectangular, for alpha=1 Hann window."
 	(dotimes (i 512)
 	  (setf (aref current-buf-s j i) (* (aref *win* j i) (aref current-buf-s j i)))))))
 
-  
-  (put-sf-image (elt *buf-s* cam) w h :dst-x (cam-dst-x cam) :scale-max (* .3 repetitions 4095s0) )
+
+  (when ;;update-display-p
+   (put-sf-image (elt *buf-s* cam) w h :dst-x (cam-dst-x cam) :scale-max (* .3 repetitions 4095s0) ))
 
   (let* ((a (make-array (list h w) :element-type 'single-float))
 	 (b (elt *buf-s* cam))
 	 (b1 (sb-ext:array-storage-vector b))
-	 (a1 (sb-ext:array-storage-vector a))
-	 (wa (floor extract-w 2))
-	 (ha (floor extract-h 2)))
+	 (a1 (sb-ext:array-storage-vector a)))
     (dotimes (i (* h w))
       (setf (aref a1 i) (aref b1 i)))
     (sb-sys:with-pinned-objects (a *buf-cs*)
       (let ((plan (fftw::rplanf a :out *buf-cs* :w w :h h :flag fftw::+measure+)))
 	(fftw::%fftwf_execute plan)
-	(put-csf-image *buf-cs*
-		     :w (1+ (floor w 2)) :h h 
-		     :x0 (- x wa 1) 
-		     :y0 (- y ha 1)
-		     :x1 (+ x wa) 
-		     :y1 (+ y ha)
-		     :dst-x (cam-dst-x cam) :dst-y 512 
-		     :scale (/ scale 30s0) :offset (* offset)
-		     )
 	(fftw::%fftwf_destroy_plan plan))))
-  
+
+  #+nil
   (cond ;; the following transform from (elt *buf-s* cam) to buf-cs
     ((= 0 cam) (fftw::%fftwf_execute *plan256-0*))
     ((= 2 cam) (fftw::%fftwf_execute *plan256-2*))
@@ -709,10 +698,10 @@ rectangular, for alpha=1 Hann window."
     (dotimes (i 512)
       (dotimes (j 512)
 	(setf (aref accum j i) 0s0))))
-  #+nil
+  
   (let ((wa (floor extract-w 2))
 	(ha (floor extract-h 2)))
-    (when t ;;update-display-p
+    (when t ;; update-display-p
       (put-csf-image *buf-cs*
 		     :w (1+ (floor w 2)) :h h 
 		     :x0 (- x wa 1) 
@@ -720,7 +709,7 @@ rectangular, for alpha=1 Hann window."
 		     :x1 (+ x wa) 
 		     :y1 (+ y ha)
 		     :dst-x (cam-dst-x cam) :dst-y 512 
-		     :scale (/ scale 1s0) :offset 0s0 ;(* offset)
+		     :scale (/ scale 30s0) :offset (* offset)
 		     ))
     (extract-csf* *buf-cs* *buf-cs64in* 
 		  :w (1+ (floor w 2)) :h h
@@ -788,7 +777,7 @@ rectangular, for alpha=1 Hann window."
 
 (let ((last-presentation-time 0)
       (start 0))
-  (defun start-acquisition-thread (&key (pol 0) (n 2000) (us-between-x11-updates 200000) (x11-display-p nil)
+  (defun start-acquisition-thread (&key (pol 0) (n 2000) (us-between-x11-updates 100000) (x11-display-p nil)
 				     (repetitions 1))
     (setf last-presentation-time (get-us-time)
 	  start last-presentation-time)
@@ -806,7 +795,7 @@ rectangular, for alpha=1 Hann window."
 		    (push (list  (- (get-us-time) start) cam success-p w h imagenr blockid timestamp value-min value-max
 				 ) *log*)
 		    (when success-p ;; do-update-p
-		      (let ((k '((84 208) (230 172) (62 68))))
+		      (let ((k '((84 206) (230 172) (62 68))))
 			(destructuring-bind (x y) (elt k cam)
 			  (draw-frame *buf-s-capture* w h pol cam (1- imagenr) x y :extract-w 64
 				      :repetitions repetitions
@@ -1202,9 +1191,9 @@ rectangular, for alpha=1 Hann window."
 #+nil
 (display-mosaic-onecam-swap :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 16 :h 16)
 #+nil
-(acquire-2d :x11-display-p nil :repetitions 30)
+(acquire-2d :x11-display-p nil :repetitions 50)
 #+nil
-(acquire-2d :x11-display-p t :repetitions 10)
+(acquire-2d :x11-display-p t :repetitions 1)
 #+nil
 (let ((a (make-array (list 64 64 2 3 64 64) :element-type '(complex single-float)
 		     )))
