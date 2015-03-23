@@ -19,7 +19,7 @@ function read_ics(fn)
     pos = find_ics_raw_start(fn)
     f=open(fn)
     seek(f,pos)
-    a=read(f,Complex64,64,64,3,54,54)
+    a=read(f,Complex64,64,64,3,16,16)
     close(f)
     a
 end
@@ -55,12 +55,12 @@ using View5D
 
 size(squeeze(abs2(a[16,16,1,:,:]),(1,2,3)))
 
-view5d(abs2(a[:,:,1,20,16]))
+view5d(abs2(a[:,:,1,16,16]))
 
 squeeze(abs2(a[16,:,2:,:]),(1,3))
 
 
-view5d(squeeze(abs2(a[:,:,1,:,:]),(3)))
+view5d(squeeze(abs2(a[:,:,2,:,:]),(3)))
 
 view5d(squeeze(abs2(a[:,:,1,:,:]),[3]))
 
