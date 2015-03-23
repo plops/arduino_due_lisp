@@ -654,9 +654,10 @@ rectangular, for alpha=1 Hann window."
     (declare (type (simple-array single-float 2) accum))
     (cond
       ((or (= cam 2) (= cam 0))
-       (dotimes (i 256)
-	 (dotimes (j 256)
-	   (incf (aref accum j i) (aref buf j i)))))
+       (let ((accum1 (sb-ext:array-storage-vector accum))
+	     (buf1 (sb-ext:array-storage-vector buf)))
+	(dotimes (i (* 256 256))
+	  (incf (aref accum1 i) (aref buf1 i)))))
       ((= cam 1)
        (dotimes (i 512)
 	 (dotimes (j 512)
@@ -664,7 +665,7 @@ rectangular, for alpha=1 Hann window."
   (when (< repetition (- repetitions 1))
     (return-from draw-frame))
   #+nil (put-sf-image buf w h :dst-x (cam-dst-x cam) )
-  (put-sf-image (elt *buf-s* cam) w h :dst-x (cam-dst-x cam) :scale-max (* 3 4095s0) )
+
   #+nil (when update-display-p (put-sf-image (elt *buf-s* cam) w h :dst-x (cam-dst-x cam) ))
   (when (= cam 1) ;; premultiply only the camera with the reflected light with a tukey window
     (let ((current-buf-s (elt *buf-s* cam)))
@@ -672,8 +673,8 @@ rectangular, for alpha=1 Hann window."
       (dotimes (j 512)
 	(dotimes (i 512)
 	  (setf (aref current-buf-s j i) (* (aref *win* j i) (aref current-buf-s j i)))))))
-  
 
+  (put-sf-image (elt *buf-s* cam) w h :dst-x (cam-dst-x cam) :scale-max (* 14 4095s0) )
   
   (cond ;; the following transform from (elt *buf-s* cam) to buf-cs
     ((= 0 cam) (fftw::%fftwf_execute *plan256-0*))
@@ -682,26 +683,21 @@ rectangular, for alpha=1 Hann window."
   
   (let ((accum (elt *buf-s* cam))) ;; reset the accumulation buffer
     (declare (type (simple-array single-float 2) accum))
-    (cond
-      ((or (= cam 2) (= cam 0))
-       (dotimes (i 256)
-	 (dotimes (j 256)
-	   (setf (aref accum j i) 0s0))))
-      ((= cam 1)
-       (dotimes (i 512)
-	 (dotimes (j 512)
-	   (setf (aref accum j i) 0s0))))))
+    (dotimes (i 512)
+      (dotimes (j 512)
+	(setf (aref accum j i) 0s0))))
 
   (let ((wa (floor extract-w 2))
 	(ha (floor extract-h 2)))
-    (when update-display-p
-      (put-csf-image *buf-cs* :w (1+ (floor w 2)) :h h 
+    (when t ;;update-display-p
+      (put-csf-image *buf-cs*
+		     :w (1+ (floor w 2)) :h h 
 		     :x0 (- x wa 1) 
 		     :y0 (- y ha 1)
 		     :x1 (+ x wa) 
 		     :y1 (+ y ha)
 		     :dst-x (cam-dst-x cam) :dst-y 512 
-		     :scale scale :offset offset))
+		     :scale (/ scale 1000s0) :offset (* 1000 offset)))
     (extract-csf* *buf-cs* *buf-cs64in* 
 		  :w (1+ (floor w 2)) :h h
 		  :x  (- x wa 1) :y (- y ha 1)
@@ -1181,7 +1177,7 @@ rectangular, for alpha=1 Hann window."
 #+nil
 (display-mosaic-onecam-swap :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 16 :h 16)
 #+nil
-(acquire-2d :x11-display-p nil :repetitions 10)
+(acquire-2d :x11-display-p nil :repetitions 30)
 #+nil
 (acquire-2d :x11-display-p t :repetitions 10)
 #+nil
