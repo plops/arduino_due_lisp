@@ -302,7 +302,7 @@
 
 #+nil
 (/ (* (expt 70 2) 64 64 3 2 2 8) (* 1024 1024s0)) 
-(let* ((n (* 56 56))
+(let* ((n (* 110 110))
        (store (loop for i from 0 below n collect
 		   (loop for cam below 3 collect
 			(loop for pol below 2 collect
@@ -709,7 +709,7 @@ rectangular, for alpha=1 Hann window."
 		     :x1 (+ x wa) 
 		     :y1 (+ y ha)
 		     :dst-x (cam-dst-x cam) :dst-y 512 
-		     :scale (/ scale 10s0) :offset (* 1 offset)
+		     :scale (/ scale 1s0) :offset (* 1 offset)
 		     ))
     (extract-csf* *buf-cs* *buf-cs64in* 
 		  :w (1+ (floor w 2)) :h h
@@ -1063,7 +1063,7 @@ rectangular, for alpha=1 Hann window."
 	 (ny (floor (sqrt n)))
 	 (reps repetitions)
 	 (center-x 1825)
-	 (center-y 2050)
+	 (center-y 1850)
 	 (radius 1800)
 	 (s0 (elt *buf-s* 0))
 	 (s1 (elt *buf-s* 1))
@@ -1124,7 +1124,7 @@ rectangular, for alpha=1 Hann window."
 
 
 #+nil
-(let* ((n (* 32 32)  #+nil (get-stored-array-length))
+(let* ((n (* 100 100)  #+nil (get-stored-array-length))
        (nx (floor (sqrt n) 4))
        (ny (floor (sqrt n) 4))
        (center-x 1825)
@@ -1191,7 +1191,7 @@ rectangular, for alpha=1 Hann window."
 #+nil
 (display-mosaic-onecam-swap :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 16 :h 16)
 #+nil
-(acquire-2d :x11-display-p nil :repetitions 50)
+(acquire-2d :x11-display-p nil :repetitions 20)
 #+nil
 (acquire-2d :x11-display-p t :repetitions 1)
 #+nil
@@ -1233,3 +1233,5 @@ rectangular, for alpha=1 Hann window."
 
 #+nil
 (/ (* 64 64 64 64 2 3 2 4) (* 1024 1024s0))
+;
+;; the fibre bundle is 104mm long, the 62um diam fiber 87cm, the yellow fiber with 9um core is 70cm (14 and a half double steps in the table)
