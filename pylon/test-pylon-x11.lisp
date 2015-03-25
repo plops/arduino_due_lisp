@@ -111,18 +111,31 @@
    :time .1d0))
 
 #+nil
-(progn ;; calculations for the beam pathlength
-  (let* ((x 0) ;; shift of the trombone
-	 (tromb-bs2 (+ 37 x 2 24 x 57))
+(progn ;; calculations for the beam pathlength, sizes in cm
+  (let* ((x 9) ;; shift of the trombone
+	 (tromb-bs2 (+ 37 x 2 24 x 57)) ;; reference for x is 37cm
+					;; away from first beam
+					;; splitter center or 24 cm
+					;; from mirror after trombone
 	 (ref-65 (+ 12 30 12 tromb-bs2))
 	 (ref-40 (+ 12.5 27.5 9 tromb-bs2))
 	 (ref-66 (+ 12 15 23.5 62 tromb-bs2))
 	 (bs-to-fiberin (+ 18 22 11))
-	 (sig-65/40 (+ bs-to-fiberin (* 1.5 70) 33))
-	 (sig-66 (+ bs-to-fiberin (* 1.5 70) (* 1.5 70) 33)))
+	 (fiber-len (* 14.5 5)) ;; measured in double holes on the
+				;; optical table (each is 50mm)
+	 (sig-65/40 (+ bs-to-fiberin (* 1.46 fiber-len) 33))
+	 (sig-66 (+ bs-to-fiberin (* 1.46 fiber-len) (* 1.5 70) 33)))
     (list (list ref-65 sig-65/40)
 	(list ref-40 sig-65/40)
 	(list ref-66 sig-66))))
+;; the ideal path length for the transmitted signals would be with 9cm
+;; increased trombone. in this case the reference beam for the
+;; reflection should be increased by 44.3cm from 250.5cm to 294.9 cm
+
+
+
+
+
 #+nil
 (arduino-serial-sbcl:talk-arduino
    ( second *ard*) 
