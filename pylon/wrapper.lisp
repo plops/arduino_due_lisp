@@ -160,10 +160,12 @@ double-float)."
   (h (:pointer :int))
   (image-nr :pointer)
   (block-id :pointer)
-  (timestamp :pointer))
+  (timestamp :pointer)
+  (value-min :pointer)
+  (value-max :pointer))
 
 (defun grab-sf (cams buf)
-  "=> (values cam success-p w h imagenr timestamp)
+  "=> (values cam success-p w h imagenr timestamp value-min value-max)
 
 Copies one acquired image into an array `buf` which should be a 2D
 array of single-float. With dimensions being at least corresponding to
@@ -186,37 +188,43 @@ This code allows to reset the counter on the camera:
 (pylon::command-execute CAMS 0 \"GevTimestampControlReset\")
 ```
 
+The return values VALUE-MIN and VALUE-MAX indicate the range of the data values in the image.
+
 The data can be fouriertransformed using FFTW:RFTF.
 
 In case of an error, all four return values are -1."
-  (declare (type (or (array single-float 2)
-		     (simple-array single-float 2)) buf))
+   (declare (type (or (array single-float 2)
+		      (simple-array single-float 2)) buf))
   ;; buf must be displaced to a 1d simple-array or a simple
   ;; multi-dimensional array
-  (destructuring-bind (h w) (array-dimensions buf)
-    (sb-sys:with-pinned-objects (buf)
-      (let ((bufp (sb-sys:vector-sap 
-		   (handler-case
-		       (sb-ext:array-storage-vector buf)
-		     (simple-error ()
-		       (array-displacement buf))))))
-	(cffi:with-foreign-objects ((cam :int)
-				    (success-p :int)
-				    (wout :int)
-				    (hout :int)
-				    (imagenr :int64)
-                                    (blockid :int64)
-				    (timestamp :int64))
-	  (%grab-sf cams w h bufp
-		 cam success-p wout hout imagenr blockid timestamp)
-	  (values (cffi:mem-ref cam :int)
-		  (if (= (cffi:mem-ref success-p :int) 1) t nil)
-		  (cffi:mem-ref wout :int)
-		  (cffi:mem-ref hout :int)
-		  (cffi:mem-ref imagenr :int64)
-                  (cffi:mem-ref blockid :int64)
-		  (cffi:mem-ref timestamp :int64)
-		  ))))))
+   (destructuring-bind (h w) (array-dimensions buf)
+     (sb-sys:with-pinned-objects (buf)
+       (let ((bufp (sb-sys:vector-sap 
+		    (handler-case
+			(sb-ext:array-storage-vector buf)
+		      (simple-error ()
+			(array-displacement buf))))))
+	 (cffi:with-foreign-objects ((cam :int)
+				     (success-p :int)
+				     (wout :int)
+				     (hout :int)
+				     (imagenr :int64)
+				     (blockid :int64)
+				     (timestamp :int64)
+				     (value-min :int64)
+				     (value-max :int64))
+	   (%grab-sf cams w h bufp
+		     cam success-p wout hout imagenr blockid timestamp value-min value-max)
+	   (values (cffi:mem-ref cam :int)
+		   (if (= (cffi:mem-ref success-p :int) 1) t nil)
+		   (cffi:mem-ref wout :int)
+		   (cffi:mem-ref hout :int)
+		   (cffi:mem-ref imagenr :int64)
+		   (cffi:mem-ref blockid :int64)
+		   (cffi:mem-ref timestamp :int64)
+                   (cffi:mem-ref value-min :int64)
+                   (cffi:mem-ref value-max :int64)
+		   ))))))
 
 (cffi:defcfun ("pylon_wrapper_grab_store" %grab-store) :void
   (cams :pointer)

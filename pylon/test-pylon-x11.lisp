@@ -79,7 +79,7 @@
 "	   n delay-ms)
    :time .1d0))
 
-
+(format nil "nalfdn s ~d" 3)
 
 (defun trigger-all-cameras-once ()
   (unless *trigger-outputs-initialized*
@@ -177,7 +177,7 @@
   (make-window :width (+ 512 256 256) :height (+ 512 512 64))
   (draw-window 0 0 100 100))
 
-(defun put-sf-image (a w h &key (dst-x 0) (dst-y 0))
+(defun put-sf-image (a w h &key (dst-x 0) (dst-y 0) (scale-max 4095s0))
   (declare (type (simple-array single-float 2) a)
 	   (type (unsigned-byte 16) w h dst-x dst-y)
 	   (optimize (speed 3) (safety 0) (debug 0)))
@@ -188,7 +188,7 @@
 			:initial-element 255))
 	 (b1 (sb-ext:array-storage-vector b))
 	 (n (* w h))
-	 (scale (/ 255s0 4095)))
+	 (scale (/ 255s0 scale-max)))
     (declare (type (simple-array single-float 1) a1)
 	     (type (simple-array (unsigned-byte 8) 1) b1))
     (dotimes (i n)
@@ -242,7 +242,8 @@
 		    (aref b j xx1 c) v)))))
     (put-image-big-req b :dst-x dst-x :dst-y dst-y) ))
 
-(defparameter *buf-s* (make-array (list 512 512) :element-type 'single-float))
+(defparameter *buf-s* (loop for i below 3 collect (make-array (list 512 512) :element-type 'single-float)))
+(defparameter *buf-s-capture* (make-array (list 512 512) :element-type 'single-float))
 (defparameter *buf-cs* (make-array (list 512 512) :element-type '(complex single-float)))
 (defparameter *buf-cs64in* (make-array (list 64 64) :element-type '(complex single-float)))
 (defparameter *buf-cs64out* (make-array (list 64 64) :element-type '(complex single-float)))
@@ -250,8 +251,8 @@
 (fftw::%fftwf_import_wisdom_from_filename "fiberholo.fftwf.wisdom")
 (time
  (progn 
-   (progn (fftw::rftf *buf-s* :out-arg *buf-cs* :w 256 :h 256 :flag fftw::+patient+) nil)
-   (progn (fftw::rftf *buf-s* :out-arg *buf-cs* :w 512 :h 512 :flag fftw::+patient+) nil)))
+   (progn (fftw::rftf *buf-s-capture* :out-arg *buf-cs* :w 256 :h 256 :flag fftw::+patient+) nil)
+   (progn (fftw::rftf *buf-s-capture* :out-arg *buf-cs* :w 512 :h 512 :flag fftw::+patient+) nil)))
 (fftw::%fftwf_export_wisdom_to_filename "fiberholo.fftwf.wisdom")
 
 
@@ -286,8 +287,9 @@
 #+nil
 (fftw::%fftwf_destroy_plan *plan64*)
 
-(defparameter *plan256* (fftw::rplanf *buf-s* :out *buf-cs* :w 256 :h 256 :flag fftw::+measure+))
-(defparameter *plan512* (fftw::rplanf *buf-s* :out *buf-cs* :w 512 :h 512 :flag fftw::+measure+))
+(defparameter *plan256-0* (fftw::rplanf (elt *buf-s* 0) :out *buf-cs* :w 256 :h 256 :flag fftw::+measure+))
+(defparameter *plan256-2* (fftw::rplanf (elt *buf-s* 2) :out *buf-cs* :w 256 :h 256 :flag fftw::+measure+))
+(defparameter *plan512-1* (fftw::rplanf (elt *buf-s* 1) :out *buf-cs* :w 512 :h 512 :flag fftw::+measure+))
 
 (defun cam-dst-x (cam)
   (ecase cam
@@ -300,7 +302,7 @@
 
 #+nil
 (/ (* (expt 70 2) 64 64 3 2 2 8) (* 1024 1024s0)) 
-(let* ((n (* 54 54))
+(let* ((n (* 56 56))
        (store (loop for i from 0 below n collect
 		   (loop for cam below 3 collect
 			(loop for pol below 2 collect
@@ -636,36 +638,85 @@ rectangular, for alpha=1 Hann window."
 
 (create-windows)
 
-(defun draw-frame (buf w h pol cam framenr x y &key (extract-w 64) (extract-h extract-w) (scale #.(/ 20s0 4095)) (offset (- 12000s0)) (update-display-p nil))
+(defun draw-frame (buf w h pol cam framenr x y &key (repetitions 1)
+						 (repetition 0)
+						 (extract-w 64) (extract-h extract-w) (scale #.(/ 20s0 4095)) (offset (- 12000s0)) (update-display-p nil))
   (declare (optimize (speed 3))
-	   (type fixnum w h pol cam framenr x y extract-w extract-h)
+	   (type fixnum w h pol x y)
+	   (type (integer 1 100000) extract-w extract-h)
+	   (type (integer 0 1000000) framenr)
+	   (type (integer 0 3) cam)
+	   (type (integer 0 10000) repetition)
+	   (type (integer 1 10000) repetitions)
+	   (type (simple-array single-float 2) buf)
 	   (type single-float scale offset))
-  (when update-display-p (put-sf-image buf w h :dst-x (cam-dst-x cam) ))
-  (when (= cam 1)
-    (let ()
-      (declare (type (simple-array single-float 2) *win* *buf-s*))
+  (let ((accum (elt *buf-s* cam)))
+    (declare (type (simple-array single-float 2) accum))
+    (cond
+      ((or (= cam 2) (= cam 0))
+       (let ((accum1 (sb-ext:array-storage-vector accum))
+	     (buf1 (sb-ext:array-storage-vector buf)))
+	(dotimes (i (* 256 256))
+	  (incf (aref accum1 i) (aref buf1 i)))))
+      ((= cam 1)
+       (dotimes (i 512)
+	 (dotimes (j 512)
+	   (incf (aref accum j i) (aref buf j i)))))))
+  (when (< repetition (- repetitions 1))
+    (return-from draw-frame))
+
+  (when (= cam 1) ;; premultiply only the camera with the reflected light with a tukey window
+    (let ((current-buf-s (elt *buf-s* cam)))
+      (declare (type (simple-array single-float 2) *win* current-buf-s))
       (dotimes (j 512)
 	(dotimes (i 512)
-	  (setf (aref *buf-s* j i) (* (aref *win* j i) (aref *buf-s* j i)))))))
+	  (setf (aref current-buf-s j i) (* (aref *win* j i) (aref current-buf-s j i)))))))
+
+
+  (when ;;update-display-p
+   (put-sf-image (elt *buf-s* cam) w h :dst-x (cam-dst-x cam) :scale-max (* .3 repetitions 4095s0) ))
+
+  (let* ((a (make-array (list h w) :element-type 'single-float))
+	 (b (elt *buf-s* cam))
+	 (b1 (sb-ext:array-storage-vector b))
+	 (a1 (sb-ext:array-storage-vector a)))
+    (dotimes (i (* h w))
+      (setf (aref a1 i) (aref b1 i)))
+    (sb-sys:with-pinned-objects (a *buf-cs*)
+      (let ((plan (fftw::rplanf a :out *buf-cs* :w w :h h :flag fftw::+measure+)))
+	(fftw::%fftwf_execute plan)
+	(fftw::%fftwf_destroy_plan plan))))
+
+  #+nil
+  (cond ;; the following transform from (elt *buf-s* cam) to buf-cs
+    ((= 0 cam) (fftw::%fftwf_execute *plan256-0*))
+    ((= 2 cam) (fftw::%fftwf_execute *plan256-2*))
+    ((= 1 cam) (fftw::%fftwf_execute *plan512-1*)))
   
-  (cond ((or (= 0 cam) (= 2 cam)) (fftw::%fftwf_execute *plan256*))
-	((= 1 cam) (fftw::%fftwf_execute *plan512*)))
+  (let ((accum (elt *buf-s* cam))) ;; reset the accumulation buffer
+    (declare (type (simple-array single-float 2) accum))
+    (dotimes (i 512)
+      (dotimes (j 512)
+	(setf (aref accum j i) 0s0))))
+  
   (let ((wa (floor extract-w 2))
 	(ha (floor extract-h 2)))
-    (when update-display-p
-      (put-csf-image *buf-cs* :w (1+ (floor w 2)) :h h 
+    (when t ;; update-display-p
+      (put-csf-image *buf-cs*
+		     :w (1+ (floor w 2)) :h h 
 		     :x0 (- x wa 1) 
 		     :y0 (- y ha 1)
 		     :x1 (+ x wa) 
 		     :y1 (+ y ha)
 		     :dst-x (cam-dst-x cam) :dst-y 512 
-		     :scale scale :offset offset))
+		     :scale (/ scale 10s0) :offset (* 1 offset)
+		     ))
     (extract-csf* *buf-cs* *buf-cs64in* 
 		  :w (1+ (floor w 2)) :h h
 		  :x  (- x wa 1) :y (- y ha 1)
 		  :w-extract extract-w :h-extract extract-h))
 
-  (let* ((a (get-stored-array 0 pol cam framenr))
+  (let* ((a (get-stored-array 0 pol cam (floor framenr repetitions)))
 	 (pixels1 (expt (cond ((or (= 0 cam) (= 2 cam)) 256)
 			      ((= 1 cam) 512)
 			      (t (error "unexpected value for camera index: ~a." cam)))
@@ -698,7 +749,8 @@ rectangular, for alpha=1 Hann window."
       (when update-display-p 
 	(put-csf-image a :w 64 :h 64 :dst-x (cam-dst-x cam) :dst-y (- 512 64) :scale 1s0 :offset 0s0)))))
 
-
+#+nil
+(get-stored-array 0 0 0 0)
 
 (defun draw-rect (x1 y1 x2 y2)
   (draw-window x1 y1 x2 y1)
@@ -725,7 +777,8 @@ rectangular, for alpha=1 Hann window."
 
 (let ((last-presentation-time 0)
       (start 0))
-  (defun start-acquisition-thread (&key (pol 0) (n 2000) (us-between-x11-updates 200000) (x11-display-p nil))
+  (defun start-acquisition-thread (&key (pol 0) (n 2000) (us-between-x11-updates 100000) (x11-display-p nil)
+				     (repetitions 1))
     (setf last-presentation-time (get-us-time)
 	  start last-presentation-time)
     (sb-thread:make-thread 
@@ -733,23 +786,27 @@ rectangular, for alpha=1 Hann window."
 	 (reset-current-index)
 	 (progn ;; sb-sprof:with-profiling (:max-samples 1000 :report :flat :loop nil)
 	   (dotimes (i n)
-	     (let* ((current (get-us-time))
-		    (do-update-p (< us-between-x11-updates (abs (- current last-presentation-time)) )))
-	       (dotimes (j 3)
-		 (multiple-value-bind (cam success-p w h imagenr blockid timestamp) 
-		     (pylon::grab-sf *cams* *buf-s*)
-		   (push (list  (- (get-us-time) start) cam success-p w h imagenr blockid timestamp) *log*)
-		   (when success-p ;; do-update-p
-		     (let ((k '((84 208) (230 172) (62 68))))
-		       (destructuring-bind (x y) (elt k cam)
-			 (draw-frame *buf-s* w h pol cam (1- imagenr) x y :extract-w 64 
-				     :scale (/ 10s0 4095) :update-display-p (and do-update-p x11-display-p)
-				     :offset (let ((o -12000s0)) (ecase cam 
-														      (0 o)
-														      (1 (* 2 o))
-														      (2 o)))))))))
-	       (when do-update-p
-		 (setf last-presentation-time current))))))
+	     (dotimes (rep repetitions)
+	      (let* ((current (get-us-time))
+		     (do-update-p (< us-between-x11-updates (abs (- current last-presentation-time)) )))
+		(dotimes (j 3)
+		  (multiple-value-bind (cam success-p w h imagenr blockid timestamp value-min value-max) 
+		      (pylon::grab-sf *cams* *buf-s-capture*)
+		    (push (list  (- (get-us-time) start) cam success-p w h imagenr blockid timestamp value-min value-max
+				 ) *log*)
+		    (when success-p ;; do-update-p
+		      (let ((k '((84 206) (230 172) (62 68))))
+			(destructuring-bind (x y) (elt k cam)
+			  (draw-frame *buf-s-capture* w h pol cam (1- imagenr) x y :extract-w 64
+				      :repetitions repetitions
+				      :repetition rep
+				      :scale (/ 10s0 4095) :update-display-p (and do-update-p x11-display-p)
+				      :offset (let ((o -12000s0)) (ecase cam 
+								    (0 o)
+								    (1 (* 2 o))
+								    (2 o)))))))))
+		(when do-update-p
+		  (setf last-presentation-time current)))))))
      :name "camera-acquisition")))
 
 #+nil
@@ -807,14 +864,19 @@ rectangular, for alpha=1 Hann window."
 	 (ny (sqrt n))
 	 (center-x 1825)
 	 (center-y 2050)
-	 (radius 1800))
-    (sb-sys:with-pinned-objects (*buf-s* *buf-cs* *buf-cs64in* *buf-cs64out*)
+	 (radius 1800)
+	 (s0 (elt *buf-s* 0))
+	 (s1 (elt *buf-s* 1))
+	 (s2 (elt *buf-s* 2)))
+    (sb-sys:with-pinned-objects (s0 s1 s2 *buf-s* *buf-cs* *buf-cs64in* *buf-cs64out*)
       (let ((*plan64* (fftw::planf *buf-cs64in* :out *buf-cs64out* 
 				   :w 64 :h 64 :flag fftw::+measure+ 
 				   :sign fftw::+backward+))
-	    (*plan256* (fftw::rplanf *buf-s* :out *buf-cs* :w 256 :h 256 
-				     :flag fftw::+measure+))
-	    (*plan512* (fftw::rplanf *buf-s* :out *buf-cs* :w 512 :h 512 
+	    (*plan256-0* (fftw::rplanf (elt *buf-s* 0) :out *buf-cs* :w 256 :h 256 
+				       :flag fftw::+measure+))
+	    (*plan256-2* (fftw::rplanf (elt *buf-s* 1) :out *buf-cs* :w 256 :h 256 
+				       :flag fftw::+measure+))
+	    (*plan512-1* (fftw::rplanf (elt *buf-s* 2) :out *buf-cs* :w 512 :h 512 
 				     :flag fftw::+measure+)))
 	(unwind-protect 
 	     (progn
@@ -862,8 +924,9 @@ rectangular, for alpha=1 Hann window."
 	  (pylon:stop-grabbing *cams*))
 	(progn 
 	  (fftw::%fftwf_destroy_plan *plan64*)
-	  (fftw::%fftwf_destroy_plan *plan256*)
-	  (fftw::%fftwf_destroy_plan *plan512*))))))
+	  (fftw::%fftwf_destroy_plan *plan256-0*)
+	  (fftw::%fftwf_destroy_plan *plan256-2*)
+	  (fftw::%fftwf_destroy_plan *plan512-1*))))))
 
 (defun trigger-all-cameras-seq-2d-scan ( &key 
 					   (starti (- 2000 500)) (startj (- 2000 500))
@@ -922,40 +985,115 @@ rectangular, for alpha=1 Hann window."
 					 (/ (- maxi starti) (* 4 stepi/4))
 					 (* delay/4-ms))
 				      (* (/ (- maxj startj) stepj) line-delay-ms))
-				   1000s0))))
+		    1000s0))))
 
-(defun acquire-2d ()
+#+nil
+(let ((count 10))
+  (loop while (< 0 count) collect (progn (decf count) count)))
+
+(defun trigger-all-cameras-seq-2d-scan-with-repetition ( &key 
+					   (starti (- 2000 500)) (startj (- 2000 500))
+					   (maxi (+ 2000 500)) (maxj (+ 2000 500))
+					   (stepi/4 10)
+					   (stepj 10)
+					   (repetitions 1)
+					   (delay/4-ms 5)
+					   (line-delay-ms 100))
+  (unless *trigger-outputs-initialized*
+    (initialize-trigger-outputs))
+  (format t "scan ~a" (list (list starti maxi stepi/4)
+			  (list startj maxj stepj)
+			  'time (/ (+ (* (/ (- maxj startj) stepj) 
+					 (/ (- maxi starti) (* 4 stepi/4))
+					 (* delay/4-ms))
+				      (* (/ (- maxj startj) stepj) line-delay-ms))
+				   1000s0))
+	  )
+  (arduino-serial-sbcl:talk-arduino
+   (second *ard*) 
+   (first *ard*)
+   (format nil 
+	   "(progn
+  (set 'i ~a)
+  (set 'j ~a)
+  (while (< j ~a)
+    (while (< i ~a)
+      (dac i j)
+      (set 'i (+ i ~a)) (delay ~a) (dac i j)
+      (set 'i (+ i ~a)) (delay ~a) (dac i j)
+      (set 'i (+ i ~a)) (delay ~a) (dac i j)
+      (delay ~a)
+      (set 'count ~a)
+      (while (< 0 count)
+        (set 'count (- count 1))
+        (digital-write 11 1)
+        (digital-write 12 1) 
+        (digital-write 10 1)
+        (delay 1)
+        (digital-write 11 0)
+        (digital-write 12 0) 
+        (digital-write 10 0)
+        (delay ~a))
+      (set 'i (+ i ~a)))
+    (set 'i ~a)
+    (set 'j (+ j ~a))
+    (dac i j)
+    (delay ~a)))"
+	   starti startj
+	   maxj maxi
+	   stepi/4 delay/4-ms
+           stepi/4 delay/4-ms
+	   stepi/4 delay/4-ms
+	   delay/4-ms
+	   repetitions
+	   (* 4 delay/4-ms)
+	   stepi/4
+	   starti
+	   stepj
+	   line-delay-ms)
+   :time (+ .4s0 (/ (+ (* (/ (- maxj startj) stepj) 
+			  (/ (- maxi starti) (* 4 stepi/4))
+			  (* delay/4-ms repetitions))
+		       (* (/ (- maxj startj) stepj) line-delay-ms))
+		    1000s0))))
+
+(defun acquire-2d (&key (x11-display-p nil) (repetitions 1))
   (let* ((n (get-stored-array-length))
 	 (nx (floor (sqrt n)))
 	 (ny (floor (sqrt n)))
+	 (reps repetitions)
 	 (center-x 1825)
 	 (center-y 2050)
-	 (radius 1800))
+	 (radius 1800)
+	 (s0 (elt *buf-s* 0))
+	 (s1 (elt *buf-s* 1))
+	 (s2 (elt *buf-s* 2)))
     (progn 
       (setf
        *trigger-outputs-initialized* nil)
       (initialize-trigger-outputs))
-    (sb-sys:with-pinned-objects (*buf-s* *buf-cs* *buf-cs64in* *buf-cs64out*)
+    (sb-sys:with-pinned-objects (s0 s1 s2 *buf-cs* *buf-cs64in* *buf-cs64out*)
       (let ((*plan64* (fftw::planf *buf-cs64in* :out *buf-cs64out* 
 				   :w 64 :h 64 :flag fftw::+measure+ 
 				   :sign fftw::+backward+))
-	    (*plan256* (fftw::rplanf *buf-s* :out *buf-cs* :w 256 :h 256 
-				     :flag fftw::+measure+))
-	    (*plan512* (fftw::rplanf *buf-s* :out *buf-cs* :w 512 :h 512 
-				     :flag fftw::+measure+)))
+	    (*plan256-0* (fftw::rplanf s0 :out *buf-cs* :w 256 :h 256 :flag fftw::+measure+))
+	    (*plan256-2* (fftw::rplanf s2 :out *buf-cs* :w 256 :h 256 :flag fftw::+measure+))
+	    (*plan512-1* (fftw::rplanf s1 :out *buf-cs* :w 512 :h 512 :flag fftw::+measure+)))
 	(macrolet ((do-trigger ()
 		     `(let* ((ci 1700)
 			     (cj 2200)
 			     (stepi/4 15)
 			     (stepj (* 4 stepi/4)))
-			(trigger-all-cameras-seq-2d-scan :starti (- ci (* (floor nx 2) (* 4 stepi/4)))
-							 :startj (- cj (* (floor ny 2) stepj))
-							 :maxi (+ ci (* (floor nx 2) (* 4 stepi/4)))
-							 :maxj (+ cj (* (floor ny 2) stepj))
-							 :stepi/4 stepi/4
-							 :stepj stepj
-							 :line-delay-ms 30
-							 :delay/4-ms 5))))
+			(trigger-all-cameras-seq-2d-scan-with-repetition
+			 :starti (- ci (* (floor nx 2) (* 4 stepi/4)))
+			 :startj (- cj (* (floor ny 2) stepj))
+			 :maxi (+ ci (* (floor nx 2) (* 4 stepi/4)))
+			 :maxj (+ cj (* (floor ny 2) stepj))
+			 :stepi/4 stepi/4
+			 :stepj stepj
+			 :repetitions reps
+			 :line-delay-ms 30
+			 :delay/4-ms 5))))
 	 (unwind-protect 
 	      (progn
 		(defparameter *log* nil)
@@ -963,7 +1101,7 @@ rectangular, for alpha=1 Hann window."
 	       
 		(reset-camera-timers *cams* 3)
 		(pylon:start-grabbing *cams*)
-		(let ((th (start-acquisition-thread :pol 0 :n n :x11-display-p nil)))
+		(let ((th (start-acquisition-thread :pol 0 :n n :x11-display-p x11-display-p  :repetitions reps)))
 		  (sleep .02)
 		  (do-trigger)
 		  (sb-thread:join-thread th)))
@@ -973,18 +1111,20 @@ rectangular, for alpha=1 Hann window."
 	      (progn
 		(reset-camera-timers *cams* 3)
 		(pylon:start-grabbing *cams*)
-		(let ((th (start-acquisition-thread :pol 1 :n n :x11-display-p nil)))
+		(let ((th (start-acquisition-thread :pol 1 :n n :x11-display-p x11-display-p :repetitions reps)))
 		  (sleep .02)
 		  (do-trigger)
 		  (sb-thread:join-thread th)))
 	   (pylon:stop-grabbing *cams*)))
 	(progn 
 	  (fftw::%fftwf_destroy_plan *plan64*)
-	  (fftw::%fftwf_destroy_plan *plan256*)
-	  (fftw::%fftwf_destroy_plan *plan512*))))))
+	  (fftw::%fftwf_destroy_plan *plan256-0*)
+	  (fftw::%fftwf_destroy_plan *plan256-2*)
+	  (fftw::%fftwf_destroy_plan *plan512-1*))))))
+
 
 #+nil
-(let* ((n (get-stored-array-length))
+(let* ((n (* 32 32)  #+nil (get-stored-array-length))
        (nx (floor (sqrt n) 4))
        (ny (floor (sqrt n) 4))
        (center-x 1825)
@@ -992,16 +1132,18 @@ rectangular, for alpha=1 Hann window."
        (radius 1800)
        (ci 1700)
        (cj 2200)
-       (stepi 10)
-       (stepj stepi))
-  (trigger-all-cameras-seq-2d-scan :starti (- ci (* (floor nx 2) stepi))
-				   :startj (- cj (* (floor ny 2) stepj))
-				   :maxi (+ ci (* (floor nx 2) stepi))
-				   :maxj (+ cj (* (floor ny 2) stepj))
-				   :stepi stepi
-				   :stepj stepj
-				   :line-delay-ms 10
-				   :delay-ms 18))
+       (stepi/4 10)
+       (stepj (* 4 stepi/4)))
+  (trigger-all-cameras-seq-2d-scan-with-repetition
+   :repetitions 40
+   :starti (- ci (* (floor nx 2) stepi/4 4))
+   :startj (- cj (* (floor ny 2) stepj))
+   :maxi (+ ci (* (floor nx 2) 4 stepi/4))
+   :maxj (+ cj (* (floor ny 2) stepj))
+   :stepi/4 stepi/4
+   :stepj stepj
+   :line-delay-ms 10
+   :delay/4-ms 5))
 
 #+nil
 (progn
@@ -1040,20 +1182,37 @@ rectangular, for alpha=1 Hann window."
 #+nil
 (progn
   (pure-x11::clear-area)
- (display-mosaic-onecam :ft 0 :pol 0 :cam 2
-			:x-offset 0 :y-offset 34 :w 54 :h 54
-			:scale 100s0 :offset (* 0 -6.0s0)
+ (display-mosaic-onecam :ft 0 :pol 0 :cam 1
+			:x-offset 0 :y-offset 34 :w 16 :h 16
+			:scale .1s0 :offset (* 0 -6.0s0)
 			:mark-global-maxima-p NIL :global-threshold 100s0))
 #+nil
 (display-mosaic-onecam :ft 1 :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 32 :h 32 :scale 100s0)
 #+nil
 (display-mosaic-onecam-swap :pol 0 :cam 1 :x-offset 0 :y-offset 0 :w 16 :h 16)
 #+nil
-(acquire-2d)
+(acquire-2d :x11-display-p nil :repetitions 50)
+#+nil
+(acquire-2d :x11-display-p t :repetitions 1)
 #+nil
 (let ((a (make-array (list 64 64 2 3 64 64) :element-type '(complex single-float)
 		     )))
   (ics:write-ics2 (format nil "/dev/shm/o.ics") a))
+
+#+nil
+(block-laser)
+#+nil
+(unblock-laser)
+
+(defun block-laser ()
+  (arduino-serial-sbcl:talk-arduino
+   (second *ard*) (first *ard*)
+   "(progn (pin-mode 8 1) (digital-write 8 0))"))
+
+(defun unblock-laser ()
+  (arduino-serial-sbcl:talk-arduino
+   (second *ard*) (first *ard*)
+   "(digital-write 8 1)"))
 
 #+nil
 (let* ((n (get-stored-array-length))
