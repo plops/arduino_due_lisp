@@ -24,6 +24,9 @@
 
 (in-package :pylon-test-x11)
 
+(defparameter *sw* 64)
+(defparameter *lw* 80)
+
 (progn
   (pylon:initialize)
   (defparameter *cams* (pylon:create (pylon::factory) 3) "Handle to multiple Pylon cameras.")
@@ -194,11 +197,9 @@
 #+nil
 (pylon:set-value-i *cams* 1 "OffsetY" 112)
 
-;; ((21433565 1 1 256 256 783 342   70 0 125000000 9000 :TRIGGER-MODE 0 :LAST-ERROR 1 :RATE-P 0 :REVERSE-X 0 :RATE 105.82011)
-;;  (21433566 1 1 512 512 789 112 2975 0 125000000 9000 :TRIGGER-MODE 0 :LAST-ERROR 1 :RATE-P 0 :REVERSE-X 0 :RATE 54.318306)
-;;  (21433540 1 1 256 256 996 439  105 0 125000000 9000 :TRIGGER-MODE 0 :LAST-ERROR 1 :RATE-P 0 :REVERSE-X 1 :RATE 105.82011))
-
-;; cam1 66 roi settings to be outside of fiber core 332 383
+;; => ((21433565 1 1 64 64  866 469   105 0 125000000 9000 :TRIGGER-MODE 0 :LAST-ERROR 1 :RATE-P 0 :REVERSE-X 0 :RATE 366.30035)
+;;     (21433566 1 1 80 80 1033 198 15995 0 125000000 9000 :TRIGGER-MODE 0 :LAST-ERROR 1 :RATE-P 0 :REVERSE-X 0 :RATE 60.990486)
+;;     (21433540 1 1 64 64 1066 564   175 8 125000000 9000 :TRIGGER-MODE 0 :LAST-ERROR 1 :RATE-P 0 :REVERSE-X 1 :RATE 366.30035))
 
 (progn ;; open a window and draw a line
   (connect)
@@ -270,17 +271,17 @@
 		    (aref b j xx1 c) v)))))
     (put-image-big-req b :dst-x dst-x :dst-y dst-y) ))
 
-(defparameter *buf-s* (loop for i below 3 collect (make-array (list 512 512) :element-type 'single-float)))
-(defparameter *buf-s-capture* (make-array (list 512 512) :element-type 'single-float))
-(defparameter *buf-cs* (make-array (list 512 512) :element-type '(complex single-float)))
-(defparameter *buf-cs64in* (make-array (list 64 64) :element-type '(complex single-float)))
-(defparameter *buf-cs64out* (make-array (list 64 64) :element-type '(complex single-float)))
+(defparameter *buf-s* (loop for i below 3 collect (make-array (list *lw* *lw*) :element-type 'single-float)))
+(defparameter *buf-s-capture* (make-array (list *lw* *lw*) :element-type 'single-float))
+(defparameter *buf-cs* (make-array (list *lw* *lw*) :element-type '(complex single-float)))
+(defparameter *buf-cs64in* (make-array (list *sw* *sw*) :element-type '(complex single-float)))
+(defparameter *buf-cs64out* (make-array (list *sw* *sw*) :element-type '(complex single-float)))
 
 (fftw::%fftwf_import_wisdom_from_filename "fiberholo.fftwf.wisdom")
 (time
  (progn 
-   (progn (fftw::rftf *buf-s-capture* :out-arg *buf-cs* :w 256 :h 256 :flag fftw::+patient+) nil)
-   (progn (fftw::rftf *buf-s-capture* :out-arg *buf-cs* :w 512 :h 512 :flag fftw::+patient+) nil)))
+   (progn (fftw::rftf *buf-s-capture* :out-arg *buf-cs* :w *sw* :h *sw* :flag fftw::+patient+) nil)
+   (progn (fftw::rftf *buf-s-capture* :out-arg *buf-cs* :w *lw* :h *lw* :flag fftw::+patient+) nil)))
 (fftw::%fftwf_export_wisdom_to_filename "fiberholo.fftwf.wisdom")
 
 
@@ -311,26 +312,26 @@
     (pylon::command-execute cams i "GevTimestampControlReset")))
 
 
-(defparameter *plan64* (fftw::planf *buf-cs64in* :out *buf-cs64out* :w 64 :h 64 :flag fftw::+measure+ :sign fftw::+backward+))
+(defparameter *plan256* (fftw::planf *buf-cs64in* :out *buf-cs64out* :w 64 :h 64 :flag fftw::+measure+ :sign fftw::+backward+))
 #+nil
-(fftw::%fftwf_destroy_plan *plan64*)
+(fftw::%fftwf_destroy_plan *plan256*)
 
-(defparameter *plan256-0* (fftw::rplanf (elt *buf-s* 0) :out *buf-cs* :w 256 :h 256 :flag fftw::+measure+))
-(defparameter *plan256-2* (fftw::rplanf (elt *buf-s* 2) :out *buf-cs* :w 256 :h 256 :flag fftw::+measure+))
-(defparameter *plan512-1* (fftw::rplanf (elt *buf-s* 1) :out *buf-cs* :w 512 :h 512 :flag fftw::+measure+))
+(defparameter *plan256-0* (fftw::rplanf (elt *buf-s* 0) :out *buf-cs* :w *sw* :h *sw* :flag fftw::+measure+))
+(defparameter *plan256-2* (fftw::rplanf (elt *buf-s* 2) :out *buf-cs* :w *sw* :h *sw* :flag fftw::+measure+))
+(defparameter *plan512-1* (fftw::rplanf (elt *buf-s* 1) :out *buf-cs* :w *lw* :h *lw* :flag fftw::+measure+))
 
 (defun cam-dst-x (cam)
   (ecase cam
     (0 0)
-    (1 256)
-    (2 (+ 512 256))))
+    (1 *sw*)
+    (2 (+ *lw* *sw*))))
 
 (defparameter *store* (loop for i from 0 below 10 collect (make-array (list 64 64) :element-type '(complex single-float))))
 (defparameter *store-index* 0)
 
 #+nil
 (/ (* (expt 70 2) 64 64 3 2 2 8) (* 1024 1024s0)) 
-(let* ((n (* 110 110))
+(let* ((n (* 32 32))
        (store (loop for i from 0 below n collect
 		   (loop for cam below 3 collect
 			(loop for pol below 2 collect
@@ -684,11 +685,11 @@ rectangular, for alpha=1 Hann window."
       ((or (= cam 2) (= cam 0))
        (let ((accum1 (sb-ext:array-storage-vector accum))
 	     (buf1 (sb-ext:array-storage-vector buf)))
-	(dotimes (i (* 256 256))
+	(dotimes (i (* *sw* *sw*))
 	  (incf (aref accum1 i) (aref buf1 i)))))
       ((= cam 1)
-       (dotimes (i 512)
-	 (dotimes (j 512)
+       (dotimes (i *lw*)
+	 (dotimes (j *lw*)
 	   (incf (aref accum j i) (aref buf j i)))))))
   (when (< repetition (- repetitions 1))
     (return-from draw-frame))
@@ -696,8 +697,8 @@ rectangular, for alpha=1 Hann window."
   (when (= cam 1) ;; premultiply only the camera with the reflected light with a tukey window
     (let ((current-buf-s (elt *buf-s* cam)))
       (declare (type (simple-array single-float 2) *win* current-buf-s))
-      (dotimes (j 512)
-	(dotimes (i 512)
+      (dotimes (j *lw*)
+	(dotimes (i *lw*)
 	  (setf (aref current-buf-s j i) (* (aref *win* j i) (aref current-buf-s j i)))))))
 
 
@@ -723,8 +724,8 @@ rectangular, for alpha=1 Hann window."
   
   (let ((accum (elt *buf-s* cam))) ;; reset the accumulation buffer
     (declare (type (simple-array single-float 2) accum))
-    (dotimes (i 512)
-      (dotimes (j 512)
+    (dotimes (i *lw*)
+      (dotimes (j *lw*)
 	(setf (aref accum j i) 0s0))))
   
   (let ((wa (floor extract-w 2))
@@ -736,17 +737,17 @@ rectangular, for alpha=1 Hann window."
 		     :y0 (- y ha 1)
 		     :x1 (+ x wa) 
 		     :y1 (+ y ha)
-		     :dst-x (cam-dst-x cam) :dst-y 512 
+		     :dst-x (cam-dst-x cam) :dst-y *lw* 
 		     :scale (/ scale 1s0) :offset (* 1 offset)
 		     ))
-    (extract-csf* *buf-cs* *buf-cs64in* 
+    #+nil (extract-csf* *buf-cs* *buf-cs64in* 
 		  :w (1+ (floor w 2)) :h h
 		  :x  (- x wa 1) :y (- y ha 1)
 		  :w-extract extract-w :h-extract extract-h))
 
   (let* ((a (get-stored-array 0 pol cam (floor framenr repetitions)))
-	 (pixels1 (expt (cond ((or (= 0 cam) (= 2 cam)) 256)
-			      ((= 1 cam) 512)
+	 (pixels1 (expt (cond ((or (= 0 cam) (= 2 cam)) *sw*)
+			      ((= 1 cam) *lw*)
 			      (t (error "unexpected value for camera index: ~a." cam)))
 			1))
 	 (pixels2 (* 64))
@@ -763,7 +764,7 @@ rectangular, for alpha=1 Hann window."
     (let* ((a (get-stored-array 1 pol cam framenr)
 	     #+nil (elt *store* *store-index*))
 	   (pixels1 (expt (cond ((or (= 0 cam) (= 2 cam)) 256)
-				((= 1 cam) 512)
+				((= 1 cam) *lw*)
 				(t (error "unexpected value for camera index: ~a." cam)))
 			  1))
 	   (pixels2 (* 64))
@@ -775,7 +776,7 @@ rectangular, for alpha=1 Hann window."
 	(dotimes (j 64)
 	  (setf (aref a j i) (* s (expt -1 (+ i j)) (aref *buf-cs64out* j i)))))
       (when update-display-p 
-	(put-csf-image a :w 64 :h 64 :dst-x (cam-dst-x cam) :dst-y (- 512 64) :scale 1s0 :offset 0s0)))))
+	(put-csf-image a :w 64 :h 64 :dst-x (cam-dst-x cam) :dst-y (- *lw* 64) :scale 1s0 :offset 0s0)))))
 
 #+nil
 (get-stored-array 0 0 0 0)
@@ -900,11 +901,11 @@ rectangular, for alpha=1 Hann window."
       (let ((*plan64* (fftw::planf *buf-cs64in* :out *buf-cs64out* 
 				   :w 64 :h 64 :flag fftw::+measure+ 
 				   :sign fftw::+backward+))
-	    (*plan256-0* (fftw::rplanf (elt *buf-s* 0) :out *buf-cs* :w 256 :h 256 
+	    (*plan256-0* (fftw::rplanf (elt *buf-s* 0) :out *buf-cs* :w *sw* :h *sw* 
 				       :flag fftw::+measure+))
-	    (*plan256-2* (fftw::rplanf (elt *buf-s* 1) :out *buf-cs* :w 256 :h 256 
+	    (*plan256-2* (fftw::rplanf (elt *buf-s* 1) :out *buf-cs* :w *sw* :h *sw* 
 				       :flag fftw::+measure+))
-	    (*plan512-1* (fftw::rplanf (elt *buf-s* 2) :out *buf-cs* :w 512 :h 512 
+	    (*plan512-1* (fftw::rplanf (elt *buf-s* 2) :out *buf-cs* :w *lw* :h *lw* 
 				     :flag fftw::+measure+)))
 	(unwind-protect 
 	     (progn
@@ -1104,9 +1105,9 @@ rectangular, for alpha=1 Hann window."
       (let ((*plan64* (fftw::planf *buf-cs64in* :out *buf-cs64out* 
 				   :w 64 :h 64 :flag fftw::+measure+ 
 				   :sign fftw::+backward+))
-	    (*plan256-0* (fftw::rplanf s0 :out *buf-cs* :w 256 :h 256 :flag fftw::+measure+))
-	    (*plan256-2* (fftw::rplanf s2 :out *buf-cs* :w 256 :h 256 :flag fftw::+measure+))
-	    (*plan512-1* (fftw::rplanf s1 :out *buf-cs* :w 512 :h 512 :flag fftw::+measure+)))
+	    (*plan256-0* (fftw::rplanf s0 :out *buf-cs* :w *sw* :h *sw* :flag fftw::+measure+))
+	    (*plan256-2* (fftw::rplanf s2 :out *buf-cs* :w *sw* :h *sw* :flag fftw::+measure+))
+	    (*plan512-1* (fftw::rplanf s1 :out *buf-cs* :w *lw* :h *lw* :flag fftw::+measure+)))
 	(macrolet ((do-trigger ()
 		     `(let* ((ci 1700)
 			     (cj 2200)
