@@ -111,6 +111,19 @@
    :time .1d0))
 
 #+nil
+(progn ;; calculations for the beam pathlength
+  (let* ((x 0) ;; shift of the trombone
+	 (tromb-bs2 (+ 37 x 2 24 x 57))
+	 (ref-65 (+ 12 30 12 tromb-bs2))
+	 (ref-40 (+ 12.5 27.5 9 tromb-bs2))
+	 (ref-66 (+ 12 15 23.5 62 tromb-bs2))
+	 (bs-to-fiberin (+ 18 22 11))
+	 (sig-65/40 (+ bs-to-fiberin (* 1.5 70) 33))
+	 (sig-66 (+ bs-to-fiberin (* 1.5 70) (* 1.5 70) 33)))
+    (list (list ref-65 sig-65/40)
+	(list ref-40 sig-65/40)
+	(list ref-66 sig-66))))
+#+nil
 (arduino-serial-sbcl:talk-arduino
    ( second *ard*) 
    (first *ard*)
@@ -1235,3 +1248,4 @@ rectangular, for alpha=1 Hann window."
 (/ (* 64 64 64 64 2 3 2 4) (* 1024 1024s0))
 ;
 ;; the fibre bundle is 104mm long, the 62um diam fiber 87cm, the yellow fiber with 9um core is 70cm (14 and a half double steps in the table)
+
