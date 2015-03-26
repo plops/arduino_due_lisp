@@ -1171,8 +1171,8 @@ rectangular, for alpha=1 Hann window."
 	  (fftw::%fftwf_destroy_plan *plan256-2*)
 	  (fftw::%fftwf_destroy_plan *plan512-1*))))))
 
-(let*  ((nx 32)
-	(ny 32)
+(let*  ((nx 40)
+	(ny 40)
 	(nx*ny (* nx ny))
 	(imgs0 (make-array (list 2 nx*ny *sw* *sw*)
 			   :element-type 'single-float
@@ -1256,7 +1256,7 @@ rectangular, for alpha=1 Hann window."
   (defparameter *imgs* (list imgs0 imgs1 imgs2))))
 
 #+nil
-(acquire-2d-no-ft :repetitions 10)
+(acquire-2d-no-ft :repetitions 12)
 
 #+nil
 (loop for i below 3 do
