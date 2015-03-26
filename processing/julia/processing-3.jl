@@ -26,9 +26,9 @@ end
 
 ics_file="/var/www/localhost/data/data20150326/scan_32x32_9umfiber.ics";
 
-a1=read_ics("/dev/shm/o0.ics",64,64);
-a2=read_ics("/dev/shm/o1.ics",80,80);
-a3=read_ics("/dev/shm/o2.ics",64,64);
+a1=read_ics("/var/www/localhost/data/data20150326/o0.ics",64,64);
+a2=read_ics("/var/www/localhost/data/data20150326/o1.ics",80,80);
+a3=read_ics("/var/www/localhost/data/data20150326/o2.ics",64,64);
 
 a1s = (reshape(a1[:,:,:,:],64,64,40,40,2));
 a2s = (reshape(a2[:,:,:,:],80,80,40,40,2));
