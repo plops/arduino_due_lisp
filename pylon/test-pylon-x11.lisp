@@ -195,6 +195,13 @@
 #+nil
 (pylon:set-value-i *cams* 1 "OffsetX" 789)
 #+nil
+(let ((i 1)
+      (e 10000))
+ (let ((inc (pylon:get-inc-i *cams* i "ExposureTimeRaw")))
+   (pylon:set-value-i *cams* i "ExposureTimeRaw" (* inc (floor e inc)))))
+#+nil
+(pylon:get-value-i *cams* 1 "ExposureTimeRaw")
+#+nil
 (pylon:set-value-i *cams* 1 "OffsetY" 112)
 
 ;; => ((21433565 1 1 64 64  866 469   105 0 125000000 9000 :TRIGGER-MODE 0 :LAST-ERROR 1 :RATE-P 0 :REVERSE-X 0 :RATE 366.30035)
