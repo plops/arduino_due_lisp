@@ -25,7 +25,7 @@
 (in-package :pylon-test-x11)
 
 (defparameter *sw* 64)
-(defparameter *lw* 80)
+(defparameter *lw* 256)
 
 (progn
   (pylon:initialize)
@@ -155,7 +155,7 @@
 (arduino-serial-sbcl:talk-arduino
    ( second *ard*) 
    (first *ard*)
-   "(dac 1500 2120)")
+   "(dac 1640 2120)")
 #+nil
 (trigger-all-cameras-once)
 (defun arduino-dac (x y)
@@ -1161,8 +1161,8 @@ rectangular, for alpha=1 Hann window."
 	  (fftw::%fftwf_destroy_plan *plan256-2*)
 	  (fftw::%fftwf_destroy_plan *plan512-1*))))))
 
-(let*  ((nx 40)
-	(ny 40)
+(let*  ((nx 32)
+	(ny 32)
 	(nx*ny (* nx ny))
 	(imgs0 (make-array (list 2 nx*ny *sw* *sw*)
 			   :element-type 'single-float))
@@ -1205,7 +1205,7 @@ rectangular, for alpha=1 Hann window."
     (macrolet ((do-trigger ()
 		 `(let* ((ci 1700)
 			 (cj 2200)
-			 (stepi/4 10)
+			 (stepi/4 15)
 			 (stepj (* 4 stepi/4)))
 		    (trigger-all-cameras-seq-2d-scan-with-repetition
 		     :starti (- ci (* (floor nx 2) (* 4 stepi/4)))

@@ -19,30 +19,39 @@ function read_ics(fn,w,h)
     pos = find_ics_raw_start(fn)
     f=open(fn)
     seek(f,pos)
-    a=read(f,Float32,h,w,40*40,2)
+    a=read(f,Float32,h,w,32*32,2)
     close(f)
     a
 end
+lw=256;
+na=32;
 
 ics_file="/var/www/localhost/data/data20150326/scan_32x32_9umfiber.ics";
 
-a1=read_ics("/var/www/localhost/data/data20150326/o0.ics",64,64);
-a2=read_ics("/var/www/localhost/data/data20150326/o1.ics",80,80);
-a3=read_ics("/var/www/localhost/data/data20150326/o2.ics",64,64);
+#dir="/var/www/localhost/data/data20150326"
+dir="/dev/shm"
 
-a1s = (reshape(a1[:,:,:,:],64,64,40,40,2));
-a2s = (reshape(a2[:,:,:,:],80,80,40,40,2));
-a3s = (reshape(a3[:,:,:,:],64,64,40,40,2));
+a1=read_ics("$dir/o0.ics",64,64);
+a2=read_ics("$dir/o1.ics",lw,lw);
+a3=read_ics("$dir/o2.ics",64,64);
+
+
+
+a1s = (reshape(a1[:,:,:,:],64,64,na,na,2));
+a2s = (reshape(a2[:,:,:,:],lw,lw,na,na,2));
+a3s = (reshape(a3[:,:,:,:],64,64,na,na,2));
 
 using View5d
 
 view5d(log(abs2(fftshift(fftshift(fft(a1s,(1,2)),1),2))))
 
-view5d(log(abs2(fftshift(fftshift(fft(a2s,(1,2)),1),2))))
+fa2s=(abs(fftshift(fftshift(fft(a2s,(1,2)),1),2)));
+
+view5d(fa2s)
 
 view5d(log(abs2(fftshift(fftshift(fft(a3s,(1,2)),1),2))))
 
-view5d(a1s)
+view5d(log(fa2s[:,:,10:20,10:20,1]))
 
 view5d((reshape(a3[:,:,:,:],64,64,40,40,2)))
 
