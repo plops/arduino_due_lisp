@@ -217,8 +217,29 @@
 ;;     (21433566 1 1 128 128  999 174 9975 0 125000000 9000 :TRIGGER-MODE 0 :LAST-ERROR 1 :RATE-P 0 :REVERSE-X 0 :RATE 96.37625)
 ;;     (21433540 1 1  64  64 1066 564  350 0 125000000 9000 :TRIGGER-MODE 0 :LAST-ERROR 1 :RATE-P 0 :REVERSE-X 1 :RATE 366.30035))
 
+;; GrabSucceeded: 1cam=2 bid=6139 ts=10803956885 id=44539 inr=6139 skip=0 chunkts=10803956885 min=0 max=4095
+;; GrabSucceeded: 1cam=1 bid=6139 ts=10804032621 id=44539 inr=6139 skip=0 chunkts=10804032621 min=0 max=4095
+;; GrabSucceeded: 1cam=0 bid=6140 ts=10805710256 id=44540 inr=6140 skip=0 chunkts=10805710256 framecnt=38093893 min=0 max=4095
+;; GrabSucceeded: 1cam=2 bid=6140 ts=10805581977 id=44540 inr=6140 skip=0 chunkts=10805581977 min=0 max=4095
+;; GrabSucceeded: 1cam=1 bid=6140 ts=10805657720 id=44540 inr=6140 skip=0 chunkts=10805657720 min=0 max=4095
+;; GrabSucceeded: 1cam=0 bid=6141 ts=10807335286 id=44541 inr=6141 skip=0 chunkts=10807335286 framecnt=38093894 min=0 max=4095
+;; GrabSucceeded: 1cam=2 bid=6141 ts=10807207001 id=44541 inr=6141 skip=0 chunkts=10807207001 min=0 max=4095
+;; GrabSucceeded: 1cam=1 bid=6141 ts=10807282747 id=44541 inr=6141 skip=0 chunkts=10807282747 min=0 max=4095
+;; GrabSucceeded: 1cam=0 bid=6142 ts=10808960321 id=44542 inr=6142 skip=0 chunkts=10808960321 framecnt=38093895 min=0 max=4095
+;; GrabSucceeded: 1cam=2 bid=6142 ts=10808832030 id=44542 inr=6142 skip=0 chunkts=10808832030 min=0 max=4095
+;; GrabSucceeded: 1cam=1 bid=6142 ts=10808907781 id=44542 inr=6142 skip=0 chunkts=10808907781 min=0 max=4095
+;; GrabSucceeded: 1cam=0 bid=6143 ts=10810585421 id=44543 inr=6143 skip=0 chunkts=10810585421 framecnt=38093896 min=0 max=4095
+;; GrabSucceeded: 1cam=2 bid=6143 ts=10810457122 id=44543 inr=6143 skip=0 chunkts=10810457122 min=0 max=4095
+;; GrabSucceeded: 1cam=1 bid=6143 ts=10810532881 id=44543 inr=6143 skip=0 chunkts=10810532881 min=0 max=4095
+;; GrabSucceeded: 1cam=0 bid=6144 ts=10812210451 id=44544 inr=6144 skip=0 chunkts=10812210451 framecnt=38093897 min=0 max=4095
+;; GrabSucceeded: 1cam=2 bid=6144 ts=10812082146 id=44544 inr=6144 skip=0 chunkts=10812082146 min=0 max=4095
+;; GrabSucceeded: 1cam=1 bid=6144 ts=10812157907 id=44544 inr=6144 skip=0 chunkts=10812157907 min=0 max=4095
+;; GrabSucceeded: 1cam=0 bid=6145 ts=10815337101 id=44545 inr=6145 skip=0 chunkts=10815337101 framecnt=38093898 min=0 max=4095
 
+(/ (/ (- 10812157907 10810532881 ) 125e6)) ;; => 76.9fps
 
+(/ (- 10812157907 10810532881 ) 125e6) ;; => 0.0130 s
+(/ 96.37625);; => 0.0103 s
 
 #+nil
 (progn ;; open a window and draw a line
@@ -1171,8 +1192,8 @@ rectangular, for alpha=1 Hann window."
 	  (fftw::%fftwf_destroy_plan *plan256-2*)
 	  (fftw::%fftwf_destroy_plan *plan512-1*))))))
 
-(let*  ((nx 40)
-	(ny 40)
+(let*  ((nx 60)
+	(ny 60)
 	(nx*ny (* nx ny))
 	(imgs0 (make-array (list 2 nx*ny *sw* *sw*)
 			   :element-type 'single-float
@@ -1220,7 +1241,7 @@ rectangular, for alpha=1 Hann window."
     (macrolet ((do-trigger ()
 		 `(let* ((ci 1700)
 			 (cj 2200)
-			 (stepi/4 15)
+			 (stepi/4 7)
 			 (stepj (* 4 stepi/4)))
 		    (trigger-all-cameras-seq-2d-scan-with-repetition
 		     :starti (- ci (* (floor nx 2) (* 4 stepi/4)))
