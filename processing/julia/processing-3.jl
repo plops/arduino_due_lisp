@@ -63,10 +63,11 @@ size((a[:,:,16+32*16,1,1]))
 
 #ics_file = "/home/martin/arduino_due_lisp/processing/julia/20150224/o-pol0.ics"
 #ics_file2 = "/home/martin/arduino_due_lisp/processing/julia/20150224/o-pol1.ics"
-ics_file = "/home/martin/data20150323/o-pol0.ics"
-ics_file2 = "/home/martin/data20150323/o-pol1.ics"
-@time a = read_ics(ics_file);
-@time b = read_ics(ics_file2);
+
+#ics_file = "/home/martin/data20150323/o-pol0.ics"
+#ics_file2 = "/home/martin/data20150323/o-pol1.ics"
+#@time a = read_ics(ics_file);
+#@time b = read_ics(ics_file2);
 
 size(a)
 
@@ -126,7 +127,89 @@ view5d(squeeze(mean(map((x)->abs2(x),squeeze(a[:,:,3,:,:],3)),(3,4)),(3,4)))
 
 view5d(squeeze(mean(map((x)->abs2(x),squeeze(c[:,:,1,:,:,:],3)),(3,4,5))))
 
+view5d(squeeze(mean(map((x)->abs2(x),squeeze(c[:,:,2,:,:,:],3)),(3,4,5))))
+
+view5d(squeeze(mean(map((x)->abs2(x),squeeze(c[:,:,2,:,:,:],3)),(3,4,5)),(3,4,5)))
+
+view5d(squeeze(mean(map((x)->abs2(x),squeeze(c[:,:,2,:,:,:],3)),(1,2,5)),(1,2,5)))
+
+view5d(abs2(reshape(squeeze(c[:,:,2,:,:,:],3),64,64,54*54*2)))
+
+# image 4262 has a nice peak on the boarder (without intensity in the fiber core)
+# the peak is approximately at 51 6
+
+pat = squeeze(abs2(reshape(squeeze(c[:,:,2,:,:,:],3),64,64,54*54*2)[:,:,4262]),3);
+
+imag = squeeze(abs2(reshape(squeeze(c[:,:,2,:,:,:],3),64,64,54*54*2)[:,:,4264]),3;)
+
+# 4264:4300
+
+con = Array(Float32,127,127,300);
+for i=1:300
+    con[:,:,i]=conv2(pat,squeeze(abs2(reshape(squeeze(c[:,:,2,:,:,:],3),64,64,54*54*2)[:,:,4264+i]),3))
+end
+
+
+pat = squeeze(reshape(squeeze(c[:,:,2,:,:,:],3),64,64,54*54*2)[:,:,4262],3)
+
+imag = squeeze(reshape(squeeze(c[:,:,2,:,:,:],3),64,64,54*54*2)[:,:,4264],3)
+
+view5d(abs2(conv2(pat,imag)))
+
+
+
+# 4264:4300
+
+
+
+pat = squeeze(reshape(squeeze(c[:,:,2,:,:,:],3),64,64,54*54*2)[:,:,4262],3)
+con = Array(Complex64,127,127,30);
+for i=1:30
+    con[:,:,i]=conv2(pat,squeeze(reshape(squeeze(c[:,:,2,:,:,:],3),64,64,54*54*2)[:,:,4268-i],3))
+end
+
+
+
+view5d(abs(con))
+
+findmax(reshape(abs(con),127*127*30))
+
+con2 = Array(Complex64,127,127,30);
+val = Array(Float32,64,64,30);
+for i=1:30
+    n=indmax(abs2(con[:,:,i]))
+    con2[div(n,128),mod(n,127),i]=95;
+    shif=Complex64[exp(im*pi*(div(n,127)*x/127+mod(n,127)*y/127)) for x=1:64,y=1:64]
+    val[:,:,i]=abs(ifft(ifftshift(shif.*fftshift(fft(pat)))))
+end
+
+view5d(abs(cat(1,con,con2)))
+
+abs(cat(3,con,con2))
+
+view5d(abs(fft(shif)))
+
+repmat({x for x=1:3}',3,1)
+
+repmat({x for x=1:3}',3,1)'
+
+{y for y=1:3}
+
+repmat({y for y=1:3},1,2)
+
+fft(pat)
+
+view5d(abs(fftshift(fft(pat))))
+
+view5d(abs2(reshape(squeeze(c[:,:,2,:,:,:],3),64,64,54*54*2)[:,:,4262]))
+
+view5d(squeeze(abs2(c[:,:,2,25,25,1]),(3,4,5,6)))
+
+reshape(squeeze(c[:,:,2,:,:,:],3),64,64,54*54*2)
+
 view5d((mean(map((x)->abs2(x),squeeze(c[:,:,1,:,:,:],3)),(3,4,5))))
+
+
 
 avg_1=squeeze(mean(map((x)->abs2(x),squeeze(c[:,:,1,:,:,:],3)),(3,4,5)),(3,4,5));
 avg_3=squeeze(mean(map((x)->abs2(x),squeeze(c[:,:,3,:,:,:],3)),(3,4,5)),(3,4,5));
@@ -141,8 +224,8 @@ view5d(hcat(avgm_1,avgm_3))
 bin_1 = (avg_1 .> quantile(reshape(avg_1,64*64),.5))
 bin_3 = (avg_3 .> quantile(reshape(avg_3,64*64),.5))
 
-binm_1 = (avgm_1 .> quantile(reshape(avgm_1,54*54),.5))
-binm_3 = (avgm_3 .> quantile(reshape(avgm_3,54*54),.5))
+binm_1 = (avgm_1 .> quantile(reshape(avgm_1,54*54),.57))
+binm_3 = (avgm_3 .> quantile(reshape(avgm_3,54*54),.57))
 
 
 bin13 = bin_1 .* bin_3
