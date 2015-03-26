@@ -1168,9 +1168,15 @@ rectangular, for alpha=1 Hann window."
 	      (multiple-value-bind (cam success-p w h imagenr blockid timestamp value-min value-max) 
 		  (pylon::grab-sf *cams* *buf-s-capture*)
 		(when success-p ;; do-update-p
-		  (dotimes (iy h)
-		    (dotimes (ix w)
-		      (setf (aref imgs pol j (1- imagenr) iy ix) (aref *buf-s-capture* iy ix))))))))))
+		  (let ((a1 (sb-ext:array-storage-vector *buf-s-capture*)))
+		   (dotimes (iy h)
+		     (dotimes (ix w)
+		       (setf (aref imgs pol j (1- imagenr) iy ix)
+			     (aref a1 (+ (* (ecase j
+					      (0 *sw*)
+					      (1 *lw*)
+					      (2 *sw*)) iy)
+					 ix))))))))))))
     :name "camera-acquisition"))
  (defun acquire-2d-no-ft (&key (repetitions 1))
   (let* ((reps repetitions)

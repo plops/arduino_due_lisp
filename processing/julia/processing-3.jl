@@ -25,11 +25,13 @@ function read_ics(fn)
 end
 
 ics_file="/var/www/localhost/data/data20150326/scan_32x32_9umfiber.ics";
+
+ics_file="/dev/shm/o.ics";
 a=read_ics(ics_file);
 
 using View5d
 
-view5d((a[:,:,16+32*16,1,1]))
+view5d((a[:,:,:,2,1]))
 
 size((a[:,:,16+32*16,1,1]))
 
