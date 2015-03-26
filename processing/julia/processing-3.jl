@@ -19,7 +19,7 @@ function read_ics(fn,w,h)
     pos = find_ics_raw_start(fn)
     f=open(fn)
     seek(f,pos)
-    a=read(f,Float32,h,w,256,2)
+    a=read(f,Float32,h,w,40*40,2)
     close(f)
     a
 end
@@ -32,7 +32,7 @@ a3=read_ics("/dev/shm/o2.ics",64,64);
 
 using View5d
 
-view5d((a2[:,:,:]))
+view5d((a1[:,:,:]))
 
 size((a[:,:,16+32*16,1,1]))
 

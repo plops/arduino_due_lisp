@@ -1161,8 +1161,8 @@ rectangular, for alpha=1 Hann window."
 	  (fftw::%fftwf_destroy_plan *plan256-2*)
 	  (fftw::%fftwf_destroy_plan *plan512-1*))))))
 
-(let*  ((nx 16)
-	(ny 16)
+(let*  ((nx 40)
+	(ny 40)
 	(nx*ny (* nx ny))
 	(imgs0 (make-array (list 2 nx*ny *sw* *sw*)
 			   :element-type 'single-float))
