@@ -30,9 +30,23 @@ a1=read_ics("/dev/shm/o0.ics",64,64);
 a2=read_ics("/dev/shm/o1.ics",80,80);
 a3=read_ics("/dev/shm/o2.ics",64,64);
 
+a1s = (reshape(a1[:,:,:,:],64,64,40,40,2));
+a2s = (reshape(a2[:,:,:,:],80,80,40,40,2));
+a3s = (reshape(a3[:,:,:,:],64,64,40,40,2));
+
 using View5d
 
-view5d((a1[:,:,:]))
+view5d(log(abs2(fftshift(fftshift(fft(a1s,(1,2)),1),2))))
+
+view5d(log(abs2(fftshift(fftshift(fft(a2s,(1,2)),1),2))))
+
+view5d(log(abs2(fftshift(fftshift(fft(a3s,(1,2)),1),2))))
+
+view5d(a1s)
+
+view5d((reshape(a3[:,:,:,:],64,64,40,40,2)))
+
+view5d((reshape(a2[:,:,:,:],80,80,40,40,2)))
 
 size((a[:,:,16+32*16,1,1]))
 
