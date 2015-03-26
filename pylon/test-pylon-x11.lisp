@@ -197,9 +197,10 @@
 #+nil
 (pylon:set-value-i *cams* 1 "OffsetY" 112)
 
-;; => ((21433565 1 1 64 64  866 469   105 0 125000000 9000 :TRIGGER-MODE 0 :LAST-ERROR 1 :RATE-P 0 :REVERSE-X 0 :RATE 366.30035)
-;;     (21433566 1 1 80 80 1033 198 15995 0 125000000 9000 :TRIGGER-MODE 0 :LAST-ERROR 1 :RATE-P 0 :REVERSE-X 0 :RATE 60.990486)
-;;     (21433540 1 1 64 64 1066 564   175 8 125000000 9000 :TRIGGER-MODE 0 :LAST-ERROR 1 :RATE-P 0 :REVERSE-X 1 :RATE 366.30035))
+;; => ((21433565 1 1 64 64  866 469   105 0 125000000 9000 :TRIGGER-MODE 1 :LAST-ERROR 1 :RATE-P 0 :REVERSE-X 0 :RATE 366.30035)
+;;     (21433566 1 1 80 80 1024 192 29995 0 125000000 9000 :TRIGGER-MODE 1 :LAST-ERROR 1 :RATE-P 0 :REVERSE-X 0 :RATE 32.899067)
+;;     (21433540 1 1 64 64 1066 564   175 8 125000000 9000 :TRIGGER-MODE 1 :LAST-ERROR 1 :RATE-P 0 :REVERSE-X 1 :RATE 366.30035))
+
 
 #+nil
 (progn ;; open a window and draw a line
@@ -1152,31 +1153,39 @@ rectangular, for alpha=1 Hann window."
 	  (fftw::%fftwf_destroy_plan *plan256-2*)
 	  (fftw::%fftwf_destroy_plan *plan512-1*))))))
 
-(let*  ((nx 32)
-	(ny 32)
+(let*  ((nx 16)
+	(ny 16)
 	(nx*ny (* nx ny))
-	(imgs (make-array (list 2 3 nx*ny *lw* *lw*)
-			  :element-type 'single-float)))
+	(imgs0 (make-array (list 2 nx*ny *sw* *sw*)
+			   :element-type 'single-float))
+	(imgs1 (make-array (list 2 nx*ny *lw* *lw*)
+			   :element-type 'single-float))
+	(imgs2 (make-array (list 2 nx*ny *sw* *sw*)
+			   :element-type 'single-float)))
   (defun start-acquisition-thread-no-ft (&key (pol 0) (n 2000))
     
    (sb-thread:make-thread 
     #'(lambda ()
-	(reset-current-index)
 	(progn ;; sb-sprof:with-profiling (:max-samples 1000 :report :flat :loop nil)
 	  (dotimes (i n)
 	    (dotimes (j 3)
 	      (multiple-value-bind (cam success-p w h imagenr blockid timestamp value-min value-max) 
 		  (pylon::grab-sf *cams* *buf-s-capture*)
 		(when success-p ;; do-update-p
-		  (let ((a1 (sb-ext:array-storage-vector *buf-s-capture*)))
-		   (dotimes (iy h)
-		     (dotimes (ix w)
-		       (setf (aref imgs pol j (1- imagenr) iy ix)
-			     (aref a1 (+ (* (ecase j
-					      (0 *sw*)
-					      (1 *lw*)
-					      (2 *sw*)) iy)
-					 ix))))))))))))
+		  (let ((a1 (sb-ext:array-storage-vector *buf-s-capture*))
+			(b (ecase j
+			     (0 imgs0)
+			     (1 imgs1)
+			     (2 imgs2)))
+			(width (ecase j
+				 (0 *sw*)
+				 (1 *lw*)
+				 (2 *sw*))))
+		    (declare (type (simple-array single-float 4) b))
+		    (dotimes (iy h)
+		      (dotimes (ix w)
+			(setf (aref b pol (1- imagenr) iy ix)
+			      (aref a1 (+ ix (* width iy)))))))))))))
     :name "camera-acquisition"))
  (defun acquire-2d-no-ft (&key (repetitions 1))
   (let* ((reps repetitions)
@@ -1221,7 +1230,7 @@ rectangular, for alpha=1 Hann window."
 	       (do-trigger)
 	       (sb-thread:join-thread th)))
 	(pylon:stop-grabbing *cams*))))
-  (defparameter *imgs* imgs)))
+  (defparameter *imgs* (list imgs0 imgs1 imgs2))))
 
 #+nil
 (acquire-2d-no-ft)
