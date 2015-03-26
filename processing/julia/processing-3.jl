@@ -23,7 +23,7 @@ function read_ics(fn,w,h)
     close(f)
     a
 end
-lw=256;
+lw=80;
 na=32;
 
 ics_file="/var/www/localhost/data/data20150326/scan_32x32_9umfiber.ics";
@@ -46,6 +46,8 @@ using View5d
 view5d(log(abs2(fftshift(fftshift(fft(a1s,(1,2)),1),2))))
 
 fa2s=(abs(fftshift(fftshift(fft(a2s,(1,2)),1),2)));
+
+view5d(a1s)
 
 view5d(fa2s)
 

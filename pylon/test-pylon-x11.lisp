@@ -25,7 +25,7 @@
 (in-package :pylon-test-x11)
 
 (defparameter *sw* 64)
-(defparameter *lw* 256)
+(defparameter *lw* 80)
 
 (progn
   (pylon:initialize)
@@ -193,7 +193,15 @@
          ;; :temp (pylon:get-value-f *cams* j "TemperatureAbs")
 	 )))
 #+nil
-(pylon:set-value-i *cams* 1 "OffsetX" 789)
+(let ((width 80)
+      (height 80)
+      (x 1024)
+      (y 192))
+  (pylon:set-value-i *cams* 1 "Width" width)
+  (pylon:set-value-i *cams* 1 "Height" height)
+  (pylon:set-value-i *cams* 1 "OffsetX" x)
+  (pylon:set-value-i *cams* 1 "OffsetY" y))
+
 #+nil
 (let ((i 1)
       (e 10000))
@@ -205,7 +213,7 @@
 (pylon:set-value-i *cams* 1 "OffsetY" 112)
 
 ;; => ((21433565 1 1 64 64  866 469  105 0 125000000 9000 :TRIGGER-MODE 0 :LAST-ERROR 1 :RATE-P 0 :REVERSE-X 0 :RATE 366.30035)
-;;     (21433566 1 1 80 80 1024 192 9975 0 125000000 9000 :TRIGGER-MODE 0 :LAST-ERROR 1 :RATE-P 0 :REVERSE-X 0 :RATE  32.899067)
+;;     (21433566 1 1 80 80 1024 192 9975 0 125000000 9000 :TRIGGER-MODE 1 :LAST-ERROR 1 :RATE-P 0 :REVERSE-X 0 :RATE 96.37625)
 ;;     (21433540 1 1 64 64 1066 564  350 0 125000000 9000 :TRIGGER-MODE 0 :LAST-ERROR 1 :RATE-P 0 :REVERSE-X 1 :RATE 366.30035))
 
 
@@ -1165,35 +1173,40 @@ rectangular, for alpha=1 Hann window."
 	(ny 32)
 	(nx*ny (* nx ny))
 	(imgs0 (make-array (list 2 nx*ny *sw* *sw*)
-			   :element-type 'single-float))
+			   :element-type 'single-float
+			   :initial-element 0s0))
 	(imgs1 (make-array (list 2 nx*ny *lw* *lw*)
-			   :element-type 'single-float))
+			   :element-type 'single-float
+			   :initial-element 0s0))
 	(imgs2 (make-array (list 2 nx*ny *sw* *sw*)
-			   :element-type 'single-float)))
-  (defun start-acquisition-thread-no-ft (&key (pol 0) (n 2000))
+			   :element-type 'single-float
+			   :initial-element 0s0)))
+  (defun start-acquisition-thread-no-ft (&key (pol 0) (n 2000) (repetitions 1))
     
    (sb-thread:make-thread 
     #'(lambda ()
 	(progn ;; sb-sprof:with-profiling (:max-samples 1000 :report :flat :loop nil)
 	  (dotimes (i n)
-	    (dotimes (j 3)
-	      (multiple-value-bind (cam success-p w h imagenr blockid timestamp value-min value-max) 
-		  (pylon::grab-sf *cams* *buf-s-capture*)
-		(when success-p ;; do-update-p
-		  (let ((a1 (sb-ext:array-storage-vector *buf-s-capture*))
-			(b (ecase cam
-			     (0 imgs0)
-			     (1 imgs1)
-			     (2 imgs2)))
-			(width (ecase cam
-				 (0 *sw*)
-				 (1 *lw*)
-				 (2 *sw*))))
-		    (declare (type (simple-array single-float 4) b))
-		    (dotimes (iy h)
-		      (dotimes (ix w)
-			(setf (aref b pol (1- imagenr) iy ix)
-			      (aref a1 (+ ix (* width iy)))))))))))))
+	    (dotimes (rep repetitions)
+	     (dotimes (j 3)
+	       (multiple-value-bind (cam success-p w h imagenr blockid timestamp value-min value-max) 
+		   (pylon::grab-sf *cams* *buf-s-capture*)
+		 (when success-p ;; do-update-p
+		   (let ((a1 (sb-ext:array-storage-vector *buf-s-capture*))
+			 (b (ecase cam
+			      (0 imgs0)
+			      (1 imgs1)
+			      (2 imgs2)))
+			 (width (ecase cam
+				  (0 *sw*)
+				  (1 *lw*)
+				  (2 *sw*)))
+			 (angle-index (floor (1- imagenr) repetitions)))
+		     (declare (type (simple-array single-float 4) b))
+		     (dotimes (iy h)
+		       (dotimes (ix w)
+			 (incf (aref b pol angle-index iy ix)
+			       (aref a1 (+ ix (* width iy))))))))))))))
     :name "camera-acquisition"))
  (defun acquire-2d-no-ft (&key (repetitions 1))
   (let* ((reps repetitions)
@@ -1216,14 +1229,14 @@ rectangular, for alpha=1 Hann window."
 		     :stepj stepj
 		     :repetitions reps
 		     :line-delay-ms 30
-		     :delay/4-ms 5))))
+		     :delay/4-ms 3))))
       (unwind-protect 
 	   (progn
 	     (arduino-trigger t)
 	     
 	     (reset-camera-timers *cams* 3)
 	     (pylon:start-grabbing *cams*)
-	     (let ((th (start-acquisition-thread-no-ft :pol 0 :n nx*ny)))
+	     (let ((th (start-acquisition-thread-no-ft :pol 0 :n nx*ny :repetitions repetitions)))
 	       (sleep .02)
 	       (do-trigger)
 	       (sb-thread:join-thread th)))
@@ -1233,7 +1246,7 @@ rectangular, for alpha=1 Hann window."
 	   (progn
 	     (reset-camera-timers *cams* 3)
 	     (pylon:start-grabbing *cams*)
-	     (let ((th (start-acquisition-thread-no-ft :pol 1 :n nx*ny)))
+	     (let ((th (start-acquisition-thread-no-ft :pol 1 :n nx*ny :repetitions repetitions)))
 	       (sleep .02)
 	       (do-trigger)
 	       (sb-thread:join-thread th)))
@@ -1241,7 +1254,7 @@ rectangular, for alpha=1 Hann window."
   (defparameter *imgs* (list imgs0 imgs1 imgs2))))
 
 #+nil
-(acquire-2d-no-ft)
+(acquire-2d-no-ft :repetitions 10)
 
 #+nil
 (loop for i below 3 do
