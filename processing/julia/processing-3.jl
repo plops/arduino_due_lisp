@@ -19,10 +19,19 @@ function read_ics(fn)
     pos = find_ics_raw_start(fn)
     f=open(fn)
     seek(f,pos)
-    a=read(f,Complex64,64,64,3,56,56)
+    a=read(f,Float32,80,80,1024,3,2)
     close(f)
     a
 end
+
+ics_file="/var/www/localhost/data/data20150326/scan_32x32_9umfiber.ics";
+a=read_ics(ics_file);
+
+using View5d
+
+view5d((a[:,:,16+32*16,1,1]))
+
+size((a[:,:,16+32*16,1,1]))
 
 #ics_file = "/home/martin/arduino_due_lisp/processing/julia/20150224/o-pol0.ics"
 #ics_file2 = "/home/martin/arduino_due_lisp/processing/julia/20150224/o-pol1.ics"

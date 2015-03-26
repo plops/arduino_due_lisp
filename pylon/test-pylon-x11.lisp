@@ -201,6 +201,7 @@
 ;;     (21433566 1 1 80 80 1033 198 15995 0 125000000 9000 :TRIGGER-MODE 0 :LAST-ERROR 1 :RATE-P 0 :REVERSE-X 0 :RATE 60.990486)
 ;;     (21433540 1 1 64 64 1066 564   175 8 125000000 9000 :TRIGGER-MODE 0 :LAST-ERROR 1 :RATE-P 0 :REVERSE-X 1 :RATE 366.30035))
 
+#+nil
 (progn ;; open a window and draw a line
   (connect)
   (make-window :width (+ 512 256 256) :height (+ 512 512 64))
@@ -323,8 +324,8 @@
 (defun cam-dst-x (cam)
   (ecase cam
     (0 0)
-    (1 *sw*)
-    (2 (+ *lw* *sw*))))
+    (1 256)
+    (2 (+ 512 256))))
 
 (defparameter *store* (loop for i from 0 below 10 collect (make-array (list 64 64) :element-type '(complex single-float))))
 (defparameter *store-index* 0)
@@ -702,7 +703,7 @@ rectangular, for alpha=1 Hann window."
 	  (setf (aref current-buf-s j i) (* (aref *win* j i) (aref current-buf-s j i)))))))
 
 
-  (when ;;update-display-p
+  (when t ;;update-display-p
    (put-sf-image (elt *buf-s* cam) w h :dst-x (cam-dst-x cam) :scale-max (* .3 repetitions 4095s0) ))
 
   (let* ((a (make-array (list h w) :element-type 'single-float))
@@ -738,7 +739,7 @@ rectangular, for alpha=1 Hann window."
 		     :x1 (+ x wa) 
 		     :y1 (+ y ha)
 		     :dst-x (cam-dst-x cam) :dst-y *lw* 
-		     :scale (/ scale 1s0) :offset (* 1 offset)
+		     :scale (/ scale .1s0) :offset (* 0 offset)
 		     ))
     #+nil (extract-csf* *buf-cs* *buf-cs64in* 
 		  :w (1+ (floor w 2)) :h h
@@ -1151,6 +1152,76 @@ rectangular, for alpha=1 Hann window."
 	  (fftw::%fftwf_destroy_plan *plan256-2*)
 	  (fftw::%fftwf_destroy_plan *plan512-1*))))))
 
+(let*  ((nx 32)
+	(ny 32)
+	(nx*ny (* nx ny))
+	(imgs (make-array (list 2 3 nx*ny *lw* *lw*)
+			  :element-type 'single-float)))
+  (defun start-acquisition-thread-no-ft (&key (pol 0) (n 2000))
+    
+   (sb-thread:make-thread 
+    #'(lambda ()
+	(reset-current-index)
+	(progn ;; sb-sprof:with-profiling (:max-samples 1000 :report :flat :loop nil)
+	  (dotimes (i n)
+	    (dotimes (j 3)
+	      (multiple-value-bind (cam success-p w h imagenr blockid timestamp value-min value-max) 
+		  (pylon::grab-sf *cams* *buf-s-capture*)
+		(when success-p ;; do-update-p
+		  (dotimes (iy h)
+		    (dotimes (ix w)
+		      (setf (aref imgs pol j (1- imagenr) iy ix) (aref *buf-s-capture* iy ix))))))))))
+    :name "camera-acquisition"))
+ (defun acquire-2d-no-ft (&key (repetitions 1))
+  (let* ((reps repetitions)
+	 (radius 1800))
+    (progn 
+      (setf
+       *trigger-outputs-initialized* nil)
+      (initialize-trigger-outputs))
+    (macrolet ((do-trigger ()
+		 `(let* ((ci 1700)
+			 (cj 2200)
+			 (stepi/4 10)
+			 (stepj (* 4 stepi/4)))
+		    (trigger-all-cameras-seq-2d-scan-with-repetition
+		     :starti (- ci (* (floor nx 2) (* 4 stepi/4)))
+		     :startj (- cj (* (floor ny 2) stepj))
+		     :maxi (+ ci (* (floor nx 2) (* 4 stepi/4)))
+		     :maxj (+ cj (* (floor ny 2) stepj))
+		     :stepi/4 stepi/4
+		     :stepj stepj
+		     :repetitions reps
+		     :line-delay-ms 30
+		     :delay/4-ms 5))))
+      (unwind-protect 
+	   (progn
+	     (arduino-trigger t)
+	     
+	     (reset-camera-timers *cams* 3)
+	     (pylon:start-grabbing *cams*)
+	     (let ((th (start-acquisition-thread-no-ft :pol 0 :n nx*ny)))
+	       (sleep .02)
+	       (do-trigger)
+	       (sb-thread:join-thread th)))
+	(pylon:stop-grabbing *cams*))
+      (trigger-flipmount-once)
+      (unwind-protect 
+	   (progn
+	     (reset-camera-timers *cams* 3)
+	     (pylon:start-grabbing *cams*)
+	     (let ((th (start-acquisition-thread-no-ft :pol 1 :n nx*ny)))
+	       (sleep .02)
+	       (do-trigger)
+	       (sb-thread:join-thread th)))
+	(pylon:stop-grabbing *cams*))))
+  (defparameter *imgs* imgs)))
+
+#+nil
+(acquire-2d-no-ft)
+
+#+nil
+(ics:write-ics2 (format nil "/dev/shm/o.ics") *imgs*)
 
 #+nil
 (let* ((n (* 100 100)  #+nil (get-stored-array-length))
