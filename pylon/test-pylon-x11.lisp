@@ -1174,11 +1174,11 @@ rectangular, for alpha=1 Hann window."
 		  (pylon::grab-sf *cams* *buf-s-capture*)
 		(when success-p ;; do-update-p
 		  (let ((a1 (sb-ext:array-storage-vector *buf-s-capture*))
-			(b (ecase j
+			(b (ecase cam
 			     (0 imgs0)
 			     (1 imgs1)
 			     (2 imgs2)))
-			(width (ecase j
+			(width (ecase cam
 				 (0 *sw*)
 				 (1 *lw*)
 				 (2 *sw*))))
@@ -1237,7 +1237,8 @@ rectangular, for alpha=1 Hann window."
 (acquire-2d-no-ft)
 
 #+nil
-(ics:write-ics2 (format nil "/dev/shm/o.ics") *imgs*)
+(loop for i below 3 do
+     (ics:write-ics2 (format nil "/dev/shm/o~d.ics" i) (elt *imgs* i)))
 
 #+nil
 (let* ((n (* 100 100)  #+nil (get-stored-array-length))

@@ -15,23 +15,24 @@ end
 # jumps over the header
 # and reads the raw data from the file into an array
 # (i keep the dimensions fixed for this example)
-function read_ics(fn)
+function read_ics(fn,w,h)
     pos = find_ics_raw_start(fn)
     f=open(fn)
     seek(f,pos)
-    a=read(f,Float32,80,80,1024,3,2)
+    a=read(f,Float32,h,w,256,2)
     close(f)
     a
 end
 
 ics_file="/var/www/localhost/data/data20150326/scan_32x32_9umfiber.ics";
 
-ics_file="/dev/shm/o.ics";
-a=read_ics(ics_file);
+a1=read_ics("/dev/shm/o0.ics",64,64);
+a2=read_ics("/dev/shm/o1.ics",80,80);
+a3=read_ics("/dev/shm/o2.ics",64,64);
 
 using View5d
 
-view5d((a[:,:,:,2,1]))
+view5d((a2[:,:,:]))
 
 size((a[:,:,16+32*16,1,1]))
 
