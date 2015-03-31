@@ -82,7 +82,6 @@
 "	   n delay-ms)
    :time .1d0))
 
-(format nil "nalfdn s ~d" 3)
 
 (defun trigger-all-cameras-once ()
   (unless *trigger-outputs-initialized*
@@ -112,7 +111,6 @@
    (format nil 
 	   "(progn (digital-write 6 1) (delay 1) (digital-write 6 0))")
    :time .1d0))
-
 #+nil
 (progn ;; calculations for the beam pathlength, sizes in cm
   (let* ((x 9) ;; shift of the trombone
@@ -153,9 +151,16 @@
    "(room)")
 #+nil
 (arduino-serial-sbcl:talk-arduino
+   (second *ard*) 
+   (first *ard*)
+   (format nil 
+	   "(progn  (pin-mode 6 1) (digital-write 6 0) (delay 1) (digital-write 6 1) (delay 1) (digital-write 6 0))")
+   :time .1d0)
+#+nil
+(arduino-serial-sbcl:talk-arduino
    ( second *ard*) 
    (first *ard*)
-   "(dac 1640 2120)")
+   "(dac 1600 1950)")
 #+nil
 (trigger-all-cameras-once)
 (defun arduino-dac (x y)
@@ -164,6 +169,13 @@
   ( second *ard*) 
   (first *ard*)
   (format nil "(dac ~a ~a)" x y)))
+
+
+#+nil
+(loop for i from 2200 downto 1000 by 30 do
+     (arduino-dac i 1950)
+     (sleep .1))
+
 
 (defun arduino-trigger (&optional (active nil))
   (dotimes (i 3)
@@ -1192,8 +1204,8 @@ rectangular, for alpha=1 Hann window."
 	  (fftw::%fftwf_destroy_plan *plan256-2*)
 	  (fftw::%fftwf_destroy_plan *plan512-1*))))))
 
-(let*  ((nx 60)
-	(ny 60)
+(let*  ((nx 32)
+	(ny 32)
 	(nx*ny (* nx ny))
 	(imgs0 (make-array (list 2 nx*ny *sw* *sw*)
 			   :element-type 'single-float
@@ -1239,9 +1251,9 @@ rectangular, for alpha=1 Hann window."
        *trigger-outputs-initialized* nil)
       (initialize-trigger-outputs))
     (macrolet ((do-trigger ()
-		 `(let* ((ci 1700)
-			 (cj 2200)
-			 (stepi/4 7)
+		 `(let* ((ci 1500)
+			 (cj 1950)
+			 (stepi/4 5)
 			 (stepj (* 4 stepi/4)))
 		    (trigger-all-cameras-seq-2d-scan-with-repetition
 		     :starti (- ci (* (floor nx 2) (* 4 stepi/4)))
@@ -1277,7 +1289,7 @@ rectangular, for alpha=1 Hann window."
   (defparameter *imgs* (list imgs0 imgs1 imgs2))))
 
 #+nil
-(acquire-2d-no-ft :repetitions 12)
+(acquire-2d-no-ft :repetitions 2)
 
 #+nil
 (loop for i below 3 do

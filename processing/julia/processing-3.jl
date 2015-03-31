@@ -16,7 +16,7 @@ end
 # and reads the raw data from the file into an array
 # (i keep the dimensions fixed for this example)
 lw=128;
-na=40;
+na=32;
 function read_ics(fn,w,h)
     pos = find_ics_raw_start(fn)
     f=open(fn)
@@ -29,6 +29,7 @@ end
 ics_file="/var/www/localhost/data/data20150326/scan_32x32_9umfiber.ics";
 
 #dir="/var/www/localhost/data/data20150326"
+#dir="/var/www/localhost/data/data20150326/accum12_60x60"
 dir="/dev/shm"
 
 a1=read_ics("$dir/o0.ics",64,64);
@@ -41,15 +42,15 @@ a1s = (reshape(a1[:,:,:,:],64,64,na,na,2));
 a2s = (reshape(a2[:,:,:,:],lw,lw,na,na,2));
 a3s = (reshape(a3[:,:,:,:],64,64,na,na,2));
 
-using View5d
+using View5D
 
 view5d(log(abs2(fftshift(fftshift(fft(a1s,(1,2)),1),2))))
 
-fa2s=(abs(fftshift(fftshift(fft(a2s,(1,2)),1),2)));
+fa2s=(abs2(fftshift(fftshift(fft(a2s,(1,2)),1),2)));
 
-view5d(a3s)
+view5d(a2s)
 
-view5d(fa2s)
+view5d(fa2s[:,:,20,20,:])
 
 view5d(log(abs2(fftshift(fftshift(fft(a3s,(1,2)),1),2))))
 
