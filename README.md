@@ -43,8 +43,8 @@ The total transfer matrix becomes a product: M = P_Λ T_θN ... P_Λ T_θ2 P_Λ 
 
 This formulation enables reconstruction of fiber shape from measured transmission properties if sufficient modes are measured. For a fiber with 10,000 modes, the number of measurable parameters scales with the number of bends that can be resolved.
 
-## Transfer Matrix and Reflection Measurement￼
-### Round-Trip Propagation￼
+## Transfer Matrix and Reflection Measurement
+### Round-Trip Propagation
 
 The experimental system measures both transmitted and reflected fields to characterize the fiber. The reflection measurement captures:
 
@@ -53,17 +53,19 @@ E_out = M' R M E_in
 where:
 
 M = forward transfer matrix (fiber input → exit)
+
 R = reflection matrix at fiber end face (diagonal with exp(iπ))
+
 M' = return transfer matrix = M^T (by reciprocity)
 
-### Phase Gradient Calculation￼
+### Phase Gradient Calculation
 For a holographically measured field U(x) = A(x) exp(iΦ(x)), the phase derivative is computed via:
 
 Φ'(x) = Im[ (1/U) × (dU/dx - d|U|/dx × U/|U|) ]
 
 This expression avoids 2π discontinuities inherent in computing d(arg(U))/dx directly, making it numerically stable for Wigner distribution calculation.
 
-## Measurement Strategy and Data Structures￼
+## Measurement Strategy and Data Structures
 ### Angular Scan Pattern￼
 The Fast Steering Mirror (FSM) scans the input field u^i across a 2D grid of angles (θₙ, φₘ) ∈ Ω, where Ω is the fiber's numerical aperture. Each scan position effectively launches a different modal distribution.
 
@@ -71,11 +73,12 @@ The Fast Steering Mirror (FSM) scans the input field u^i across a 2D grid of ang
 ### Mapping to Storage Arrays
 The theoretical quantities map to 4D/5D array structures in the codebase:
 
-Theoretical Object	Array Dimensions	ICS File Organization
-u^t_∥(x',y',θ,φ)	[64, 64, N_θ, N_φ]	  o0.ics (Camera 1)
-u^t_⊥(x',y',θ,φ)	[64, 64, N_θ, N_φ]	  o2.ics (Camera 3)
-u^o_⊥(x,y,θ,φ)	  [128, 128, N_θ, N_φ]	o1.ics (Camera 2)
-FT domain	        [90, 90, 3, N_θ, N_φ]	FFT ROI extraction
+| Theoretical Object | Array Dimensions | ICS File Organization |
+|---|---|---|
+| u^t_∥(x',y',θ,φ) | [64, 64, N_θ, N_φ] | o0.ics (Camera 1) |
+| u^t_⊥(x',y',θ,φ) | [64, 64, N_θ, N_φ] | o2.ics (Camera 3) |
+| u^o_⊥(x,y,θ,φ) | [128, 128, N_θ, N_φ] | o1.ics (Camera 2) |
+| FT domain | [90, 90, 3, N_θ, N_φ] | FFT ROI extraction |
 
 
 The scan generates ~167×127 angle points, creating datasets of ~95GB per complete measurement.
