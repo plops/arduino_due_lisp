@@ -1,3 +1,19 @@
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/plops/arduino_due_lisp)
+
+# Purpose and Scope
+
+This repository implements a multi-camera coherent imaging system for characterizing multimode optical fibers through holographic measurements. The system synchronizes three Basler GigE cameras using an Arduino Due microcontroller to capture spatially and angularly resolved interference patterns, performs real-time Fourier transform processing, and conducts offline statistical analysis on multi-dimensional datasets.
+
+# Camera Acquisition System
+
+The system supports three Basler GigE cameras capturing synchronized images for holographic fiber characterization experiments. Multiple acquisition paths coexist to serve different purposes: the primary real-time system using the proprietary camera SDK with X11 visualization, alternative scanning patterns, an open-source Aravis-based alternative, and C++ implementations for performance testing.
+
+
+# Image Processing
+
+The image processing subsystem provides array manipulation, format conversion, and mathematical operations for processing camera data in real-time and preparing it for FFT analysis and storage. This page covers the Common Lisp image processing utilities found in the image-processing package. 
+
+
 This is code I use to control my holographic setup to image through
 multimode fibers.
 
