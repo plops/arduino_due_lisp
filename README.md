@@ -81,7 +81,7 @@ The theoretical quantities map to 4D/5D array structures in the codebase:
 | FT domain | [90, 90, 3, N_θ, N_φ] | FFT ROI extraction |
 
 
-The scan generates ~167×127 angle points, creating datasets of ~95GB per complete measurement.
+The scan generates ~167×127 angle points.
 
 
 This is code I use to control my holographic setup to image through
