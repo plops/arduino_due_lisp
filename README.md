@@ -23,8 +23,62 @@ This page documents the hardware control subsystem that manages the Arduino Due 
 
 The system implements two distinct approaches: true REPL-driven interactive development for Common Lisp components, and signal-triggered dynamic library reloading for C/C++ components. Both mechanisms preserve critical runtime state (camera connections, buffers, hardware control) across code updates, eliminating the need for process restarts during algorithm development.
 
+# Fiber Mode Propagation Model
+
+## Single Bend Model
+
+The system models light propagation through a perturbed multimode fiber by decomposing the problem into a sequence of linear operations on the mode amplitude vector E = (A₀, A₁, ..., Aₙ). Each physical component transforms this vector through matrix multiplication.
+
+*Propagation Matrix:* A straight fiber segment of length L applies phase shifts exp(iβᵢL) to each mode i, represented by diagonal matrix P_L:
+P_L(i,i)	exp(iβᵢ L)
+P_L(i,j), i≠j	0
+
+*Coupling Matrix:* A bend with angle θ couples modes through the symmetric matrix T_θ. For weakly-guiding circular fibers, only modes with the same azimuthal quantum number l couple, making T_θ sparse.
+
+## Generalized Multi-Bend Model
+
+Real fibers have continuous curvature, which the model approximates by discretizing into N equidistant bends, each characterized by angles (θᵢ, φᵢ)
+
+The total transfer matrix becomes a product: M = P_Λ T_θN ... P_Λ T_θ2 P_Λ T_θ1
+
+This formulation enables reconstruction of fiber shape from measured transmission properties if sufficient modes are measured. For a fiber with 10,000 modes, the number of measurable parameters scales with the number of bends that can be resolved.
+
+## Transfer Matrix and Reflection Measurement￼
+### Round-Trip Propagation￼
+
+The experimental system measures both transmitted and reflected fields to characterize the fiber. The reflection measurement captures:
+
+E_out = M' R M E_in
+
+where:
+
+M = forward transfer matrix (fiber input → exit)
+R = reflection matrix at fiber end face (diagonal with exp(iπ))
+M' = return transfer matrix = M^T (by reciprocity)
+
+### Phase Gradient Calculation￼
+For a holographically measured field U(x) = A(x) exp(iΦ(x)), the phase derivative is computed via:
+
+Φ'(x) = Im[ (1/U) × (dU/dx - d|U|/dx × U/|U|) ]
+
+This expression avoids 2π discontinuities inherent in computing d(arg(U))/dx directly, making it numerically stable for Wigner distribution calculation.
+
+## Measurement Strategy and Data Structures￼
+### Angular Scan Pattern￼
+The Fast Steering Mirror (FSM) scans the input field u^i across a 2D grid of angles (θₙ, φₘ) ∈ Ω, where Ω is the fiber's numerical aperture. Each scan position effectively launches a different modal distribution.
 
 
+### Mapping to Storage Arrays
+The theoretical quantities map to 4D/5D array structures in the codebase:
+
+Theoretical Object	Array Dimensions	ICS File Organization
+u^t_∥(x',y',θ,φ)	[64, 64, N_θ, N_φ]	  o0.ics (Camera 1)
+u^t_⊥(x',y',θ,φ)	[64, 64, N_θ, N_φ]	  o2.ics (Camera 3)
+u^o_⊥(x,y,θ,φ)	  [128, 128, N_θ, N_φ]	o1.ics (Camera 2)
+FT domain	        [90, 90, 3, N_θ, N_φ]	FFT ROI extraction
+
+
+The scan generates ~167×127 angle points, creating datasets of ~95GB per complete measurement.
 
 
 This is code I use to control my holographic setup to image through
